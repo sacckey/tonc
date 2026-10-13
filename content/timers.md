@@ -1,26 +1,26 @@
-# 15. Timers
+# 15. タイマー
 
 <!-- toc -->
 
-## Timing is everything {#sec-intro}
+## タイミングがすべて {#sec-intro}
 
-Think of every time you've heard a joke ruined because the punch line came too late or too early; think of all the failed jumps in Super Mario Bros (or any other platform game); all the occasions that you skidded at the start of a Mario Kart race for revving too soon; that your invincibility wore off just *before* you got a red shell up your a\[censored\]s; that you didn't quite dodge that hail of bullets in old-skool shooters because of a sudden slow-down. Think of all this and situations like them and you'll agree that in games, as in life, Timing Is Everything.
+オチが遅すぎたり早すぎたりして、ジョークが台無しになるのを聞いたときのことを思い出してください。スーパーマリオブラザーズ（やほかのアクションゲーム）で失敗したジャンプのすべてを思い出してください。マリオカートのレースのスタートで、アクセルを早く踏みすぎてスリップしたときのことを。赤こうらがケ\[検閲済み\]に飛んでくる*直前*に、無敵が切れてしまったときのことを。昔ながらのシューティングゲームで、急な処理落ちのせいで弾の雨をよけきれなかったときのことを。こうしたことや似たような状況を思い出せば、人生と同じくゲームでも、タイミングがすべてだということに同意してもらえるでしょう。
 
-Ironically, tim*ers* are of less importance. Throughout video-game history programmers have built their games around one timing mechanism: the vertical refresh rate of the screen. In other words, the VBlank. This is a machine-oriented timer (you count frames) rather than a human-oriented one (where you'd count seconds). For consoles, this works very well as the hardware is always the same. (Except, of course, that some countries use NTSC televisions (@ 60 Hz) and others use PAL TVs (@ 50 Hz). Everyone living in the latter category and has access to both kinds knows the difference and curses the fact that it's the NTSC countries that most games stem from.) While the VBlank timer is pervasive, it is not the only one. The GBA has four clock timers at your disposal. This section covers these timers.
+皮肉なことに、タイマー*そのもの*はそれほど重要ではありません。ビデオゲームの歴史を通じて、プログラマはただ 1 つのタイミングの仕組み、つまり画面の垂直リフレッシュレートを中心にゲームを作ってきました。言い換えると、VBlank です。これは（秒を数える）人間向けのタイマーではなく、（フレームを数える）機械向けのタイマーです。ゲーム機ではハードウェアが常に同じなので、これはとてもうまくいきます。（もちろん、NTSC のテレビ（60 Hz）を使う国と、PAL のテレビ（50 Hz）を使う国があるのは別です。後者に住んでいて両方を使える人なら誰でも違いを知っていて、ほとんどのゲームが NTSC の国から生まれていることを呪っています。）VBlank のタイマーはどこにでもありますが、それだけがタイマーではありません。GBA には、自由に使える 4 つのクロックタイマーがあります。この節では、これらのタイマーを扱います。
 
-## GBA Timers {#sec-tmr}
+## GBA のタイマー {#sec-tmr}
 
-All conceivable timers work in pretty much the same way. You have something that oscillates with a certain fixed frequency (like a CPU clock or the swing of a pendulum). After every full period, a counter is incremented and you have yourself a timer. Easy, innit?
+考えられるタイマーは、どれもだいたい同じように働きます。ある決まった周波数で振動するもの（CPU のクロックや振り子の揺れなど）があります。1 周期が終わるたびにカウンタを 1 つ増やせば、タイマーのできあがりです。簡単でしょう？
 
-The basic frequency of the GBA timers is the CPU frequency, which is 2<sup>24</sup> ≈ 16.78 Mhz. In other words, one <dfn>clock cycle</dfn> of the CPU takes 2<sup>−24</sup> ≈ 59.6 ns. Since this is a very lousy timescale for us humans, the GBA allows for 4 different frequencies (or, rather periods): 1, 64, 256 and 1024 cycles. Some details of these frequencies are shown in {@tbl:tmr-freq}. By clever use of the timer registers, you can actually create timers of any frequency, but more on that later. It should be noted that the screen refreshes every 280,896 cycles, exactly.
+GBA のタイマーの基本の周波数は CPU の周波数で、2<sup>24</sup> ≈ 16.78 Mhz です。言い換えると、CPU の 1 <dfn>クロックサイクル</dfn>は 2<sup>−24</sup> ≈ 59.6 ns です。これは私たち人間にとってはとても扱いにくい時間の尺度なので、GBA では 4 つの異なる周波数（というより周期）を使えます。1、64、256、1024 サイクルです。これらの周波数の詳細を {@tbl:tmr-freq} に示します。タイマーのレジスタをうまく使えば、実際にはどんな周波数のタイマーでも作れますが、それについてはあとで説明します。画面はちょうど 280,896 サイクルごとにリフレッシュされることも言っておくべきでしょう。
 
 <div class="lblock">
 <table id="tbl:tmr-freq" class="table-data">
 <caption align="bottom">
-  <b>{*@tbl:tmr-freq}</b>: Timer frequencies
+  <b>{*@tbl:tmr-freq}</b>: タイマーの周波数
 </caption>
 <col span=4 align="right">
-<tr><th>#cycles<th>frequency<th>period
+<tr><th>サイクル数<th>周波数<th>周期
 <tr><td>  1 <td>16.78 MHz<td>59.59 ns
 <tr><td>  64 <td>262.21 kHz<td>3.815 &mu;s
 <tr><td> 256 <td>65.536 kHz<td>15.26 &mu;s
@@ -28,19 +28,19 @@ The basic frequency of the GBA timers is the CPU frequency, which is 2<sup>24</s
 </table>
 </div>
 
-### Timer registers {#ssec-tmr-regs}
+### タイマーのレジスタ {#ssec-tmr-regs}
 
-The GBA has four timers, timers 0 to 3. Each of these has two registers: a data register (`REG_TMxD`) and a control register (`REG_TMxCNT`). The addresses can be found in {@tbl:tmr-reg}.
+GBA には、タイマー 0 から 3 の 4 つのタイマーがあります。それぞれに 2 つのレジスタがあります。データレジスタ（`REG_TMxD`）と制御レジスタ（`REG_TMxCNT`）です。アドレスは {@tbl:tmr-reg} にあります。
 
 <div class="lblock">
 <table id="tbl:tmr-reg">
 <caption align="bottom">
-  <b>{*@tbl:tmr-reg}</b>: Timer register addresses
+  <b>{*@tbl:tmr-reg}</b>: タイマーのレジスタのアドレス
 </caption>
-<tr><th>reg<th>function<th>address
-<tr><td><code>REG_TMxD</code><td>data
+<tr><th>レジスタ<th>機能<th>アドレス
+<tr><td><code>REG_TMxD</code><td>データ
 	<td><code>0400:0100h  + 04h</code>·x
-<tr><td><code>REG_TMxCNT</code><td>control
+<tr><td><code>REG_TMxCNT</code><td>制御
 	<td><code>0400:0102h + 04h</code>·x
 </table>
 </div>
@@ -67,71 +67,70 @@ The GBA has four timers, timers 0 to 3. Each of these has two registers: a data 
   <col class="bits" width=40>
   <col class="bf" width="8%">
   <col class="def" width="12%">
-<tr align="left"><th>bits<th>name<th>define<th>description
+<tr align="left"><th>ビット<th>名前<th>定義<th>説明
 <tbody valign="top">
 <tr class="bg0">
   <td>0-1<td class="rclr2">Fr
   <td>TM_FREQ_y
-  <td>Timer <b>frequency</b>. 0-3 for 1, 64, 256, or 1024 cycles, 
-    respectively. <code>y</code> in the define is the number of 
-    cycles.
+  <td>タイマーの<b>周波数</b>。0-3 がそれぞれ 1、64、256、1024 サイクルに
+    対応します。定義の <code>y</code> はサイクル数です。
 <tr class="bg1">
   <td> 2 <td class="rclr3">CM
   <td>TM_CASCADE
-  <td><b>Cascade mode</b>. When the counter of the <i>preceding</i> 
-    (<code>x</code>&minus;1) timer overflows (<code>REG_TM(x-1)D= 
-    0xffff</code>), this one will be incremented too. A timer that 
-    has this bit set does <i>not</i> count on its own, though you 
-    still have to enable it. Obviously, this won't work for timer 0.
-    If you plan on using it make sure you understand exactly what I 
-    just said; this place is a death-trap for the unwary.
+  <td><b>カスケードモード</b>。<i>1 つ前の</i>（<code>x</code>&minus;1 の）
+    タイマーのカウンタがオーバーフローしたとき（<code>REG_TM(x-1)D= 
+    0xffff</code>）に、このタイマーも 1 つ増えます。このビットが設定された
+    タイマーは自分では数え<i>ません</i>が、それでも有効にはしておく必要が
+    あります。当然ながら、タイマー 0 ではこれは働きません。
+    使うつもりなら、今言ったことを正確に理解しておいてください。
+    ここは不注意な人にとっての死の罠です。
 <tr class="bg0">
   <td> 6 <td class="rclr1">I
   <td>TM_IRQ
-  <td>Raise an interrupt on overflow.
+  <td>オーバーフローしたときに割り込みを発生させる。
 <tr class="bg1">
   <td> 7 <td class="rclr0">En
   <td>TM_ENABLE
-  <td>Enable the timer.
+  <td>タイマーを有効にする。
 </tbody>
 </table>
 </div>
 
 ### REG_TMxD {#ssec-reg-tmxd}
 
-The data register `REG_TMxD` is a 16-bit number that works a little bit differently than you might expect at first, but in the end it makes sense. The number that you **read** from the register is the **current** timer-count. So far, so good. However, the number that you **write** to `REG_TMxD` is the **initial value** that the counter begins at when the timer is either enabled (via `TM_ENABLE`) or overflows. This has number of ‘interesting’ consequences. To make things a little easier, define variables *n* of the initial value (the write-number) and *c* for the current count (the read number).
+データレジスタ `REG_TMxD` は 16 ビットの数で、最初に思うのとは少し違う働き方をしますが、最終的には筋が通っています。このレジスタから**読む**数は、タイマーの**現在の**カウントです。ここまでは問題ありません。しかし、`REG_TMxD` に**書く**数は、タイマーが（`TM_ENABLE` によって）有効になったとき、またはオーバーフローしたときに、カウンタが始まる**初期値**なのです。このことから、「興味深い」結果がいくつか生じます。話を少し簡単にするために、初期値（書く数）を *n*、現在のカウント（読む数）を *c* という変数で表すことにします。
 <br>  
-First of all, when you set an *n* (of, say, `c000h`) like this:
+まず、次のように *n*（たとえば `c000h`）を設定しても、
 
 ```c
     REG_TM2D= 0xc000;
 ```
 
-you will *not* have set the current timer-count *c* to *n* (=`c000h`). In fact, if the timer is disabled, then *c*= 0. However, as soon as you do enable the counter, then *c = n* and proceeds from there. And when the timer overflows, it will reset to this value as well. By the way, because *n* is only the starting value it is important to set *n* first, and enable the timer afterwards.
+タイマーの現在のカウント *c* が *n*（=`c000h`）になるわけでは*ありません*。実際、タイマーが無効なら *c*= 0 です。しかし、カウンタを有効にしたとたんに *c = n* となり、そこから進んでいきます。そしてタイマーがオーバーフローしたときも、この値にリセットされます。ちなみに、*n* は開始値にすぎないので、先に *n* を設定してから、タイマーを有効にすることが大事です。
 
-Secondly, ask yourself this: what happens when you disable the timer again? Well, the counter retains its current value. However, when you *enable* it afterwards, *c* will reset to *n* again. This is a bit of a drag if you want to disable the timer for a while (during a game-pause for instance) and then pick up where it left of. Well, yeah, but there is a way to make it happen. How? By turning it into a cascade timer via `TM_CASCADE`! Having that bit set in the `REG_TMxCNT` will cause the timer to be increased only when the preceding one overflows. If you prevent that from ever happening (if it's disabled for instance) then you will have effectively disabled your timer.
+次に、こう自問してみてください。タイマーをまた無効にしたらどうなるでしょうか？ まあ、カウンタは現在の値を保ちます。しかし、そのあとで*有効に*すると、*c* はまた *n* にリセットされます。しばらくタイマーを止めて（たとえばゲームの一時停止中など）、それから止めたところから再開したい場合、これは少し困ります。ええ、でも、それを実現する方法があります。どうやって？ `TM_CASCADE` でカスケードタイマーにするのです！ `REG_TMxCNT` でこのビットを設定すると、タイマーは 1 つ前のタイマーがオーバーフローしたときにだけ増えるようになります。それが決して起きないようにすれば（たとえば 1 つ前のタイマーが無効なら）、実質的にタイマーを止めたことになります。
 
-Lastly, given a certain *n*, then the timer will overflow after *T*= `10000h`−*n* increments. Or, thanks to the wonders of two's complement, just *T*= −*n*. Combined with a cascade timer (or interrupts) you can build timers of any frequency, which is what you want from a timer.
+最後に、ある *n* が与えられると、タイマーは *T*= `10000h`−*n* 回増えたあとでオーバーフローします。あるいは、2 の補数の素晴らしさのおかげで、単に *T*= −*n* です。カスケードタイマー（または割り込み）と組み合わせれば、どんな周波数のタイマーでも作れます。タイマーに求められるのはまさにそれです。
 
-:::warning Writing to REG_TMxD is weird
+:::warning REG_TMxD への書き込みは変わっている
 
-Writing into REG_TMxD may not do what you think it does. It does *not* set the timer value. Rather, it sets the *initial* value for the next timer run.
+REG_TMxD への書き込みは、思っているとおりの動作をしないかもしれません。タイマーの値を設定するのでは*ありません*。次にタイマーが動くときの*初期*値を設定するのです。
 
 :::
 
-## Timer demo : like clockwork {#sec-demo}
+## タイマーのデモ: 時計仕掛けのように {#sec-demo}
 
-In today's demo, I'm going to show how to make a simple digital clock with the timers. To do this, we'll need a 1 Hz timer. As that's not available directly, I'm going to set up a cascading timer system with timers 2 and 3. Timer 3 will be set to cascade mode, which is updated when timer 2 overflows. It is possible to set the overflow to happen at a frequency of exactly one Hertz. The clock frequency is 2<sup>24</sup>, or 1024\*0x4000. By setting timer 2 to `TM_FREQ_1024` and to start at −0x4000, the cascading timer 3 will effectively be a 1 Hz counter.
+今回のデモでは、タイマーを使って簡単なデジタル時計を作る方法を示します。そのためには 1 Hz のタイマーが必要です。それは直接は使えないので、タイマー 2 と 3 でカスケードタイマーの仕組みを作ります。タイマー 3 をカスケードモードにして、タイマー 2 がオーバーフローしたときに更新されるようにします。オーバーフローがちょうど 1 ヘルツの周波数で起きるようにできます。クロックの周波数は 2<sup>24</sup>、つまり 1024\*0x4000 です。タイマー 2 を `TM_FREQ_1024` にして −0x4000 から始めるようにすれば、カスケードしたタイマー 3 は実質的に 1 Hz のカウンタになります。
 
 <div class="cpt_fr" style="width:240px;">
 <img alt="Clock demo" src="./img/demo/tmr_demo.png" id="fig:tmr-demo">
 
-**{*@fig:tmr-demo}**: `tmr_demo`.
+**{*@fig:tmr-demo}**: `tmr_demo`。
 </div>
 
-Whenever timer 3 is updated, the demo turns the number of seconds into hours, minutes and seconds and prints that on screen (see {@fig:tmr-demo}). Yes, I am using divisions and moduli here because it is the simplest procedure and I can spare the cycles in this particular demo.
+タイマー 3 が更新されるたびに、デモは秒数を時、分、秒に変換して画面に表示します（{@fig:tmr-demo} を見てください）。そう、ここでは除算と剰余を使っています。それが一番簡単な手順ですし、このデモではサイクルに余裕があるからです。
 
-The demo can be (un)paused with Select and Start. Start disables timer 2, and thus timer 3 too. Select turns timer 2 into a cascade timer as well, and since timer 1 is disabled, doing this also stops timer 2 (and 3). The difference is what happens when you unpause. By disabling a timer, it will start again at the initial value; but stopping it with a cascade actually keeps the timer active and it will simply resume counting once the cascade is removed. The difference is a subtle one, but the latter is more appropriate.
+このデモは Select と Start で一時停止と再開ができます。Start はタイマー 2 を無効にし、それによってタイマー 3 も止めます。Select はタイマー 2 もカスケードタイマーにします。タイマー 1 は無効なので、これでもタイマー 2（と 3）が止まります。違いは、一時停止を解除したときに何が起きるかです。タイマーを無効にした場合は初期値から再び始まりますが、カスケードで止めた場合はタイマーが実際には有効なままなので、カスケードを外せば単に数えるのを再開します。違いは微妙ですが、後者のほうがふさわしいやり方です。
 
 ```c
 // Using a the "Berk" font from headspins font collection.
@@ -188,4 +187,4 @@ int main()
 }
 ```
 
-This was a rather simple use of timers. Of course, I could have just as easily used the VBlank to keep track of the seconds, which is how it's usually done anyway. The hardware timers are usually reserved for timed DMA's, which are used in [sound mixers](https://stuij.github.io/deku-sound-tutorial/g), not for game timers. There is one other use that comes to mind, though, namely profiling: examining how fast your functions are. One of the [text system demos](text.html#ssec-demo-se2) uses that to check the speeds of a few copying routines.
+これはタイマーのかなり単純な使い方でした。もちろん、秒を数えるのに VBlank を使うこともまったく同じように簡単にできましたし、実際、普通はそうします。ハードウェアのタイマーは、普通はゲームのタイマーではなく、[サウンドミキサー](https://stuij.github.io/deku-sound-tutorial/g)で使うタイミング指定の DMA のために取っておかれます。とはいえ、もう 1 つ思いつく使い道があります。プロファイリング、つまり関数がどれだけ速いかを調べることです。[テキストシステムのデモ](text.html#ssec-demo-se2)の 1 つでは、いくつかのコピー処理の速さを調べるのにこれを使っています。

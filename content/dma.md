@@ -1,35 +1,35 @@
-# 14. Direct Memory Access
+# 14. ダイレクトメモリアクセス
 
 <!-- toc -->
 
-## DMA … que? {#sec-intro}
+## DMA って… ケ？ {#sec-intro}
 
-<dfn>Direct Memory Access</dfn> (DMA) is fast way of copying data from one place to another. Or, rather, a way of *transferring* data fast; as it can be used for copying data, but also filling memory. When you activate DMA the so-called <dfn>DMA controller</dfn> takes over the hardware (the CPU is actually halted), does the desired transfer and hands control back to the CPU before you even knew it was missing.
+<dfn>ダイレクトメモリアクセス</dfn>（Direct Memory Access、DMA）は、データをある場所から別の場所へ高速にコピーする方法です。というより、データを高速に*転送*する方法です。データのコピーにも使えますが、メモリを埋めることにも使えるからです。DMA を起動すると、いわゆる <dfn>DMA コントローラ</dfn>がハードウェアを引き継ぎ（実際には CPU は停止します）、望む転送を行って、CPU が自分がいなかったことに気づく前に制御を返します。
 
-There are four DMA channels. Channel 0 has the highest priority; it is used for time-critical operations and can only be used with internal RAM. Channels 1 and 2 are used to transfer sound data to the right sound buffers for playback. The lowest priority channel, channel 3, is for general-purpose copies. One of the primary uses for this channel is loading in new bitmap or tile data.
+DMA チャンネルは 4 つあります。チャンネル 0 は優先度が最も高く、時間に厳しい処理に使われ、内部 RAM にしか使えません。チャンネル 1 と 2 は、再生のために音のデータを適切な音声バッファへ転送するのに使われます。優先度が最も低いチャンネル 3 は、汎用のコピー用です。このチャンネルの主な用途の 1 つは、新しいビットマップやタイルのデータを読み込むことです。
 
-## DMA registers {#sec-regs}
+## DMA のレジスタ {#sec-regs}
 
-Every kind of transfer routine needs 3 things: a source, a destination and the amount of data to copy. The *whence*, *whither* and *how much*. For DMA, the source address is put into `REG_DMAxSAD` and destination address into `REG_DMAxDAD`. A third register, `REG_DMAxCNT`, not only indicates the amount to transfer, but also controls other features possible for DMA, like when it should start the transfer, chunk-size, and how the source and destination addresses should be updated after each individual chunk of data. All the DMA registers are 32bits in length, though they can be divided into two 16bit registers if so desired. Those of channel 0 start at`0400:00B0h`; subsequent channels start at an offset of 12 (see {@tbl:dma-regs}).
+どんな種類の転送処理にも、3 つのものが必要です。転送元、転送先、そしてコピーするデータの量です。*どこから*、*どこへ*、*どれだけ*、です。DMA では、転送元のアドレスを `REG_DMAxSAD` に、転送先のアドレスを `REG_DMAxDAD` に入れます。3 つ目のレジスタ `REG_DMAxCNT` は、転送する量を示すだけでなく、いつ転送を始めるか、チャンクの大きさ、データのチャンクを 1 つ転送するたびに転送元と転送先のアドレスをどう更新するかなど、DMA で使えるほかの機能も制御します。DMA のレジスタはどれも 32 ビットの長さですが、必要なら 2 つの 16 ビットのレジスタに分けることもできます。チャンネル 0 のレジスタは`0400:00B0h` から始まり、続くチャンネルは 12 ずつずれた位置から始まります（{@tbl:dma-regs} を見てください）。
 
 <div class="lblock">
 <table id="tbl:dma-regs">
 <caption align="bottom">
-  <b>{*@tbl:dma-regs}</b>: DMA register addresses
+  <b>{*@tbl:dma-regs}</b>: DMA のレジスタのアドレス
 </caption>
-<tr><th>reg<th>function<th>address
-<tr><td><code>REG_DMAxSAD</code><td>source
+<tr><th>レジスタ<th>機能<th>アドレス
+<tr><td><code>REG_DMAxSAD</code><td>転送元
 	<td><code>0400:00B0h  + 0Ch</code>·x
-<tr><td><code>REG_DMAxDAD</code><td>destination
+<tr><td><code>REG_DMAxDAD</code><td>転送先
 	<td><code>0400:00B4h + 0Ch</code>·x
-<tr><td><code>REG_DMAxCNT</code><td>control
+<tr><td><code>REG_DMAxCNT</code><td>制御
 	<td><code>0400:00B8h + 0Ch</code>·x
 </table>
 </div>
 
-### DMA controls {#ssec-reg-cnt}
+### DMA の制御 {#ssec-reg-cnt}
 
-The use of the source and destination registers should be obvious. The control register needs some explaining. Although the `REG_DMAxCNT` registers themselves are 32bits, they are often split into two separate registers: one for the count, and one for the actual control bits.
+転送元と転送先のレジスタの使い方は明らかでしょう。制御レジスタには少し説明が必要です。`REG_DMAxCNT` レジスタそのものは 32 ビットですが、多くの場合、2 つの別々のレジスタに分けられます。1 つは個数用、もう 1 つは実際の制御ビット用です。
 
 <div class="reg">
 <table class="table-reg reg-huge" id="tbl:reg-dmaxcnt"
@@ -59,95 +59,95 @@ The use of the source and destination registers should be obvious. The control r
   <col class="bits" width=56>
   <col class="bf" width="8%">
   <col class="def" width="12%">
-<tr align="left"><th>bits<th>name<th>define<th>description
+<tr align="left"><th>ビット<th>名前<th>定義<th>説明
 <tbody valign="top">
 <tr class="bg0">
   <td>00-0F<td class="rclr0">N
   <td> 
-  <td><b>Number</b> of transfers.
+  <td>転送の<b>回数</b>。
 <tr class="bg1">
   <td>15-16<td class="rclr4">DA
   <td>DMA_DST_INC, DMA_DST_DEC, DMA_DST_FIXED, DMA_DST_RELOAD
-  <td><b>Destination adjustment</b>.
+  <td><b>転送先の調整</b>。
     <ul>
-      <li><b>00</b>: increment after each transfer (default)
-      <li><b>01</b>: decrement after each transfer
-      <li><b>10</b>: none; address is fixed
-      <li><b>11</b>: increment the destination during the transfer, 
-	    and reset it so that repeat DMA will always start at the 
-		same destination.
+      <li><b>00</b>: 転送ごとに増やす（デフォルト）
+      <li><b>01</b>: 転送ごとに減らす
+      <li><b>10</b>: なし。アドレスは固定
+      <li><b>11</b>: 転送中は転送先を増やし、終わったら
+	    元に戻す。これで、繰り返しの DMA が常に
+		同じ転送先から始まる。
     </ul>
 <tr class="bg0">
   <td>17-18<td class="rclr3">SA
   <td>DMA_SRC_INC, DMA_SRC_DEC, DMA_SRC_FIXED,
-  <td><b>Source Adjustment</b>. Works just like the two bits for the 
-    destination. Note that there is no <code>DMA_SRC_RESET</code>; 
-    code 3 for source is forbidden.
+  <td><b>転送元の調整</b>。転送先の 2 ビットとまったく同じように
+    働きます。<code>DMA_SRC_RESET</code> はないことに注意してください。
+    転送元にコード 3 は使えません。
 <tr class="bg1">
   <td> 19  <td class="rclr7">R
   <td>DMA_REPEAT
-  <td>Repeats the copy at each VBlank or HBlank if the DMA timing 
-    has been set to those modes.
+  <td>DMA のタイミングが VBlank か HBlank のモードに設定されていれば、
+    そのたびにコピーを繰り返します。
 <tr class="bg0">
   <td> 1A  <td class="rclr2">CS
   <td>DMA_16, DMA_32
-  <td><b>Chunk Size</b>. Sets DMA to copy by halfword (if clear) 
-    or word (if set).
+  <td><b>チャンクの大きさ</b>。DMA がハーフワード単位（クリア時）
+    とワード単位（セット時）のどちらでコピーするかを設定します。
 <tr class="bg1">
   <td>1C-1D<td class="rclr5">TM
   <td>DMA_NOW, DMA_AT_VBLANK, DMA_AT_HBLANK, DMA_AT_REFRESH
-  <td><b>Timing Mode</b>. Specifies when the transfer should start.
+  <td><b>タイミングのモード</b>。転送をいつ始めるかを指定します。
       <ul>
-        <li><b>00</b>: start immediately.
-        <li><b>01</b>: start at VBlank.
-        <li><b>10</b>: start at HBlank. 
-        <li><b>11</b>: Never used it so far, but here's how I gather it 
-          works. For DMA1 and DMA2 it'll refill the FIFO when it has 
-          been emptied. Count and size are forced to 1 and 32bit, 
-          respectively. For DMA3 it will start the copy at the start of 
-          each rendering line, but with a 2 scanline delay.
+        <li><b>00</b>: すぐに始める。
+        <li><b>01</b>: VBlank で始める。
+        <li><b>10</b>: HBlank で始める。
+        <li><b>11</b>: 今のところ使ったことはありませんが、私が理解している
+          動き方は次のとおりです。DMA1 と DMA2 では、FIFO が空になったときに
+          補充します。個数と大きさは、それぞれ 1 と 32 ビットに
+          固定されます。DMA3 では、各描画ラインの始まりでコピーを
+          始めますが、2 スキャンライン遅れます。
       </ul>
 <tr class="bg0">
   <td> 1E  <td class="rclr6">I
   <td>DMA_IRQ
-  <td><b>Interrupt request</b>. Raise an interrupt when finished.
+  <td><b>割り込み要求</b>。終わったら割り込みを発生させます。
 <tr class="bg1">
   <td> 1F  <td class="rclr1">En
   <td>DMA_ENABLE
-  <td><b>Enable</b> the DMA transfer for this channel.
+  <td>このチャンネルの DMA 転送を<b>有効にする</b>。
 </tbody>
 </table>
 </div>
 
-### Source and destination addresses {#ssec-reg-adr}
+### 転送元と転送先のアドレス {#ssec-reg-adr}
 
-The registers for source and destination addresses work just as you'd expect: just put in the proper addresses. Oh, I should tell you that the sizes for the source and destination addresses are 28 and 27 bits wide, respectively, and not the full 32. This is nothing to worry about though, you can't access addresses above `1000:0000h` anyway. For destination addresses, you can't use the section above `0800:0000h`. But then, being able to copy to ROM would be kind of strange, wouldn't it?
+転送元と転送先のアドレスのレジスタは、期待どおりに働きます。正しいアドレスを入れるだけです。そうそう、転送元と転送先のアドレスの大きさは、32 ビットすべてではなく、それぞれ 28 ビットと 27 ビットの幅だということは言っておくべきでしょう。でも、これは気にする必要はありません。どのみち `1000:0000h` より上のアドレスにはアクセスできませんから。転送先のアドレスには、`0800:0000h` より上の領域は使えません。でも、ROM にコピーできたら、それはそれで変ですよね？
 
-### DMA flags {#ssec-reg-flags}
+### DMA のフラグ {#ssec-reg-flags}
 
-The `REG_DMAxCNT` registers can be split in two parts: one with actual flags, and one for the number of copies to do. Either way will work but you must be careful how the flags are defined: using 32-bit #defines for 16-bit registers or vice versa is not a good idea.
+`REG_DMAxCNT` レジスタは 2 つの部分に分けられます。実際のフラグの部分と、コピーする回数の部分です。どちらの使い方でも動きますが、フラグの定義の仕方には注意が必要です。16 ビットのレジスタに 32 ビットの #define を使ったり、その逆をしたりするのは良い考えではありません。
 
-There are options to control what will be the next source and destination addresses when one chunk has been transferred. By default, both will increment so that it works as a copier. But you could also keep the source constant so that it'd work more as a memory fill.
+1 つのチャンクを転送し終えたときに、次の転送元と転送先のアドレスをどうするかを制御するオプションがあります。デフォルトでは両方とも増えていくので、コピーとして働きます。しかし、転送元を一定にしておけば、どちらかというとメモリを埋める処理として働くようにもできます。
 
-What goes into the lower half of `REG_DMAxCNT` is the number of transfers. This is the number of *chunks*, not bytes! Best be careful when using `sizeof()` or something similar here, missing a factor 2 or 4 is very easy. A chunk can be either 16 or 32 bit, depending on bit 26.
+`REG_DMAxCNT` の下半分に入れるのは、転送の回数です。これはバイト数ではなく、*チャンク*の数です！ ここで `sizeof()` などを使うときは気をつけたほうがよいでしょう。2 倍や 4 倍の係数を書き忘れるのはとても簡単です。チャンクは、ビット 26 によって 16 ビットか 32 ビットになります。
 
-### More on DMA timing {#ssec-reg-timing}
+### DMA のタイミングについてもう少し {#ssec-reg-timing}
 
-What the immediate DMA does is easy to imagine, it works as soon as you enable the DMA. Well *actually* it takes 2 cycles before it'll set in, but it's close enough. The other timing settings aren't that more difficult conceptually, but there is one point of confusion.
+すぐに始まる DMA が何をするかは、簡単に想像できます。DMA を有効にしたとたんに動きます。まあ、*実際には*動き出すまでに 2 サイクルかかりますが、十分近いです。ほかのタイミングの設定も、考え方としてはそれほど難しくありませんが、混乱しやすい点が 1 つあります。
 
-Consider the following situation: you want to do something cool to your otherwise standard backgrounds; specifically, you want to do something that requires the background registers to be updated every scanline. I just said that you can copy data at every HBlank (via the `DMA_AT_HBLANK` timing flag), which seems perfect for the job. If you think about it for a minute, however, you may ask yourself the following question:
+次のような状況を考えてみてください。普通の背景に何かかっこいいことをしたいとします。具体的には、背景のレジスタをスキャンラインごとに更新する必要のあることをしたいとします。HBlank のたびにデータをコピーできる（`DMA_AT_HBLANK` のタイミングのフラグで）と言ったばかりなので、これはこの仕事にうってつけに思えます。しかし、少し考えてみると、次のような疑問が浮かぶかもしれません。
 
-> When you set the timing to, say, `DMA_AT_HBLANK`, does it do *all* the *N* copies at the next HBlank, or one copy at each HBlank until the list is done?
+> タイミングを、たとえば `DMA_AT_HBLANK` に設定したとき、次の HBlank で *N* 回のコピーを*すべて*行うのでしょうか、それとも、リストが終わるまで HBlank ごとに 1 回ずつコピーするのでしょうか？
 
-There is a crucial difference between the two. The first option seems pointless because all copied would be done at once; if your destination is fixed (like they are for background registers), all copies except the last would be lost. In the case of the second one, how would you do more than one copy per HBlank? Clearly, something's amiss here. There is, on two counts.
+この 2 つには決定的な違いがあります。1 つ目の場合は、すべてのコピーが一度に行われてしまうので意味がなさそうです。転送先が（背景のレジスタのように）固定されていれば、最後のもの以外のコピーはすべて無駄になります。2 つ目の場合は、HBlank ごとに 2 回以上コピーするにはどうすればいいのでしょうか？ 明らかに、何かがおかしいです。実は、2 つの点でおかしいのです。
 
-For the record, I'm not 100% sure about what I'm going to say here, but I think it's pretty close to what's actually going on. The main thing to realize is that as long as the channel is not enabled (`REG_DMAxCNT`\{1f\} is cleared), that channel won't do squat; only after `REG_DMAxCNT`\{1f\} has been set will the DMA process be initiated. At the appropriate time (determined by the timing bits), DMA will do all *N* copies and then shut itself off again.
+念のため言っておくと、これから言うことに 100% の確信があるわけではありませんが、実際に起きていることにかなり近いと思います。理解しておくべき主な点は、チャンネルが有効になっていない（`REG_DMAxCNT`\{1f\} がクリアされている）限り、そのチャンネルは何もしないということです。`REG_DMAxCNT`\{1f\} が設定されて初めて、DMA の処理が開始されます。適切なタイミング（タイミングのビットで決まります）で、DMA は *N* 回のコピーをすべて行い、それから自分で自分を停止させます。
 
-Unless, that is, the repeat-bit (`REG_DMAxCNT`\{19\}) is set. In that case, it will keep doing the copies at the right time until you disable the channel yourself.
+ただし、繰り返しのビット（`REG_DMAxCNT`\{19\}）が設定されている場合は別です。その場合は、自分でチャンネルを無効にするまで、適切なタイミングでコピーを続けます。
 
-## Some DMA routines {#sec-func}
+## DMA の処理をいくつか {#sec-func}
 
-While it's not that much trouble to set the three registers manually, it is preferable to hide the direct interaction in subroutines. Now, in older code, you might come across something like this:
+3 つのレジスタを手で設定するのはそれほど面倒ではありませんが、直接のやり取りはサブルーチンの中に隠したほうがよいでしょう。さて、古いコードでは、次のようなものに出くわすかもしれません。
 
 ```c
 // Don't do this. Please.
@@ -164,7 +164,7 @@ void dma_copy(int ch, void* src, void* dest, uint count, u32 mode)
 }
 ```
 
-This will work, but it's not a nice way of doing things. If your switch-cases differ by a single number, you can usually replace it by a simpe lookup. There are a number of ways of fixing this, but the easiest is by mapping a struct array over the DMA registers, similar to what I did for tile memory. After that, you can just select the channel with the channel variable and simply fill in the addresses and flags.
+これでも動きますが、良いやり方ではありません。switch の各ケースが 1 つの数値しか違わないなら、たいていは単純な表引きで置き換えられます。直す方法はいくつかありますが、一番簡単なのは、タイルのメモリでしたのと同じように、DMA のレジスタに構造体の配列を重ねることです。そうすれば、チャンネルの変数でチャンネルを選び、アドレスとフラグを埋めるだけで済みます。
 
 ```c
 typedef struct DMA_REC
@@ -177,7 +177,7 @@ typedef struct DMA_REC
 #define REG_DMA ((volatile DMA_REC*)0x040000B0)
 ```
 
-The following are my three of my DMA routines. First the `DMA_TRANSER()` macro, which is the overall macro that can be used for anything. Then two routines for general memory copies and fills using 32bit transfers with DMA 3.
+以下は、私の DMA の処理のうち 3 つです。まず `DMA_TRANSER()` マクロ。これは何にでも使える全体的なマクロです。それから、DMA 3 で 32 ビットの転送を使って、汎用のメモリのコピーと埋めを行う 2 つの処理です。
 
 ```c
 // in tonc_core.h
@@ -218,11 +218,11 @@ INLINE void dma3_fill(void *dst, const void *src, u32 size)
 {   dma_fill(dst, src, size/4, 3, DMA_CPY32);  }
 ```
 
-In all cases, I disable any previously operating transfers first. This may seem redundant if DMA stops the CPU, but remember that DMA transfers can be timed as well – you wouldn't want it to start in the middle of setting the registers. After that, it's simply a matter of filling the registers. Now, it so happens that there is a 2-cycle delay before any transfer really begins. This means that you could lose a transfer if you ask for transfers in immediate succession. I'm not sure if this is very likely though: memory wait-states themselves already take that much time so you *should* be safe.
+どの場合も、まず、それまで動いていた転送をすべて無効にしています。DMA が CPU を止めるなら冗長に思えるかもしれませんが、DMA の転送はタイミングを指定することもできることを思い出してください。レジスタを設定している途中で転送が始まってほしくはないはずです。そのあとは、レジスタを埋めるだけです。さて、実は転送が本当に始まるまでに 2 サイクルの遅延があります。つまり、立て続けに転送を要求すると、転送が失われることがあるということです。ただ、これがよく起きるかどうかはわかりません。メモリのウェイトステート自体がすでにそれくらいの時間をとるので、安全な*はず*です。
 
-Other notes on these routines: the `DMA_TRANSFER()` macro's code sits between a `do {} while(0);` loop. The problem with macros is that when expanded multiple statements might break nesting-blocks. For example, calling it in the body of an `if` without braces around it would have the first line as the body, but the rest fall outside it. This kind of loop is one of the ways of preventing that. Another problem with macros is that if the arguments' names may hide other parts of the macro's code. Like the `src` and `dst` members of the `DMA_REC` struct; which is why they're underscored. The fill routines also have something remarkable going on, which you can read about in the [next subsection](#ssec-func-fill). Lastly, the `dma3` inlines use word-transfers and take the byte-size as their last arguments, making them very similar to the standard `memcpy()` and `memset()`.
+これらの処理についてのほかの注意点です。`DMA_TRANSFER()` マクロのコードは `do {} while(0);` ループの中に置いてあります。マクロの問題は、展開されたときに複数の文が入れ子のブロックを壊すことがある点です。たとえば、中かっこで囲まずに `if` の本体の中で呼ぶと、最初の行だけが本体になり、残りはその外に出てしまいます。この種のループは、それを防ぐ方法の 1 つです。マクロのもう 1 つの問題は、引数の名前がマクロのコードのほかの部分を隠してしまうことがある点です。`DMA_REC` 構造体の `src` メンバと `dst` メンバのようにです。引数にアンダースコアが付いているのはこのためです。埋める処理にも注目すべき点があり、それについては[次の小節](#ssec-func-fill)で読めます。最後に、`dma3` のインライン関数はワード単位の転送を使い、最後の引数としてバイト単位の大きさを取るので、標準の `memcpy()` や `memset()` にとてもよく似ています。
 <br>  
-I used to have the following macro for my transfers. It uses one of the more exotic capabilities of the preprocessor: the merging-operator ‘##’, which allows you to create symbol names at compile-time. It's scary, totally unsafe and generally unruly, but it does work. The other macro I gave is better, but I still like this thing too.
+以前は、転送に次のマクロを使っていました。これは、プリプロセッサのやや風変わりな機能の 1 つである連結演算子「##」を使っています。これを使うと、コンパイル時にシンボル名を作れます。恐ろしく、まったく安全ではなく、一般に手に負えないものですが、ちゃんと動きます。先ほどのマクロのほうが良いのですが、私はこれもまだ気に入っています。
 
 ```c
 #define DMA_TRANSFER(_dst, _src, _count, _ch, _mode)  \
@@ -231,41 +231,41 @@ I used to have the following macro for my transfers. It uses one of the more exo
     REG_DMA##_ch##CNT = (_count) | (_mode)            \
 ```
 
-As long as you are using a literal number for `_ch` it'll form the correct register names. And yes, those comma operators between the statements actually work. They keep the statements separate, and also guard against wrongful nesting just like the `do{} while(0)` construct does.
+`_ch` にリテラルの数値を使っている限り、正しいレジスタ名ができます。そして、そう、文の間のカンマ演算子は実際にちゃんと働きます。文を分けておくだけでなく、`do{} while(0)` の構文と同じように、誤った入れ子を防ぐ役目も果たします。
 
-### On DMA fills {#ssec-func-fill}
+### DMA による埋めについて {#ssec-func-fill}
 
-DMA can be used to fill memory, but there are two problems that you need to be aware of before you try it. The first can be caught by simply paying attention. DMA fills don't work *quite* in the same way as `memset()` does. What you put into `REG_DMAxSAD` isn't the value you want to fill with, but its *address*!
+DMA はメモリを埋めるのに使えますが、試す前に知っておくべき問題が 2 つあります。1 つ目は、注意していれば防げます。DMA による埋めは、`memset()` と*まったく*同じようには働きません。`REG_DMAxSAD` に入れるのは、埋めたい値ではなく、その*アドレス*なのです！
 
-“Very well, I'll put the value in a variable and use its address.” Yes, and that brings us to our second problem, a bug which is almost impossible to find. If you try this, you'll find that it doesn't work. Well it fills with *something*, but usually not what you wanted to fill with. The full explanation is somewhat technical, but basically because you're probably only using the variable's address and not its *value*, the optimizer doesn't ever initialize it. There is a simple solution, one that we've seen before, make it volatile. Or you can use a (inline) function like `dma_fill()`, which has its source argument set as volatile so you can just insert a number just as you'd expect. Note that if you remove the volatile keyword there, it'll fail again.
+「わかった、値を変数に入れて、そのアドレスを使えばいいんだね。」 そう、そしてそれが 2 つ目の問題につながります。見つけるのがほぼ不可能なバグです。これを試してみると、うまくいかないことがわかります。まあ、*何か*では埋められるのですが、たいていは埋めたかったものではありません。完全な説明は少し技術的ですが、基本的には、おそらく変数のアドレスしか使っておらず*値*を使っていないので、最適化によって変数が一度も初期化されないのです。簡単な解決策があります。前にも見たものですが、volatile にすることです。あるいは、`dma_fill()` のような（インライン）関数を使うこともできます。この関数では転送元の引数が volatile になっているので、期待どおりに数値をそのまま入れられます。そこから volatile のキーワードを取り除くと、また失敗することに注意してください。
 <br>  
-In short: DMA fills need addresses, not direct values. Globals will always work, but if you use local variables or arguments you'll need to make them volatile. Note that the same thing holds true for the BIOS call CpuFastSet().
+要するに、DMA による埋めには、値を直接ではなくアドレスを渡す必要があるということです。グローバル変数なら常に動きますが、ローカル変数や引数を使う場合は volatile にする必要があります。同じことが BIOS コールの CpuFastSet() にも当てはまることに注意してください。
 
-### DMA; don't wear it out {#ssec-func-use}
+### DMA、使いすぎにご用心 {#ssec-func-use}
 
-DMA is fast, there's no question about that. It can be up to [ten times as fast](text.html#ssec-demo-se2) as array copies. However, think twice about using it for every copy. While it is fast, it doesn't quite blow every other transfer routine out of the water. CpuFastSet() comes within 10% of it for copies and is actually 10% faster for fills. The speed gain isn't that big a deal. Another problem is that it stops the CPU, which can screw up [interrupts](interrupts.html), causing seemingly random bugs. It does have its specific uses, usually in conjunction with timers or interrupts, but for general copies, you might consider other things as well. CpuFastSet() is a good routine, but libtonc also comes with `memcpy16()/32()` and `memset16()/32()` routines that are safer than that, and less restrictions. They are assembly routines, though, so you'll need to know how to assemble or use libraries.
+DMA は速いです。それは疑いようがありません。配列のコピーより[最大 10 倍速く](text.html#ssec-demo-se2)なることもあります。しかし、すべてのコピーに使うかどうかはよく考えてください。速いとはいえ、ほかのすべての転送処理を圧倒するほどではありません。CpuFastSet() はコピーでは 10% 以内の差に迫り、埋めでは実際に 10% 速いです。速度の向上はそれほど大きなものではありません。もう 1 つの問題は、DMA が CPU を止めることです。これは[割り込み](interrupts.html)をめちゃくちゃにして、一見でたらめなバグを引き起こすことがあります。DMA にはたいていタイマーや割り込みと組み合わせた特定の使い道がありますが、汎用のコピーなら、ほかのものも検討するとよいでしょう。CpuFastSet() は良い処理ですが、libtonc にはそれより安全で制約も少ない `memcpy16()/32()` と `memset16()/32()` の処理もあります。ただしこれらはアセンブリの処理なので、アセンブルの仕方かライブラリの使い方を知っている必要があります。
 
-## DMA demo : circular windows {#sec-demo}
+## DMA のデモ: 円形のウィンドウ {#sec-demo}
 
 <div class="cpt_fr" style="width:240px;">
 <img alt="dma_demo short" src="./img/demo/dma_demo.png" id="fig:dma-demo">
 
-**{*@fig:dma-demo}**: palette for `dma_demo`.
+**{*@fig:dma-demo}**: `dma_demo` の画面。（訳注: 原文は "palette for" ですが、図の内容に合わせました）
 </div>
 
-The demo for this chapter may seem a little complicated, but the effect is worth it. The basic use of DMA transfers is so easy that it's hardly worth having a demo of. Use of *triggered* DMA is another matter. In this case, we'll look at HBlank-triggered DMA, or HDMA for short. We'll use it to update the [window](gfx.html#sec-win) sized inside the HBlank to give a circular window effect.
+この章のデモは少し複雑に見えるかもしれませんが、その効果にはそれだけの価値があります。DMA 転送の基本的な使い方はとても簡単なので、デモにするまでもありません。*トリガー付き*の DMA を使うのは別の話です。ここでは、HBlank をトリガーにした DMA、略して HDMA を見ていきます。これを使って、HBlank の中で[ウィンドウ](gfx.html#sec-win)の大きさを更新し、円形のウィンドウの効果を出します。
 
-This is easier said than done, of course. The first step in the design is how to use HDMA for this in the first place. Because we need to copy to `REG_WIN0H` each HBlank, we need to keep the destination fixed. Technically, it needs to be *reset* to the original destination, but with only one halfword to copy this means the same thing. For the source, we'll keep track of the data that needs to be copied there in an array with one entry for each scanline, and we'll progress through the array one scanline at a time (i.e, incrementing source). And of course, the transfer has to occur at *each* scanline, so we set it to repeat. so basically we need this:
+もちろん、言うは易く行うは難しです。設計の最初の一歩は、そもそもこのために HDMA をどう使うかです。HBlank のたびに `REG_WIN0H` へコピーする必要があるので、転送先は固定しておく必要があります。厳密には、元の転送先に*戻す*必要がありますが、コピーするのがハーフワード 1 つだけなら、同じことです。転送元については、そこにコピーする必要のあるデータを、スキャンラインごとに 1 つのエントリを持つ配列で管理し、1 スキャンラインずつ配列を進めていきます（つまり、転送元を増やしていきます）。そしてもちろん、転送は*各*スキャンラインで行う必要があるので、繰り返しに設定します。つまり、基本的には次のものが必要です。
 
 ```c
 #define DMA_HDMA    (DMA_ENABLE | DMA_REPEAT | DMA_AT_HBLANK | DMA_DST_RELOAD)
 ```
 
-As for the circle, we need a routine that can calculate the left and right edges of a circle. There are a couple of algorithms around that can draw circles, for example [Bresenham's](http://www.gamedev.net/reference/articles/article767.asp) version. We'll use a modified version of it because we only need to store the left and right points instead of drawing a pixel there. Why left-right and not top-bottom? Because the array is scanline-based, so that indicates the *y*-values already.
+円については、円の左右の端を計算できる処理が必要です。円を描けるアルゴリズムはいくつかあります。たとえば [Bresenham](http://www.gamedev.net/reference/articles/article767.asp) のものです。そこにピクセルを描く代わりに左右の点を保存するだけでよいので、それに手を加えた版を使います。なぜ上下ではなく左右なのでしょうか？ 配列はスキャンライン単位なので、*y* の値はすでに配列が表しているからです。
 
-It doesn't really matter what you use actually, as long as you can find the edges. Once you have, all you need to do is setup the DMA in the VBlank and you're done.
+実際には、端を求められさえすれば、何を使ってもかまいません。求められたら、あとは VBlank で DMA を準備するだけで完成です。
 <br>  
-The end result will show something like {@fig:dma-demo}. It's the Brinstar background (again) inside the window, and a striped bg outside. The text indicates the position and radius of the window, which can be moved with the D-pad and scaled by A and B.
+最終的な結果は {@fig:dma-demo} のようになります。ウィンドウの内側には（またしても）ブリンスタの背景があり、外側には縞模様の背景があります。文字はウィンドウの位置と半径を示しています。ウィンドウは十字キーで動かせ、A と B で大きさを変えられます。
 
 <pre><code class="language-c hljs">
 #include <stdio.h>
@@ -395,14 +395,14 @@ int main()
 } 
 </code></pre>
 
-The initialization function is mostly just fluff. Mostly, because there is one thing of interest: the calls to `dma_cpy` to copy the Brinstar palette, tiles and map. Aside from that, nothing to see here.
+初期化関数は、ほとんどがただの飾りです。「ほとんど」と言ったのは、1 つ注目すべき点があるからです。ブリンスタのパレット、タイル、マップをコピーするための `dma_cpy` の呼び出しです。それ以外は、見るべきものはありません。
 
-The main function itself is also pretty standard. Of interest here are the call to `win_circle()`, which sets up the source-array, and to `DMA_TRANSFER()` to initialize the HDMA. Note that I'm actually making it start at `g_winh[1]` instead of just `g_winh[0]`. The reason for this is that the HBlank occurs *after* a given scanline, not before it, so we'll lag one otherwise. The `g_winh` array is actually 160+1 long, and both entry 0 and 160 describe the data for scanline 0. What's also important, but not exactly visible here, is that HDMA only occurs on the *visible* HBlanks, not the ones in the VBlank. This saves up a whole lot of trouble determining how many scanlines to correct for when setting it up.
+main 関数そのものも、かなり標準的なものです。ここで注目すべきなのは、転送元の配列を準備する `win_circle()` の呼び出しと、HDMA を初期化する `DMA_TRANSFER()` の呼び出しです。実際には `g_winh[0]` ではなく `g_winh[1]` から始めていることに注意してください。その理由は、HBlank はあるスキャンラインの前ではなく*後*に起きるので、そうしないと 1 ラインずれてしまうからです。`g_winh` 配列は実際には 160+1 の長さで、エントリ 0 と 160 はどちらもスキャンライン 0 のデータを表します。ここでははっきり見えませんが、もう 1 つ重要なのは、HDMA は*表示される* HBlank でのみ起き、VBlank 中の HBlank では起きないということです。おかげで、準備するときに何スキャンラインぶん補正すればいいかを決める手間が大いに省けます。
 
-And then there's `win_circle()`. If you're aware of how the Bresenham circle algorithm work, you know it calculates an offset for one octant and then uses it for the 7 others via symmetry rules. This happens here as well. What doesn't happen in the original probably is all the clipping (the `clamp()`s and `IN_RANGE()s`). However, these steps are absolutely vital here. Going out of bounds horizontally would mean wrong windowing offsets which would make the window turn in on itself. Going out of bounds vertically means going OOB on `g_winh` for all kind of horrible. Trust me, they are necessary.
+そして `win_circle()` です。Bresenham の円のアルゴリズムの仕組みを知っていれば、1 つの八分円のオフセットを計算し、対称性の規則を使ってそれを残りの 7 つに使うことはご存じでしょう。ここでも同じことをしています。おそらく元のアルゴリズムにないのは、すべてのクリッピング（`clamp()` や `IN_RANGE()s`）です。しかし、ここではこれらの手順が絶対に欠かせません。横方向に範囲外に出ると、ウィンドウのオフセットが間違ってしまい、ウィンドウが裏返ってしまいます。縦方向に範囲外に出ると、`g_winh` の範囲外にアクセスすることになり、あらゆる恐ろしいことが起きます。信じてください。これらは必要です。
 
-Also, notice that I wipe the whole array clean first; this can be done inside the loop, but sometimes it's just faster to fill the whole thing first and then only update the parts you need. Lastly, as mentioned before, the first scanline's data is copied to the final entry of the array to account for the way HBlanks happen.
+また、最初に配列全体をきれいに消していることにも注目してください。これはループの中でもできますが、先に全体を埋めてから必要な部分だけを更新するほうが速いこともあります。最後に、前に述べたように、HBlank の起き方に合わせて、最初のスキャンラインのデータを配列の最後のエントリにコピーしています。
 <br>  
-And here ends the chapter on DMA. The use of HDMA in this manner is great for all kinds of effects, not just circular windows. All you need is an array containing scanline-data and a function that sets it up beforehand. Be careful you don't get your channels mixed up, though.
+これで DMA の章は終わりです。HDMA をこのように使うのは、円形のウィンドウだけでなく、あらゆる効果にとても役立ちます。必要なのは、スキャンラインのデータを入れた配列と、それを前もって準備する関数だけです。ただし、チャンネルを取り違えないように気をつけてください。
 
-DMA is the fastest method of copying, but as you block interrupts using `memcpy32()` is probably safer. The speed difference is only 10% anyway. DMA is also used for sound FIFO, in conjunction with timers. I can't really show you how to use it for sound, but I can tell you how timers work, and will do so in the next chapter.
+DMA は最も速いコピーの方法ですが、割り込みを妨げてしまうので、`memcpy32()` を使うほうがおそらく安全です。どのみち速度の差は 10% しかありません。DMA は、タイマーと組み合わせて音の FIFO にも使われます。音に使う方法はここではお見せできませんが、タイマーの仕組みは説明できます。それは次の章で説明します。

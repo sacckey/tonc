@@ -1,29 +1,29 @@
-# 17. BIOS Calls
+# 17. BIOS コール
 
 <!-- toc -->
 
 <br>  
 
-## Introduction {#sec-intro}
+## はじめに {#sec-intro}
 
-Apart from [hardware interrupts](interrupts.html), like HBlank and cartridge interrupts, there are also things called <dfn>software interrupts</dfn>, also known as <dfn>BIOS calls</dfn>. The software interrupts work very much like ordinary functions: you set-up input, call the routine, and get some output back. The difference lies in how you reach the code; for normal functions you just, well, jump to the routine you want. Software interrupts use the `swi` instruction, which diverts the program flow to somewhere in BIOS, carries out the requested algorithm and then restores the normal flow of your program. This is similar to what hardware interrupts do, only now you raise the interrupt programmatically. Hence: software interrupt.
+HBlank 割り込みやカートリッジ割り込みのような[ハードウェア割り込み](interrupts.html)のほかに、<dfn>ソフトウェア割り込み</dfn>と呼ばれるものもあります。<dfn>BIOS コール</dfn>とも呼ばれます。ソフトウェア割り込みは、普通の関数ととてもよく似た働き方をします。入力を準備してルーチンを呼び、出力を受け取ります。違いはコードへのたどり着き方にあります。普通の関数では、まあ、目的のルーチンにジャンプするだけです。ソフトウェア割り込みでは `swi` 命令を使います。この命令はプログラムの流れを BIOS のどこかにそらし、要求されたアルゴリズムを実行して、それからプログラムの通常の流れに戻します。これはハードウェア割り込みがすることと似ていますが、今度はプログラムから割り込みを発生させるのです。だからソフトウェア割り込みというわけです。
 
-The GBA BIOS has 42 software interrupts, with basic routines for copying, math (division, square root), affine transformations for sprites and backgrounds, decompression among others. There are also some very special functions like the `IntrWait` routines, which can stop the CPU until a hardware interrupt occurs. The VBlank variant is highly recommended, which is what makes this chapter important.
+GBA の BIOS には 42 個のソフトウェア割り込みがあり、コピー、数学（除算、平方根）、スプライトや背景のアフィン変換、展開などの基本的なルーチンがそろっています。`IntrWait` のルーチンのような、とても特別な関数もあります。これは、ハードウェア割り込みが起きるまで CPU を止めておけるものです。その VBlank 版はとてもおすすめで、この章が重要なのはそのためです。
 
-Using software interrupts isn't too hard if it weren't for one thing: the `swi` instruction itself. This again requires some assembly. However, not *much* assembly, and it's easy to write C wrappers for them, which we'll also cover here.
+ソフトウェア割り込みを使うのは、1 つのことさえなければそれほど難しくありません。`swi` 命令そのものです。これにはまたアセンブリが必要です。ただし、*たくさん*のアセンブリではありませんし、それらの C のラッパーを書くのも簡単です。それもここで扱います。
 
-## The BIOS functions {#sec-funs}
+## BIOS の関数 {#sec-funs}
 
-Calling the BIOS functions can be done via the ‘<code>swi <i>n</i></code>’ instruction, where *n* is the BIOS call you want to use. Mind you, the exact numbers you need to use depends on whether your code is in ARM or Thumb state. In Thumb the argument is simply the *n* itself, but in ARM you need to use *n*<<16. Just like normal functions, the BIOS calls can have input and output. The first four registers (r0-r3) are used for this purpose; though the exact purpose and the number of registers differ for each call.
+BIOS の関数を呼ぶには、「<code>swi <i>n</i></code>」命令を使います。*n* は使いたい BIOS コールです。ただし、使う必要のある正確な数値は、コードが ARM ステートか Thumb ステートかによって変わることに注意してください。Thumb では引数は単に *n* そのものですが、ARM では *n*<<16 を使う必要があります。普通の関数と同じく、BIOS コールにも入力と出力があります。この目的には最初の 4 つのレジスタ（r0-r3）が使われますが、正確な用途とレジスタの数はコールごとに違います。
 
-Here's a list containing the names of each BIOS call. I am not going to say what each of them does since other sites have done that already and it seems pointless to copy their stuff verbatim. For full descriptions go to [GBATEK](https://problemkaputt.de/gbatek.htm), for example. I will give a description of a few of them so you can get a taste of how they work.
+以下は、各 BIOS コールの名前の一覧です。それぞれが何をするかは説明しません。ほかのサイトがすでにやっていますし、その内容をそのまま写しても意味がないと思うからです。完全な説明は、たとえば [GBATEK](https://problemkaputt.de/gbatek.htm) を見てください。どう働くのか感じをつかめるように、いくつかについては説明します。
 
-### Full list {#ssec-funs-list}
+### 完全な一覧 {#ssec-funs-list}
 
 <center>
 <table class="center" width="70%">
 <col span=5 align="left">
-<tr><th>id		<th width="30%">Name  <th width="10%">	<th>id		<th>Name
+<tr><th>id		<th width="30%">名前  <th width="10%">	<th>id		<th>名前
 <tr><td>0x00	<td>SoftReset		<td><td>0x08	<td>Sqrt
 <tr><td>0x01	<td>RegisterRamReset<td><td>0x09	<td>ArcTan 
 <tr><td>0x02	<td>Halt			<td><td>0x0A	<td>ArcTan2
@@ -55,65 +55,65 @@ Here's a list containing the names of each BIOS call. I am not going to say what
 </table>
 </center>
 
-### Div, Sqrt, Arctan2 and ObjAffineSet descriptions {#ssec-funs-smpl}
+### Div、Sqrt、Arctan2、ObjAffineSet の説明 {#ssec-funs-smpl}
 
 <dl>
 <dt>0x06: Div</dt>
 <dd>
-Input:
-  <p>r0: numerator</p>
-  <p>r1: denominator</p>
- Output:
-  <p>r0: numerator / denominator</p>
-  <p>r1: numerator % denominator</p>
-  <p>r3: abs(numerator / denominator)</p>
- Note: do NOT divide by zero!
+入力:
+  <p>r0: 分子</p>
+  <p>r1: 分母</p>
+ 出力:
+  <p>r0: 分子 / 分母</p>
+  <p>r1: 分子 % 分母</p>
+  <p>r3: abs(分子 / 分母)</p>
+ 注意: ゼロで割ってはいけません！
 <br>
 </dd>
 
 <dt>0x08: Sqrt</dt>
 <dd>
-Input:
-  <p>r0: num, a unsigned 32-bit integer</p>
-Output:
+入力:
+  <p>r0: num。符号なし 32 ビット整数</p>
+出力:
   <p>r1: sqrt(num)</p>
 <br>
 </dd>
 
 <dt>0x0a: ArcTan2</dt>
 <dd>
-Input:
-  <p>r0: <i>x</i>, a <b>signed 16bit</b> number (<code>s16</code>)</p>
-  <p>r1: <i>y</i>, a <b>signed 16bit</b> number (<code>s16</code>)</p>
-Output:
+入力:
+  <p>r0: <i>x</i>。<b>符号付き 16 ビット</b>の数（<code>s16</code>）</p>
+  <p>r1: <i>y</i>。<b>符号付き 16 ビット</b>の数（<code>s16</code>）</p>
+出力:
   <p>r0: 
     <i>x</i>&ge;0 : <i>&theta;</i>= arctan(<i>y/x</i>) &or;
     <i>x</i>&lt;0 : <i>&theta;</i>= 
       sign(<i>y</i>)*(&pi; &minus; arctan(|<i>y/x</i>|).<br>
   </p>
-    This does the full inverse of <i>y</i> = <i>x</i>*tan(&theta;).
-    The problem with the tangent is that the domain is a semi-circle,
-    as is the range of arc tangent. To get the full circle range, both
-    <i>x</i> and <i>y</i> values are required for not only their 
-    quotient, but their signs as well. The mathematical range of
-    <i>&theta;</i> is [&minus;&pi;,&nbsp;&pi;&rang;, which corresponds
-    to [&minus;0x8000,&nbsp;0x8000&rang; (or
-    [0,&nbsp;2&pi;&rang; and [0,&nbsp;0xFFFF] if you like)
+    これは <i>y</i> = <i>x</i>*tan(&theta;) の完全な逆を求めます。
+    タンジェントの問題は、定義域が半円であることで、
+    アークタンジェントの値域も半円です。円全体の範囲を得るには、
+    <i>x</i> と <i>y</i> の値の商だけでなく、それぞれの符号も
+    必要です。<i>&theta;</i> の数学的な範囲は
+    [&minus;&pi;,&nbsp;&pi;&rang; で、これは
+    [&minus;0x8000,&nbsp;0x8000&rang;（あるいは、お好みなら
+    [0,&nbsp;2&pi;&rang; と [0,&nbsp;0xFFFF]）に対応します
 <br>
 </dd>
 
 <dt>0x0f: ObjAffineSet</dt>
 <dd>
-Input:
-  <p>r0: source address</p>
-  <p>r1: destination address</p>
-  <p>r2: number of calculations</p>
-  <p>r3: Offset of <b>P</b> matrix elements (2 for bgs,
-    8 for objects)</p>
+入力:
+  <p>r0: 転送元のアドレス</p>
+  <p>r1: 転送先のアドレス</p>
+  <p>r2: 計算の回数</p>
+  <p>r3: <b>P</b> 行列の要素の間隔（背景なら 2、
+    オブジェクトなら 8）</p>
 </dd>
 </dl>
 
-The source address points to an array of `AFF_SRC` structs (also known as `ObjAffineSource`, which is a bit misleading since you can use them for backgrounds as well). The `AFF_SRC` struct consist of two scales *s*<sub>x</sub> , *s*<sub>y</sub> and an angle α, which again uses the range \[0, 0xFFFF\] for 2π. The resulting **P**:
+転送元のアドレスは、`AFF_SRC` 構造体の配列を指します（`ObjAffineSource` とも呼ばれますが、背景にも使えるので、これは少し誤解を招く名前です）。`AFF_SRC` 構造体は、2 つのスケール *s*<sub>x</sub>、*s*<sub>y</sub> と、角度 α でできています。角度はここでも \[0, 0xFFFF\] の範囲で 2π を表します。結果の **P** は次のとおりです。
 
 <math id="eq:pswi" xmlns="http://www.w3.org/1998/Math/MathML" display="inline">
   <mstyle displaystyle="true" scriptlevel="0">
@@ -184,11 +184,11 @@ The source address points to an array of `AFF_SRC` structs (also known as `ObjAf
   </mstyle>
 </math>
 
-By now you should know what this does: it scales horizontally by 1/*s*<sub>x</sub>, vertically by 1/*s*<sub>y</sub> followed by a counter-clockwise rotation by *α*. `ObjAffineSet()` does almost exactly what `obj_aff_rotscale()` and `bg_aff_rotscale()` do, except that `ObjAffineSet()` can also set multiple matrices at once.
+もうこれが何をするかはわかるはずです。横方向に 1/*s*<sub>x</sub>、縦方向に 1/*s*<sub>y</sub> で拡大縮小し、そのあとで *α* だけ反時計回りに回転します。`ObjAffineSet()` は `obj_aff_rotscale()` や `bg_aff_rotscale()` とほぼまったく同じことをしますが、`ObjAffineSet()` は複数の行列を一度に設定することもできます。
 
-The source data is kept in `ObjAffineSource` (i.e., `AFF_SRC`) structs. Now, as the routine sets affine matrices, you might think that the destinations are either `OBJ_AFFINE` or `ObjAffineDest` structs. However, you'd be wrong. Well, partially anyway. The problem is that the destination always points to a *p*<sub>a</sub>-element, which is not necessarily the first element in struct. You *will* make the mistake of simply supplying an `OBJ_AFFINE` pointer when you try to use it to fill those. Don't say I didn't warn you.
+転送元のデータは `ObjAffineSource`（つまり `AFF_SRC`）構造体に入れておきます。さて、このルーチンはアフィン行列を設定するので、転送先は `OBJ_AFFINE` 構造体か `ObjAffineDest` 構造体だと思うかもしれません。しかし、それは間違いです。まあ、部分的には。問題は、転送先は常に *p*<sub>a</sub> の要素を指すことで、それは構造体の最初の要素とは限りません。これを使って行列を埋めようとするとき、単に `OBJ_AFFINE` のポインタを渡すという間違いを、あなたは*きっと*犯します。警告しなかったとは言わせませんよ。
 
-Two other things need to be said here as well. First, once again we have a bit of a misnomer: ObjAffineSet doesn't really have much to do with objects per se, but can be used in that capacity by setting `r3` to 8 instead of 2. The second is that the routine can also be used to set up multiple arrays via `r2`. However, *be careful* when you do this with devkitPro 19. `ObjAffineSet()` expects its source structs to be [word-aligned](bitmaps.html#ssec-data-align), which they won't be unless you add the alignment attributes yourself.
+ここで言っておくべきことがほかに 2 つあります。まず、またしても少し名前が不適切です。ObjAffineSet は、実はオブジェクトそのものとはあまり関係がありませんが、`r3` を 2 ではなく 8 にすればオブジェクト用として使えます。2 つ目は、このルーチンは `r2` によって複数の配列を設定するのにも使えることです。ただし、devkitPro 19 でこれをするときは*気をつけてください*。`ObjAffineSet()` は転送元の構造体が[ワード境界に揃っている](bitmaps.html#ssec-data-align)ことを期待していますが、自分でアラインメントの属性を付けない限り、そうはなりません。
 
 <pre><code class="language-c hljs">// Source struct. Note the alignment!
 typedef struct AFF_SRC
@@ -215,11 +215,11 @@ typedef struct OBJ_AFFINE
 } ALIGN4 OBJ_AFFINE;
 </code></pre>
 
-## Using BIOS calls {#sec-usage}
+## BIOS コールを使う {#sec-usage}
 
-### Assembly for BIOS calls {#ssec-use-swi-asm}
+### BIOS コールのためのアセンブリ {#ssec-use-swi-asm}
 
-You might think this whole discussion was rather pointless since you can't access the registers and the `swi` instruction unless you use assembly, which will be pretty tough, right? Well, no, yes and no. The necessary assembly steps for BIOS calls are actually rather simple, and are given below.
+アセンブリを使わない限りレジスタや `swi` 命令にはアクセスできず、それはかなり大変なのだから、ここまでの話はあまり意味がなかったと思うかもしれません。そうですよね？ ええと、いいえ、はい、そしていいえ、です。BIOS コールに必要なアセンブリの手順は実はかなり単純で、以下のとおりです。
 
 ```armasm
 @ In tonc_bios.s
@@ -237,20 +237,20 @@ Div:
     bx      lr
 ```
 
-This is assembly code for the GNU assembler (GAS); for Goldroad or ARM STD the syntax is likely to be slightly different. The first thing you need to do is give some <dfn>directives</dfn>, which tells some details about the following code. In this case, we use the ‘`.text`’ to put the code in the `text` section (ROM or EWRAM for multiboot). We also say that the code is Thumb code by using ‘`.code 16`’ or ‘`.thumb`’. If you place these at the top of the file, they'll hold for the rest of the thing. For each BIOS call, you'll need the following 6 items.
+これは GNU アセンブラ（GAS）用のアセンブリのコードです。Goldroad や ARM STD では、構文が少し違うと思います。最初にする必要があるのは、続くコードについての詳細を伝える、いくつかの<dfn>ディレクティブ</dfn>を書くことです。ここでは、「`.text`」を使ってコードを `text` 領域（ROM、マルチブートなら EWRAM）に置きます。また、「`.code 16`」か「`.thumb`」を使って、コードが Thumb コードであることも伝えます。これらをファイルの先頭に置けば、ファイルの残りすべてに効きます。各 BIOS コールには、次の 6 つの項目が必要です。
 
--   **Word-alignment**. Or at least halfword alignment, but words are probably preferable. There are two directives for this, <code>.align <i>n</i></code> and <code>.balign <i>m</i></code>. The former aligns to 2<sup>*n*</sup> so requires ‘`.align 2`’; the latter aligns to *m* so you can just use ‘<code>balign <i>m</i></code>’. Note that both will only work on the *next* piece of code or data and no further, which is why it's best to add it for each function.
--   **Scope**. The <code>.global <i>name</i></code> directive makes a symbol out of *name*, which will then be visible for other files in the project as well. A bit like `extern` or, rather, an anti-`static`.
--   **Thumb indicator** It would seem that `.code 16` alone isn't enough, you also need `.thumb_func`. In fact, if I read the manual correctly this one also implies `.code 16`, which would make that directive redundant.
--   **Label**. ‘*name*:’ marks where the symbol *name* starts. Obviously, to use a function it must actually exist.
--   **BIOS call** To actually activate the BIOS call, use ‘swi *n*’, with *n* the BIOS call you want.
--   **Return** And we're practically done already, all we have to do now is return to the caller with ‘bx lr’.
+-   **ワード境界への整列**。少なくともハーフワード境界ですが、おそらくワードのほうが望ましいでしょう。これには 2 つのディレクティブ、<code>.align <i>n</i></code> と <code>.balign <i>m</i></code> があります。前者は 2<sup>*n*</sup> に揃えるので「`.align 2`」が必要です。後者は *m* に揃えるので、単に「<code>balign <i>m</i></code>」を使えます。どちらも*次の*コードやデータにしか効かず、それより先には効かないことに注意してください。そのため、関数ごとに付けるのが一番です。
+-   **スコープ**。<code>.global <i>name</i></code> ディレクティブは *name* からシンボルを作り、プロジェクトのほかのファイルからも見えるようにします。`extern` のようなもの、というより、`static` の逆のようなものです。
+-   **Thumb の印**。`.code 16` だけでは十分ではないようで、`.thumb_func` も必要です。実際、マニュアルを正しく読めているなら、これは `.code 16` も意味するので、そのディレクティブは冗長になります。
+-   **ラベル**。「*name*:」は、シンボル *name* がどこから始まるかを示します。当然ですが、関数を使うには、それが実際に存在しなければなりません。
+-   **BIOS コール**。実際に BIOS コールを起動するには、「swi *n*」を使います。*n* は使いたい BIOS コールです。
+-   **戻り**。これでほぼ完成です。あとは「bx lr」で呼び出し元に戻るだけです。
 
-See? It's really not that complicated. Sometimes you might want a little more functionality than this, but for the most part you only need two measly instructions.
+ね？ 本当にそれほど複雑ではありません。これより少し多くの機能が欲しいこともあるかもしれませんが、たいていは、たった 2 つの命令で済みます。
 
-### The Arm Architecture Procedure Call Standard {#ssec-use-aapcs}
+### ARM アーキテクチャのプロシージャ呼び出し標準 {#ssec-use-aapcs}
 
-That's all fine and good, but that still leaves the questions of a) how do I combine this with C code and b) where'd all the input and output go? The answer to the first is simple: just add a function declaration like usual:
+それで結構なのですが、まだ疑問が残ります。a) これを C のコードとどう組み合わせればいいのか、そして b) 入力と出力はどこへ行ってしまったのか、です。1 つ目の答えは簡単です。いつもどおりに関数の宣言を追加するだけです。
 
 ```c
 // In tonc_bios.h
@@ -258,23 +258,23 @@ That's all fine and good, but that still leaves the questions of a) how do I com
 int Div(int num, int denom);
 ```
 
-Mkay, but that *still* doesn't explain where my input and output went. Well actually … it *does*.
+ふむ、でもそれでは入力と出力がどこへ行ったのか、*やはり*説明になっていません。ところが実は……*説明になっている*のです。
 
-> “I am not sure how clouds get formed. But the clouds know how to do it, and that is the important thing”
+> 「雲がどうやってできるのか、ぼくにはよくわからない。でも雲はやり方を知っている。それが大事なことなんだ」
 
-Found that quote long ago in one of those Kids on Science lists, and I'm always reminded of it when programming. The thing about computers is that they don't think in terms of input, output, text, pictures etc. Actually, they don't think at all, but that's another story. All a computer sees is data; not even code and data, just data since code is data too. Of course, *you* may not see it that way because you're used to C or VB or whatever, but when all is said and done, it's all just ones and zeros. If the ones and zeros come to the CPU via the program counter (**PC** register, `r15`) it's code, otherwise it's data.
+ずっと前に、子どもたちの科学の珍回答集のようなもので見つけた言葉ですが、プログラミングをしているといつも思い出します。コンピュータについて言えるのは、コンピュータは入力、出力、テキスト、絵などという観点では考えないということです。実際には何も考えていないのですが、それはまた別の話です。コンピュータに見えているのはデータだけです。コードとデータですらなく、ただのデータです。コードもデータだからです。もちろん、C や VB などに慣れている*あなた*はそうは見ていないかもしれませんが、結局のところ、すべてはただの 1 と 0 にすぎません。1 と 0 がプログラムカウンタ（**PC** レジスタ、`r15`）を通って CPU に来ればそれはコードで、そうでなければデータです。
 
-So how does that explain the input/output? Well, it doesn't do it directly, but it points to how you should be looking at the situation. Consider you're the compiler and you have to convert some bloke's C code into machine code (or assembly, which is almost the same thing) that a CPU can actually use. You come across the line “`q= Div(x,y);`”. What does `Div()` do? Well, if there's no symbol in the C-file for that name (and there isn't, as it's in *tonc_bios.s*), you wouldn't know. Technically, you don't even know *what* it is. But `Div` knows, and that's the important thing. At least, that's *almost* how it works. The compiler should still need to know what sort of critter `Div` is to avoid confusion: A variable? A macro? A function? That's what the declarations are for. And the declaration above says that `Div` is a function that expects two signed integers and returns one too. As far as the compiler's concerned, it ends there.
+では、それで入力と出力がどう説明できるのでしょうか？ まあ、直接説明するわけではありませんが、状況をどう見るべきかを示してくれます。あなたがコンパイラで、どこかの誰かの C のコードを、CPU が実際に使える機械語（またはアセンブリ。ほぼ同じものです）に変換しなければならないとします。「`q= Div(x,y);`」という行に出くわしました。`Div()` は何をするのでしょうか？ C のファイルにその名前のシンボルがなければ（そして実際にありません。*tonc_bios.s* にあるからです）、わかりません。厳密には、それが*何なのか*すらわかりません。でも `Div` は知っています。それが大事なことなのです。少なくとも、*ほぼ*そういう仕組みになっています。それでもコンパイラは、混乱を避けるために `Div` がどんな種類の生き物なのかを知る必要があります。変数？ マクロ？ 関数？ そのために宣言があるのです。上の宣言は、`Div` が 2 つの符号付き整数を受け取り、1 つの符号付き整数を返す関数だと言っています。コンパイラに関する限り、話はそこで終わりです。
 <br>  
-Of course, that still doesn't explain how the compiler knows what do to. Well, it simply follows the *ARM Architecture Procedure Call Standard*, <dfn>AAPCS</dfn> for short. This states how functions should pass arguments to each other. This PDF document can be found [here](https://github.com/ARM-software/abi-aa/releases/download/2023Q3/aapcs32.pdf) and if you're contemplating assembly is a very worthwhile download.
+もちろん、それでもコンパイラが何をすればいいかをどうやって知るのかの説明にはなっていません。実は、コンパイラは単に *ARM Architecture Procedure Call Standard*、略して <dfn>AAPCS</dfn> に従っているのです。これは、関数どうしが引数をどう受け渡すべきかを定めたものです。この PDF 文書は[こちら](https://github.com/ARM-software/abi-aa/releases/download/2023Q3/aapcs32.pdf)にあり、アセンブリを考えているなら、ダウンロードする価値は大いにあります。
 
-For now, here's what you need to know. The first four arguments are placed in the first four registers `r0-r3`, every one after that is placed on the stack. The output value is placed in `r0`. As long as you take the argument list of the BIOS call as the list in the declaration, it should work fine. Note that the declaration also takes care of any casting that needs to be done. It is important that you realize just what the declaration means here: *it* determines how the function is called, not the actual *definition* assembly function. Or even C function. Things can go very wrong if you mess up the declaration.
+今のところは、次のことを知っておけば十分です。最初の 4 つの引数は最初の 4 つのレジスタ `r0-r3` に置かれ、それ以降の引数はスタックに置かれます。出力の値は `r0` に置かれます。BIOS コールの引数のリストを宣言のリストとして使う限り、うまく動くはずです。宣言は、必要なキャストもすべて面倒みてくれることに注意してください。ここで宣言が何を意味するのかを理解しておくことが大事です。関数がどう呼ばれるかを決めるのは*宣言*であって、実際のアセンブリの関数の*定義*ではありません。C の関数の定義でさえありません。宣言を間違えると、とてもまずいことになりかねません。
 
-Another thing the AAPCS tells you is that register r0-r3 (and r12) are so-called <dfn>scratch</dfn> registers. This means that the caller *expects* the called function to mess these up. After the function returns their contents are to be considered undefined – unless you're the one writing both asm functions, in which case there may be certain … allowances. Having these as scratch registers means that a function can use them without needing to push and pop the originals on and off the stack, thus saving time. This does not hold for the other registers, though: r4-r11, r13, r14 *must* be returned in the way the calling function got them. The last one, r15, is exempt from this, as you shouldn't screw around with the program counter.
+AAPCS が教えてくれることがもう 1 つあります。レジスタ r0-r3（と r12）は、いわゆる<dfn>スクラッチ</dfn>レジスタだということです。つまり、呼び出し側は、呼ばれた関数がこれらを書き換えることを*想定*しています。関数から戻ったあと、それらの中身は未定義とみなされます。ただし、両方のアセンブリの関数を自分で書いているなら、ある種の……融通が利くこともあります。これらがスクラッチレジスタであるおかげで、関数は元の値をスタックに積んだり取り出したりせずにこれらを使え、時間を節約できます。ただし、ほかのレジスタではそうはいきません。r4-r11、r13、r14 は、呼び出し側の関数から受け取ったときの状態で返さ*なければなりません*。最後の r15 は例外です。プログラムカウンタをいじるべきではないからです。
 
-### Inline assembly {#ssec-use-inl-asm}
+### インラインアセンブリ {#ssec-use-inl-asm}
 
-Actually, you don't even need a full assembly file for BIOS calls: you could use <dfn>inline assembly</dfn>. With inline assembly, you can mix C code and assembly code. Since the functions are usually rather simple, you could use something like
+実は、BIOS コールのためにアセンブリのファイルを丸ごと用意する必要すらありません。<dfn>インラインアセンブリ</dfn>を使えるのです。インラインアセンブリを使えば、C のコードとアセンブリのコードを混ぜられます。関数はたいていかなり単純なので、次のようなものが使えます。
 
 ```c
 // In a C file
@@ -282,11 +282,11 @@ int Div(int num, int denom)
 {   asm("swi 0x06");   }
 ```
 
-This does exactly the same thing as the assembly version of `Div`. However, you need to be careful with inline assembly because you can't see the code around it and might accidentally <dfn>clobber</dfn> some registers that you shouldn't be messing with, thus ruining the rest of the code. For the full rules on inline assembly, see the [GCC manual](http://www.gnu.org/manual/manual.html). You can also find a short faq on inline assembly use at [devrs.com](http://www.devrs.com/gba/). The ‘proper’ syntax of inline assembly isn't the friendliest in the world, mind you, and there are other problems as well. Consider the C function given above. Since it doesn't really do anything itself, the optimiser may be tempted to throw it away. This will happen with `-O3` unless you take appropriate precautions. Also, the compiler will complain that the function doesn't return anything, even though it should. It has a point, of course, considering that part is taken care of inside the assembly block. There are probably a few other problems that I'm not aware of at present; in the end it's easier to use the full-assembly versions so you know what's happening.
+これは、アセンブリ版の `Div` とまったく同じことをします。ただし、インラインアセンブリには注意が必要です。周りのコードが見えないので、いじるべきでないレジスタをうっかり<dfn>破壊</dfn>（clobber）してしまい、コードの残りを台無しにするかもしれないからです。インラインアセンブリの完全な規則は、[GCC のマニュアル](http://www.gnu.org/manual/manual.html)を見てください。[devrs.com](http://www.devrs.com/gba/) にも、インラインアセンブリの使い方についての短い FAQ があります。とはいえ、インラインアセンブリの「正しい」構文は世界一親切なものとは言えませんし、ほかにも問題があります。上の C の関数を考えてみてください。それ自体は実際には何もしないので、最適化によって捨てられてしまうかもしれません。適切な対策をとらない限り、`-O3` ではそうなります。また、コンパイラは、関数が値を返すべきなのに何も返していないと文句を言います。もちろん、その部分はアセンブリのブロックの中で面倒をみているのですから、コンパイラの言い分にも一理あります。今のところ私が気づいていない問題もおそらくほかにあるでしょう。結局のところ、何が起きているのかがわかる、アセンブリだけで書いた版を使うほうが簡単です。
 
-### The <kbd>swi_call</kbd> macro {#ssec-use-swi-call}
+### <kbd>swi_call</kbd> マクロ {#ssec-use-swi-call}
 
-On the other hand, there are also BIOS calls that use no arguments, which can be run via a mere macro. The `swi_call(x)` macro will run the BIOS call *x*, and can be found in *swi.h*, and in Wintermute's [libgba](https://devkitpro.org), which is where I got it from. It's a little more refined than the `Div` function given above. First, it uses the `volatile` keyword, which should keep your optimizer from deleting the function (just like we did for all the registers). Secondly, it uses a <dfn>clobber list</dfn> (after the triple colons). This will tell the compiler which registers are used by the inline assembly. Thirdly, it will take care of the Thumb/ARM switch automatically. If you use the `-mthumb` compiler option, the compiler will define `__thumb__` for us, which we will now use to get the right swi-number. Clever, eh?
+一方で、引数を使わない BIOS コールもあり、それらは単なるマクロで実行できます。`swi_call(x)` マクロは BIOS コール *x* を実行します。*swi.h* と、Wintermute の [libgba](https://devkitpro.org) にあり、私はそこから持ってきました。上の `Div` 関数より少し洗練されています。まず、`volatile` キーワードを使っています。これで、最適化によって関数が削除されるのを防げるはずです（すべてのレジスタに対してしたのと同じです）。次に、<dfn>クロバーリスト</dfn>（3 つのコロンの後ろ）を使っています。これはコンパイラに、インラインアセンブリがどのレジスタを使うかを伝えます。3 つ目に、Thumb と ARM の切り替えを自動的に面倒みます。`-mthumb` コンパイラオプションを使うと、コンパイラが `__thumb__` を定義してくれるので、それを使って正しい swi の番号を得るのです。賢いでしょう？
 
 ```c
 #ifndef(__thumb__)
@@ -298,9 +298,9 @@ On the other hand, there are also BIOS calls that use no arguments, which can be
 
   
 
-By the way, if you want more information about assembly, you can find a number of tutorials on ARM assembly at gbadev.org. Another nice way to learn is by using the `-S` compiler flag, which will give you a compiler-generated assembly file of your code. This will show you exactly what the compiler does to your code, including optimisation steps and use of the AAPCS. Really, you should see this at least once.
+ところで、アセンブリについてもっと知りたければ、gbadev.org に ARM アセンブリのチュートリアルがいくつかあります。もう 1 つの良い学び方は、`-S` コンパイラフラグを使うことです。これを使うと、コンパイラが生成した、あなたのコードのアセンブリのファイルが得られます。最適化の手順や AAPCS の使い方も含めて、コンパイラがあなたのコードに何をしているのかが正確にわかります。本当に、少なくとも一度は見ておくべきです。
 
-It may also help to use `-fverbose-asm`, which will write out the original variable names and operations in comments. Usually in the right place too. Also handy is the `ASM_CMT()` macro shown below. This will give you some hints as to where specific blocks of code are. But again, not all the time.
+`-fverbose-asm` を使うのも役に立つかもしれません。これは、元の変数名や演算をコメントに書き出してくれます。たいていは正しい場所に書かれます。下に示す `ASM_CMT()` マクロも便利です。これで、特定のコードのブロックがどこにあるのか、手がかりが得られます。ただし、これもいつもうまくいくとは限りません。
 
 ```c
 #define ASM_CMT(str) asm volatile("@ " str)
@@ -309,25 +309,25 @@ It may also help to use `-fverbose-asm`, which will write out the original varia
 ASM_CMT("Hi, I'm here!");
 ```
 
-## Demo graphs {#sec-demo}
+## デモのグラフ {#sec-demo}
 
 <div class="cpt_fr" style="width:240px;">
 <img alt="math graphs" src="./img/demo/swi_demo.png" id="fig:swi-demo">
 
-**{*@fig:swi-demo}**: div, sqrt, arctan2, sin and cos graphs, courtesy of BIOS.
+**{*@fig:swi-demo}**: BIOS 提供の、div、sqrt、arctan2、sin、cos のグラフ。
 </div>
 
-To illustrate the use of BIOS calls I am using Div, Sqrt, ArcTan and ObjAffineSet to create graphs if a hyperbole, square root, sine and cosine. I've scaled them in such a way so that they fit nicely on the 240x160 screen. The definitions are
+BIOS コールの使い方を示すために、Div、Sqrt、ArcTan、ObjAffineSet を使って、双曲線、平方根、サイン、コサインのグラフを作ります。240x160 の画面にうまく収まるように拡大縮小してあります。定義は次のとおりです。
 
 <table>
-<tr><td>division	<td><i>y</i>= 2560/<i>x</i>
-<tr><td>square root	<td><i>y</i>= 160*sqrt(<i>x</i>/240)
+<tr><td>除算	<td><i>y</i>= 2560/<i>x</i>
+<tr><td>平方根	<td><i>y</i>= 160*sqrt(<i>x</i>/240)
 <tr><td>arctan  	<td><i>y</i>= 80 + 64*(2/&pi;)*(arctan(<i>x</i>-120)/16))
-<tr><td>sine		<td><i>y</i>=  1*sy*sin(2&pi;·<i>x</i>/240)	<td>; sy= 80
-<tr><td>cosine		<td><i>y</i>= 80*sx*cos(2&pi;·<i>x</i>/240)	<td>; sx= 1
+<tr><td>サイン		<td><i>y</i>=  1*sy*sin(2&pi;·<i>x</i>/240)	<td>; sy= 80
+<tr><td>コサイン		<td><i>y</i>= 80*sx*cos(2&pi;·<i>x</i>/240)	<td>; sx= 1
 </table>
 
-and these functions have been plotted in fig 1. If you're wondering how I got the sine and cosine values, as there are no calls for those, take a look at eq 1 again. The **P** matrix has them. I've used *p*<sub>a</sub> for the cosine and *p*<sub>c</sub> for the sine. Note that the graphs appear instantly; there is no sense of loading time while the graphs are plotted. An earlier version of the mode 7 demo (or PERNs mode 7 demo) used calls to the actual division, sine and cosine functions to build up the LUTs. Even with the symmetry rules of trigonometry, `sin()` and `cos()` are still noticeably slower than the BIOS equivalent.
+これらの関数を図 1 にプロットしました。サインとコサインのためのコールはないのに、どうやってその値を得たのか不思議に思うなら、もう一度式 1 を見てください。**P** 行列にそれらが入っています。コサインには *p*<sub>a</sub> を、サインには *p*<sub>c</sub> を使いました。グラフは一瞬で表示されることに注意してください。グラフを描いている間に読み込み時間のようなものは感じません。モード 7 のデモの以前の版（や PERN のモード 7 のデモ）では、ルックアップテーブルを作るのに、実際の除算、サイン、コサインの関数を呼んでいました。三角関数の対称性の規則を使っても、`sin()` と `cos()` は BIOS の同等のものより目に見えて遅いのです。
 
 ```c
 #include <stdio.h>
@@ -449,19 +449,19 @@ int main()
 }
 ```
 
-## Vsyncing part II, VBlankIntrWait {#sec-vsync2}
+## VSync その 2、VBlankIntrWait {#sec-vsync2}
 
-Until now, all demos used the function `vid_vsync` to synchronize the action to the VBlank (see the [graphics introduction](video.html#sec-vsync1)). What this did was to check `REG_VCOUNT` and stay in a while loop until the next VBlank came along. While it works, it's really a pretty poor way of doing things for two reasons. First, because of the potential problem when you are in a VBlank already, but that one had been covered. The second reason is more important: while you're in the while loop, you're wasting an awful lot of CPU cycles, all of which slurp battery power.
+これまで、デモはすべて、動作を VBlank に同期させるのに `vid_vsync` 関数を使ってきました（[グラフィックの入門](video.html#sec-vsync1)を見てください）。この関数は `REG_VCOUNT` を確認し、次の VBlank が来るまで while ループの中にとどまるというものでした。動きはしますが、2 つの理由から、本当にかなりまずいやり方です。1 つ目は、すでに VBlank の中にいる場合に起こりうる問題ですが、それは対処済みでした。2 つ目の理由のほうが重要です。while ループの中にいる間、ものすごく多くの CPU のサイクルを無駄にしていて、そのすべてが電池を消耗させるのです。
 
 <div class="cpt_fr" style="width:240px;">
 <img alt="swi_vsync" src="./img/demo/swi_vsync.png" id="fig:swi-vsync">
 
-**{*@fig:swi-vsync}**: `swi_vsync` demo.
+**{*@fig:swi-vsync}**: `swi_vsync` デモ。
 </div>
 
-There are a number of BIOS calls that can put the CPU into a low power mode, thus sparing the batteries. The main BIOS call for this is Halt (#2), but what we're currently interested in is VBlankIntrWait (#5). This will set things up to wait until the next VBlank interrupt. To use it, you have to have interrupts switched on, of course, in particular the VBlank interrupt. As usual, the VBlank isr will have to acknowledge the interrupt by writing to `REG_IF`. But it *also* has to write to its BIOS equivalent, `REG_IFBIOS`. This little bit of information is a little hard to find elsewhere (in part because few tutorials cover BIOS calls); for more info, see [GBATEK, BIOS Halt Functions](https://problemkaputt.de/gbatek.htm#bioshaltfunctions). Fortunately for us, the switchboard presented in the [interrupts](interrupts.html#sec-switch) section has this built in.
+CPU を低消費電力モードにして、電池を節約できる BIOS コールがいくつかあります。そのための主な BIOS コールは Halt（#2）ですが、今興味があるのは VBlankIntrWait（#5）です。これは、次の VBlank 割り込みまで待つように準備します。これを使うには、もちろん割り込み、特に VBlank 割り込みを有効にしておく必要があります。いつものように、VBlank の ISR は `REG_IF` に書き込んで割り込みを処理済みにしなければなりません。しかし、それに*加えて*、BIOS 版の `REG_IFBIOS` にも書き込む必要があります。このちょっとした情報は、ほかではなかなか見つかりません（BIOS コールを扱うチュートリアルが少ないこともその一因です）。詳しくは [GBATEK, BIOS Halt Functions](https://problemkaputt.de/gbatek.htm#bioshaltfunctions) を見てください。幸い、[割り込み](interrupts.html#sec-switch)の節で示した交換台には、これが組み込まれています。
 
-To show you how to set it up, see the `swi_vsync` demo. The most important code is given below; a screen shot can be found in fig 2. What it does is give a rotating metroid sprite with an angular velocity of π rad/s (this corresponds to Δθ = 0x10000/4/60= 0x0111). The basic steps for interrupt handling should be familiar, except the fact that there's no real VBlank isr because the switchboard already takes care of acknowledging the interrupt. After that it's pretty simple: we use `ObjAffineSet()` to calculate the required affine matrix and `VBlankIntrWait` puts the CPU on Halt until the next VBlank interrupt.
+準備の仕方を示すために、`swi_vsync` デモを見てください。最も重要なコードを以下に示します。スクリーンショットは図 2 にあります。このデモは、π rad/s の角速度（これは Δθ = 0x10000/4/60= 0x0111 に相当します）で回転するメトロイドのスプライトを表示します。割り込みを扱う基本的な手順はおなじみのはずですが、交換台がすでに割り込みの処理済みの通知を面倒みてくれるので、実際の VBlank の ISR はありません。そのあとはかなり単純です。`ObjAffineSet()` を使って必要なアフィン行列を計算し、`VBlankIntrWait` で次の VBlank 割り込みまで CPU を Halt させます。
 
 ```c
 // inside main, after basic initialisations
@@ -486,18 +486,18 @@ while(1)
 }
 ```
 
-:::tip Prefer VBlankIntrWait() over vid_vsync()
+:::tip vid_vsync() より VBlankIntrWait() を使おう
 
-Waiting for the VBlank via `vid_vsync()` (or its functional equivalent) is not a good idea: it wastes too much battery power. The recommended procedure is using `VBlankIntrWait()` to halt the processor, to be woken again on the VBlank interrupt.
-
-:::
-
-:::warning Acknowledging IntrWait routines
-
-`VBlankIntrWait()` is only one of the BIOS's `IntrWait()` routines that can stop the CPU until an interrupt has been raised. However, it doesn't look at `REG_IF` but at `REG_IFBIOS` (0300:7FF8) for the acknowledgement of the interrupt. If your game locks up after trying `VBlankIntrWait()`, this may be why. Note that you may find the address under other names, as there isn't really an official one for it.
+`vid_vsync()`（や機能的に同等のもの）で VBlank を待つのは良い考えではありません。電池を無駄にしすぎます。おすすめの手順は、`VBlankIntrWait()` を使ってプロセッサを止め、VBlank 割り込みで再び起こしてもらうことです。
 
 :::
 
-## Final thoughts {#sec-concs}
+:::warning IntrWait のルーチンでの処理済みの通知
 
-Now that you know how to use them, I should warn you that you shouldn't go overboard with them. It appears that the BIOS routines have been designed for space, not speed, so they aren't the fastest in the world. Not only that, there's an overhead of at least 60 cycles for each one (mind you, normal functions seem to have a 30 cycle overhead). If speed is what you're after then the BIOS calls may not be the best thing; you can probably find faster routines on the web ... somewhere. This doesn't mean that the BIOS routines can't be useful, of course, but if you have alternative methods, use those instead. Just remember that that's an optimisation step, which you shouldn't do prematurely.
+`VBlankIntrWait()` は、割り込みが発生するまで CPU を止められる BIOS の `IntrWait()` ルーチンの 1 つにすぎません。ただし、これは割り込みの処理済みの通知を、`REG_IF` ではなく `REG_IFBIOS`（0300:7FF8）で確認します。`VBlankIntrWait()` を試したあとでゲームが固まってしまうなら、これが原因かもしれません。このアドレスには公式の名前がないので、ほかの名前で見かけることもあるかもしれないことに注意してください。
+
+:::
+
+## 最後に {#sec-concs}
+
+使い方がわかったところで、使いすぎないように注意しておくべきでしょう。BIOS のルーチンは速さではなく大きさを重視して設計されているようなので、世界一速いわけではありません。それだけでなく、1 回ごとに少なくとも 60 サイクルのオーバーヘッドがあります（ちなみに、普通の関数には 30 サイクルのオーバーヘッドがあるようです）。速さを求めているなら、BIOS コールは最善の選択ではないかもしれません。ウェブ上の……どこかで、もっと速いルーチンがおそらく見つかるでしょう。もちろん、だからといって BIOS のルーチンが役に立たないわけではありませんが、ほかの方法があるなら、そちらを使ってください。ただ、それは最適化の手順であり、早まってするべきではないことは覚えておいてください。

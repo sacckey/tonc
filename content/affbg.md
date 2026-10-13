@@ -1,24 +1,24 @@
-# 12. Affine backgrounds
+# 12. アフィン背景
 
 <!-- toc -->
 
-## Introduction {#sec-intro}
+## はじめに {#sec-intro}
 
-This section covers <dfn>affine backgrounds</dfn>: the ones on which you can perform an affine transformation via the **P** matrix. And that's all it does. If you haven't read – and understood! – the [sprite/bg overview](objbg.html) and the sections on [regular backgrounds](regbg.html) and the [affine transformation matrix](affine.html), do so before continuing.
+この節では、<dfn>アフィン背景</dfn>を扱います。**P** 行列によってアフィン変換をかけられる背景です。そして、できるのはそれだけです。[スプライトと背景の概要](objbg.html)と、[通常の背景](regbg.html)と[アフィン変換の行列](affine.html)の節をまだ読んでいない（そして理解していない！）なら、先に進む前に読んでください。
 
-If you know how to build a regular background and have understood the concepts behind the affine matrix, you should have little problems here. The theory behind an affine backgrounds are the same as for regular ones, the practice can be different at a number of very crucial points. For example, you use different registers for positioning and both the map-layout and their format are different.
+通常の背景の作り方を知っていて、アフィン行列の背後にある考え方を理解していれば、ここで困ることはほとんどないはずです。アフィン背景の背後にある理論は通常の背景と同じですが、実際の使い方はいくつかのとても重要な点で違うことがあります。たとえば、位置の指定には別のレジスタを使いますし、マップの配置と形式もどちらも違います。
 
-Of the four backgrounds the GBA has, only the last two can be used as affine backgrounds, and only in specific video modes (see {@tbl:bg-types}). The sizes are also different for affine backgrounds. You can find a list of sizes in {@tbl:bga-size}.
+GBA にある 4 つの背景のうち、アフィン背景として使えるのは最後の 2 つだけで、それも特定のビデオモードに限られます（{@tbl:bg-types} を見てください）。アフィン背景では大きさも違います。大きさの一覧は {@tbl:bga-size} にあります。
 
 <div class="cblock">
   <table>
     <tr>
       <td>
         <table id="tbl:bg-types" border=1 cellpadding=2 cellspacing=0 width=128 class="table-data">
-          <caption align="bottom"><b>{*@tbl:bg-types}</b>: video modes and background type</caption>
+          <caption align="bottom"><b>{*@tbl:bg-types}</b>: ビデオモードと背景の種類</caption>
           <tbody align="center">
             <tr>
-              <th>mode</th>
+              <th>モード</th>
               <th>0</th>
               <th>1</th>
               <th>2</th>
@@ -53,15 +53,15 @@ Of the four backgrounds the GBA has, only the last two can be used as affine bac
       <td width="10%"></td>
       <td style="vertical-align: top;">
         <table id="tbl:bga-size" border=1 cellpadding=2 cellspacing=0 width=144 class="table-data">
-          <caption align="bottom"><b>{*@tbl:bga-size}</b>: affine bg sizes</caption>
+          <caption align="bottom"><b>{*@tbl:bga-size}</b>: アフィン背景の大きさ</caption>
           <col>
           <col class="def">
           <tbody align="center">
             <tr>
               <th>Sz</th>
-              <th>define</th>
-              <th>(tiles)</th>
-              <th>(pixels)</th>
+              <th>定義</th>
+              <th>（タイル）</th>
+              <th>（ピクセル）</th>
             </tr>
             <tr>
               <td>00</td>
@@ -94,18 +94,18 @@ Of the four backgrounds the GBA has, only the last two can be used as affine bac
   </table>
 </div>
 
-## Affine background registers {#sec-regs}
+## アフィン背景のレジスタ {#sec-regs}
 
-Like their regular counterparts, the primary control for affine backgrounds is `REG_BGxCNT`. If you've forgotten what it does, you can read a description [here](regbg.html#tbl-reg-bgxcnt). The differences with regular backgrounds are the sizes, and that `BG_WRAP` actually does something now. The other important registers are the <dfn>displacement vector</dfn> **dx** (`REG_BGxX` and `REG_BGxY`), and the <dfn>affine matrix</dfn> **P** (`REG_BGxPA`-`REG_BGxPD`). You can find their addresses in {@tbl:aff-regs}.
+通常の背景と同じく、アフィン背景を主に制御するのは `REG_BGxCNT` です。何をするものか忘れてしまったなら、[こちら](regbg.html#tbl-reg-bgxcnt)で説明を読めます。通常の背景との違いは大きさと、`BG_WRAP` が今度は実際に働くことです。ほかの重要なレジスタは、<dfn>変位ベクトル</dfn> **dx**（`REG_BGxX` と `REG_BGxY`）と、<dfn>アフィン行列</dfn> **P**（`REG_BGxPA`-`REG_BGxPD`）です。それらのアドレスは {@tbl:aff-regs} にあります。
 
 <div class="lblock">
   <table id="tbl:aff-regs" class="table-data">
-    <caption align="bottom"><b>{*@tbl:aff-regs}</b>: Affine background register addresses. Note that <i>x</i> is 2 or 3 only!</caption>
+    <caption align="bottom"><b>{*@tbl:aff-regs}</b>: アフィン背景のレジスタのアドレス。<i>x</i> は 2 か 3 だけであることに注意！</caption>
     <col span=2 align="right">
     <tr>
-      <th>Register</th>
-      <th>length</th>
-      <th>address</th>
+      <th>レジスタ</th>
+      <th>長さ</th>
+      <th>アドレス</th>
     </tr>
     <tr>
       <th>REG_BGxCNT</th>
@@ -130,11 +130,11 @@ Like their regular counterparts, the primary control for affine backgrounds is `
   </table>
 </div>
 
-There are a couple of things to take note of when it comes to displacement and transformation of affine backgrounds. First, the displacement *dx* uses different registers than regular backgrounds: `REG_BGxX` and `REG_BGxY` instead of `REG_BGxHOFS` and `REG_BGxVOFS`. A second point here is that they are 24.8 fixed numbers rather than pixel offsets. (Actually, they are 20.8 fixed numbers but that's not important right now.)
+アフィン背景の変位と変換については、注意すべき点がいくつかあります。まず、変位 *dx* には通常の背景とは別のレジスタを使います。`REG_BGxHOFS` と `REG_BGxVOFS` ではなく、`REG_BGxX` と `REG_BGxY` です。次に、これらはピクセルのオフセットではなく、24.8 の固定小数点数です。（実際には 20.8 の固定小数点数ですが、今それは重要ではありません。）
 
-I usually use the affine parameters via BG_AFFINE struct instead of `REG_BGxPA`, etc. The memory map in *tonc_memmap.h* contains a `REG_BG_AFFINE` for this purpose. Setting the registers this way is advantageous at times because you'll usually have a BG_AFFINE struct set up already, which you can then copy to the registers with a single assignment. An example of this is given below.
+私はたいてい、`REG_BGxPA` などではなく、BG_AFFINE 構造体を通してアフィンパラメータを使います。*tonc_memmap.h* のメモリマップには、この目的のための `REG_BG_AFFINE` があります。この方法でレジスタを設定すると便利なことがあります。たいていはすでに BG_AFFINE 構造体を用意してあるので、それを 1 回の代入でレジスタにコピーできるからです。この例を下に示します。
 
-The elements of the affine transformation matrix **P** works exactly like they do for affine sprites: 8.8 fixed point numbers that describe the transformation from screen to texture space. However for affine backgrounds they are stored consecutively (2 byte offset), whereas those of sprites are at an 8 byte offset. You can use the `bg_aff_foo` functions from *tonc_bg_affine.c* to set them to the transformation you want.
+アフィン変換の行列 **P** の要素は、アフィンスプライトの場合とまったく同じように働きます。画面空間からテクスチャ空間への変換を表す 8.8 の固定小数点数です。ただし、アフィン背景では要素が連続して（2 バイト間隔で）格納されるのに対し、スプライトの要素は 8 バイト間隔で並んでいます。*tonc_bg_affine.c* の `bg_aff_foo` 関数を使えば、望む変換にこれらを設定できます。
 
 <div id="cd-bga-types">
 
@@ -159,17 +159,17 @@ const BG_AFFINE bg_aff_default= { 256, 0, 0, 256, 0, 0 };
 REG_BG_AFFINE[2] = bg_aff_default;
 ```
 
-:::warning Regular vs affine tilemap scrolling
+:::warning 通常のタイルマップとアフィンのタイルマップのスクロール
 
-  Affine tilemaps use **different** scrolling registers! Instead of REG_BG*x*HOFS and REG_BG*x*VOFS, they use REG_BG*x*X and REG_BG*x*Y. Also, these are 32bit fixed point numbers, not halfwords.
+  アフィンのタイルマップは**別の**スクロールレジスタを使います！ REG_BG*x*HOFS と REG_BG*x*VOFS ではなく、REG_BG*x*X と REG_BG*x*Y を使います。また、これらはハーフワードではなく、32 ビットの固定小数点数です。
 
 :::
 
-## Positioning and transforming affine backgrounds {#sec-aff-ofs}
+## アフィン背景の位置合わせと変換 {#sec-aff-ofs}
 
-Now that we know what the displacement and transformation registers are, now let's look at what they do. This is actually a lot trickier subject that you might think, so pay attention. Warning: this is gonna get mathematical again.
+変位と変換のレジスタがわかったので、次はそれらが何をするのかを見てみましょう。これは思ったよりずっとややこしい話なので、よく注意してください。警告: また数学っぽくなります。
 
-The displacement vector **dx** works the same as for regular backgrounds: **dx** contains the background-coordinates that are mapped to the screen origin. (And *not* the other way around!) However, this time **dx** is in fixed number notation. Likewise, the affine transformation matrix **P** works the same as for affine sprites: **P** describes the transformation from screen space to texture space. To put it mathematically, if we define
+変位ベクトル **dx** は、通常の背景と同じように働きます。**dx** には、画面の原点に写される背景の座標が入ります。（その逆では*ありません*！）ただし、今回の **dx** は固定小数点表記です。同様に、アフィン変換の行列 **P** はアフィンスプライトと同じように働きます。**P** は画面空間からテクスチャ空間への変換を表します。数学的に書くと、次のように定義すれば
 
 <table id="eq:defs">
   <tr>
@@ -185,7 +185,7 @@ The displacement vector **dx** works the same as for regular backgrounds: **dx**
   </tr>
 </table>
 
-then
+次のようになります。
 
 <table id="eq:aff-defs">
   <tr>
@@ -198,33 +198,33 @@ then
   </tr>
 </table>
 
-where
+ここで、
 
 <table cellpadding=1 cellspacing=0>
   <tr>
     <th>p</th>
-    <td>is a point in texture space,</td>
+    <td>はテクスチャ空間の点、</td>
   </tr>
   <tr>
     <th>q</th>
-    <td>is a point in screen space,</td>
+    <td>は画面空間の点、</td>
   </tr>
   <tr>
     <th>dx</th>
-    <td>is the displacement vector (<code>REG_BGxX</code> and <code>REG_BGxY</code>).</td>
+    <td>は変位ベクトル（<code>REG_BGxX</code> と <code>REG_BGxY</code>）、</td>
   </tr>
   <tr>
     <th>A</th>
-    <td>is the transformation from texture to screen space,</td>
+    <td>はテクスチャ空間から画面空間への変換、</td>
   </tr>
   <tr>
     <th>P</th>
-    <td>is the transformation screen from to texture space, (<code>REG_BGxPA</code>-<code>REG_BGxPD</code>).</td>
+    <td>は画面空間からテクスチャ空間への変換（<code>REG_BGxPA</code>-<code>REG_BGxPD</code>）です。</td>
   </tr>
 </table>
 <br>
 
-The problem with {@eq:aff-defs} is that these only describe what happens if you use either a displacement or a transformation. So what happens if you want to use both? This is an important question because the order of transformation matters (like we have seen in the [affine sprite demo](affobj.html#sec-demo)), and this is true for the order of transformation and displacement as well. As it happens, translation goes first:
+{@eq:aff-defs} の問題は、変位と変換のどちらか一方だけを使った場合に何が起きるかしか表していないことです。では、両方を使いたい場合はどうなるのでしょうか？ これは重要な問題です。（[アフィンスプライトのデモ](affobj.html#sec-demo)で見たように）変換の順番は結果を左右しますし、それは変換と変位の順番についても同じだからです。実際には、平行移動が先に行われます。
 
 <table id="eq:ofs">
   <tr>
@@ -254,7 +254,7 @@ The problem with {@eq:aff-defs} is that these only describe what happens if you 
   </tr>
 </table>
 
-Another way to say this is that the transformation always uses the top left of the screen as its origin and the displacement tells which background pixels is put there. Of course, this arrangement doesn't help very much if you want to, say, rotate around some other point on the screen. To do that you'll have to pull a few tricks. To cover them all in one swoop, we'll combine {@eq:ofs} and the general coordinate transformation equation:
+別の言い方をすると、変換は常に画面の左上を原点として使い、変位はそこにどの背景のピクセルが置かれるかを決めます。もちろん、たとえば画面上の別の点を中心に回転させたい場合、この仕組みはあまり役に立ちません。そうするには、ちょっとした技を使う必要があります。それらをまとめて扱うために、{@eq:ofs} と一般的な座標変換の式を組み合わせます。
 
 <table id="eq:aff-ofs">
   <tr>
@@ -290,7 +290,7 @@ Another way to say this is that the transformation always uses the top left of t
   </tr>
 </table>
 
-So what the hell does *that* mean? It means that if you use this **dx** for your displacement vector, you perform your transformation around texture point **p**<sub>0</sub>, which then ends up at screen point **q**<sub>0</sub>; the **P**·**q**<sub>0</sub> term is the correction in texture-space you have to perform to have the rotation point at **q**<sub>0</sub> instead of (0,0). So what the hell does *that* mean? It means that before you try to use this stuff you should think about which effect you are actually trying to pull off and that you have *two* coordinate systems to work with, not one. When you do, the meaning of {@eq:aff-ofs} will become apparent. In any case, the function I use for this is `bg_rotscale_ex()`, which basically looks like this:
+で、*これは*いったい何を意味するのでしょうか？ この **dx** を変位ベクトルに使えば、テクスチャの点 **p**<sub>0</sub> を中心に変換が行われ、その点は画面の点 **q**<sub>0</sub> に来る、ということです。**P**·**q**<sub>0</sub> の項は、回転の中心を (0,0) ではなく **q**<sub>0</sub> にするために、テクスチャ空間で行う必要のある補正です。で、*これは*いったい何を意味するのでしょうか？ これを使おうとする前に、自分が実際にどんな効果を出そうとしているのかをよく考え、扱う座標系が 1 つではなく *2 つ*あることを意識するべきだ、ということです。そうすれば、{@eq:aff-ofs} の意味が見えてきます。いずれにせよ、私がこのために使っている関数は `bg_rotscale_ex()` で、基本的には次のようになっています。
 
 ```c
 typedef struct tagAFF_SRC_EX
@@ -318,20 +318,20 @@ void bg_rotscale_ex(BG_AFFINE *bgaff, const AFF_SRC_EX *asx)
 }
 ```
 
-This is very similar to the `obj_rotscale_ex()` function covered in the [off-center object transformation](affobj.html#sec-combo) section. The math is identical, but the terms have been reshuffled a bit. The background version is actually simpler because the affine offset correction can be done in texture space instead of screen space, which means no messing about with **P**'s inverse matrix. Or with sprite-size corrections, thank IPU. For the record, yes you can apply the function directly to `REG_BG_AFFINE`.
+これは、[中心以外を基準にしたオブジェクトの変換](affobj.html#sec-combo)の節で扱った `obj_rotscale_ex()` 関数とよく似ています。数学は同じですが、項を少し並べ替えています。背景版のほうが実は単純です。アフィンのオフセットの補正を画面空間ではなくテクスチャ空間で行えるので、**P** の逆行列をいじる必要がないからです。スプライトの大きさの補正も要りません。IPU に感謝です。念のため書いておくと、そう、この関数は `REG_BG_AFFINE` に直接使えます。
 
-### Internal reference point registers {#ssec-bga-refpts}
+### 内部の基準点レジスタ {#ssec-bga-refpts}
 
-There's one more important thing left to mention about the displacement and transformation registers. Quoting directly from [GBATEK](https://problemkaputt.de/gbatek.htm#lcdiobgrotationscaling) (except the bracketed parts):
+変位と変換のレジスタについて、もう 1 つ重要なことが残っています。[GBATEK](https://problemkaputt.de/gbatek.htm#lcdiobgrotationscaling) から直接引用します（角かっこの部分を除く）。
 
-> The above reference points \[the displacement registers\] are automatically copied to internal registers during each vblank, specifying the origin for the first scanline. The internal registers are then incremented by dmx \[`REG_BGxPB`\] and dmy \[`REG_BGxPD`\] after each scanline.
-> Caution: Writing to a reference point register by software outside of the Vblank period does immediately copy the new value to the corresponding internal register, that means: in the current frame, the new value specifies the origin of the *current* scanline (instead of the topmost scanline).
+> 上記の基準点 \[変位レジスタ\] は、VBlank のたびに自動的に内部レジスタへコピーされ、最初のスキャンラインの原点を指定します。その後、内部レジスタは各スキャンラインの後に dmx \[`REG_BGxPB`\] と dmy \[`REG_BGxPD`\] だけ加算されます。
+> 注意: VBlank 期間外にソフトウェアから基準点レジスタに書き込むと、新しい値はただちに対応する内部レジスタにコピーされます。つまり、現在のフレームでは、新しい値は（一番上のスキャンラインではなく）*現在の*スキャンラインの原点を指定します。
 
-Normally this won't matter to you, but if you try to write to `REG_BGxY` during an HBlank things, might not go as expected. As I learned the hard way when I tried to get my Mode 7 stuff working. This only affects affine backgrounds, though; regular ones use other registers.
+普段はこれが問題になることはありませんが、HBlank 中に `REG_BGxY` に書き込もうとすると、期待どおりに動かないかもしれません。私は Mode 7 のものを動かそうとしたときに、これを痛い目にあって学びました。ただし、これが影響するのはアフィン背景だけです。通常の背景は別のレジスタを使います。
 
-## Mapping format {#sec-map}
+## マッピングの形式 {#sec-map}
 
-Both the map layout and screen entries for affine backgrounds are very different from those of regular backgrounds. Ironically, they are also a lot simpler. While regular backgrounds divide the full map into quadrants (each using one full screenblock), the affine backgrounds use a flat map, meaning that the normal equation for getting a screenentry-number *n* works, making things a whole lot easier.
+アフィン背景のマップの配置とスクリーンエントリは、どちらも通常の背景のものとは大きく違います。皮肉なことに、ずっと単純でもあります。通常の背景はマップ全体を区画に分けます（それぞれがスクリーンブロック 1 つを丸ごと使います）が、アフィン背景は平らなマップを使います。つまり、スクリーンエントリの番号 *n* を求める普通の式がそのまま使えるので、ずっと楽になります。
 
 <table id="eq:aff-sid">
   <tr>
@@ -340,54 +340,54 @@ Both the map layout and screen entries for affine backgrounds are very different
   </tr>
 </table>
 
-The screen entries themselves are also different from those of regular backgrounds as well. In affine maps, they are *1 byte long* and only contain the index of the tile to use. Additionally, you can *only* use 256 color tiles. This gives you access to all the tiles in the base charblock, but not the one(s) after it.
+スクリーンエントリそのものも、通常の背景のものとは違います。アフィンのマップでは、スクリーンエントリは *1 バイトの長さ*で、使うタイルのインデックスしか入っていません。さらに、256 色のタイルしか使え*ません*。これで、ベースのキャラブロックにあるすべてのタイルにアクセスできますが、その後ろのキャラブロックのタイルにはアクセスできません。
 
-And that's about it, really. No, wait there's one more issue: you have to be careful when filling or changing the map because *VRAM can only be accessed 16 or 32 bits at a time*. So if you have your map stored in an array of bytes, you'll have to cast it to `u16` or `u32` first. Or use [DMA](dma.html). OK, now I'm done.
+本当に、それでだいたい全部です。いや、待ってください。もう 1 つ問題があります。*VRAM には一度に 16 ビットか 32 ビット単位でしかアクセスできない*ので、マップを埋めたり変更したりするときには注意が必要です。マップをバイトの配列に格納しているなら、まず `u16` か `u32` にキャストする必要があります。あるいは [DMA](dma.html) を使いましょう。よし、これで終わりです。
 
-:::warning Regular vs affine tilemap mapping differences
+:::warning 通常のタイルマップとアフィンのタイルマップのマッピングの違い
 
-  There are two important differences between regular and affine map formats. First, affine screen entries are merely one-byte tile indices. Secondly, the maps use a linear layout, rather than the division into 32x32t maps that bigger regular maps use.
+  通常のマップとアフィンのマップの形式には、重要な違いが 2 つあります。1 つ目は、アフィンのスクリーンエントリが 1 バイトのタイルのインデックスにすぎないこと。2 つ目は、大きな通常のマップのように 32x32t のマップに分割するのではなく、マップが線形の配置を使うことです。
 
 :::
 
-## *sbb_aff* demo {#sec-demo}
+## *sbb_aff* デモ {#sec-demo}
 
 <div class="cpt_fr" style="width:240px">
   <img id="fig:sbb-aff" src="./img/demo/sbb_aff.png" alt="sbb_aff demo">
-  <b>{*@fig:sbb-aff}</b>: <i>sbb_aff</i> demo.
+  <b>{*@fig:sbb-aff}</b>: <i>sbb_aff</i> デモ。
 </div>
 
-*sbb_aff* is to affine backgrounds what *sbb_reg* was to regular ones, with a number of extras. The demo uses a 64x64 tile affine background, shown in {@fig:sbb-aff}. This is divided into 16 parts of 256 bytes, each of which is filled with tiles of one color and the number of that part on it. Now, if the map-layout for affine backgrounds was the same as regular ones, each part would form a 16x16t square. If it is a flat memory layout, each part would be a 64x16t strip. As you can see in {@fig:sbb-aff}, it is the latter. You can also see that, unlike regular backgrounds, this map doesn't wrap around automatically at the edges.
+*sbb_aff* は、通常の背景に対する *sbb_reg* のアフィン背景版で、おまけもいくつか付いています。このデモは、{@fig:sbb-aff} に示す 64x64 タイルのアフィン背景を使います。これは 256 バイトずつ 16 の部分に分かれていて、それぞれが 1 色のタイルと、その部分の番号で埋められています。さて、アフィン背景のマップの配置が通常の背景と同じなら、各部分は 16x16t の正方形になるはずです。平らなメモリ配置なら、各部分は 64x16t の帯になるはずです。{@fig:sbb-aff} でわかるとおり、後者です。また、通常の背景とは違って、このマップは端で自動的に回り込まないこともわかります。
 
-The most interesting thing about the demo are the little black and white crosshairs. The white crosshairs indicates the rotation point (the anchor). As I said earlier, you cannot simply pick a map-point **p**<sub>0</sub> and say that that is ‘the’ rotation point. Well you could, but it wouldn't give the desired effect. Simply using a map-point will give you a rotating map around that point, but on screen it'll always be in the top-left corner. To move the map anchor to a specific location on the screen, you need an anchor there as well. This is **q**<sub>0</sub>. Fill both into {@eq:aff-ofs} to find the displacement vector you need: **dx** = **p**<sub>0</sub>−**P·q**<sub>0</sub>. This **dx** is going to be quite different from both **p**<sub>0</sub> and **q**<sub>0</sub>. Its path is indicated by the black crosshairs.
+このデモで一番面白いのは、小さな黒と白の照準マークです。白い照準マークは回転の中心（アンカー）を示しています。前に言ったように、マップ上の点 **p**<sub>0</sub> を選んで、それを「その」回転の中心だと言うことは単純にはできません。まあ、できなくはないのですが、望む効果にはなりません。マップ上の点を使うだけだと、その点の周りでマップは回転しますが、画面上では常に左上の角にあります。マップのアンカーを画面上の特定の位置に動かすには、そこにもアンカーが必要です。これが **q**<sub>0</sub> です。両方を {@eq:aff-ofs} に入れれば、必要な変位ベクトルが求まります。**dx** = **p**<sub>0</sub>−**P·q**<sub>0</sub> です。この **dx** は、**p**<sub>0</sub> とも **q**<sub>0</sub> ともかなり違ったものになります。その軌跡は黒い照準マークで示されています。
 
-The demo lets you control both **p**<sub>0</sub> and **q**<sub>0</sub>. And rotation and scaling, of course. The full list of controls is.
+このデモでは、**p**<sub>0</sub> と **q**<sub>0</sub> の両方を操作できます。もちろん、回転と拡大縮小もできます。操作の完全な一覧は次のとおりです。
 
 <div class="lblock">
   <table cellpadding=1 cellspacing=0>
     <tr>
       <th>D-pad</th>
-      <td>move map rotation point, <b>p</b><sub>0</sub></td>
+      <td>マップの回転の中心 <b>p</b><sub>0</sub> を動かす</td>
     </tr>
     <tr>
       <th>D-pad + A</th>
-      <td>move screen rotation point, <b>q</b><sub>0</sub></td>
+      <td>画面の回転の中心 <b>q</b><sub>0</sub> を動かす</td>
     </tr>
     <tr>
       <th>L,R</th>
-      <td>rotate the background.</td>
+      <td>背景を回転する。</td>
     </tr>
     <tr>
       <th>B(+Se)</th>
-      <td>scale up and down.</td>
+      <td>拡大と縮小。</td>
     </tr>
     <tr>
       <th>St</th>
-      <td>Toggle wrapping flag.</td>
+      <td>回り込みのフラグを切り替える。</td>
     </tr>
     <tr>
       <th>St+Se</th>
-      <td>Reset anchors and <b>P</b></td>
+      <td>アンカーと <b>P</b> をリセットする</td>
     </tr>
   </table>
 </div>

@@ -1,12 +1,12 @@
-# 10. The Affine Transformation Matrix (a.k.a. **P**)
+# 10. アフィン変換の行列（別名 **P**）
 
 <!-- toc -->
 
-## About this page
+## このページについて
 
-As you probably know, the GBA is capable of applying geometric transformations like rotating and/or scaling to sprites and backgrounds. To set them apart from the regular items, the transformable ones are generally referred to as Rot/Scale sprites and backgrounds. The transformations are described by four parameters, `pa`, `pb`, `pc` and `pd`. The locations and exact names differ for sprites and backgrounds but that doesn't matter for now.
+ご存じかもしれませんが、GBA はスプライトや背景に、回転や拡大縮小などの幾何学的な変換をかけられます。通常のものと区別するため、変換できるものは一般に Rot/Scale スプライト、Rot/Scale 背景と呼ばれます。変換は `pa`、`pb`、`pc`、`pd` の 4 つのパラメータで表されます。置き場所や正確な名前はスプライトと背景で違いますが、今はそれは気にしなくてかまいません。
 
-There are two ways of interpreting these numbers. The first is to think of each of them as individual offsets to the sprite and background data. This is how the reference documents like [GBATEK](https://problemkaputt.de/gbatek.htm) and [CowBite Spec](http://www.cs.rit.edu/~tjh8300/CowBite/CowBiteSpec.htm) describe them. The other way is to see them as the elements of a 2x2 matrix which I will refer to as **P**. This is how pretty much all tutorials describe them. These tutorials also give the following matrix for rotation and scaling:
+これらの数値には 2 通りの解釈があります。1 つ目は、それぞれをスプライトや背景のデータに対する個別のオフセットと考えるものです。[GBATEK](https://problemkaputt.de/gbatek.htm) や [CowBite Spec](http://www.cs.rit.edu/~tjh8300/CowBite/CowBiteSpec.htm) のようなリファレンス文書は、この形で説明しています。もう 1 つは、これらを 2x2 行列の要素と見なすもので、この行列を **P** と呼ぶことにします。ほとんどすべてのチュートリアルは、こちらの形で説明しています。そして、そうしたチュートリアルは回転と拡大縮小の行列として次のものを挙げています。
 
 <math id="eq:incorrect_transform_matrix" class="block">
     <mo>(</mo>
@@ -46,14 +46,14 @@ There are two ways of interpreting these numbers. The first is to think of each 
     </mrow>
 </math>
 
-Now, this is indeed a rotation and scale matrix. Unfortunately, it's also the <span class="rem">wrong one</span>! Or at least, it probably does not do what you'd expect. For example, consider the case with a scaling of <math><msub><mi>s</mi><mi>x</mi></msub></math> = 1.5, <math><msub><mi>s</mi><mi>y</mi></msub></math> = 1.0 and a rotation of α= 45. You'd probably expect something like {@fig:rotatescale}a, but what you'd actually get is {@fig:rotatescale}b. The sprite has rotated, but in the wrong direction, it has shrunk rather than expanded and there's an extra shear as well. Of course, you can always say that you meant for this to happen, but that's probably not quite true.
+たしかにこれは回転と拡大縮小の行列です。残念ながら、これは<span class="rem">間違った行列</span>でもあるのです！ 少なくとも、おそらくあなたの期待どおりには動きません。たとえば、<math><msub><mi>s</mi><mi>x</mi></msub></math> = 1.5、<math><msub><mi>s</mi><mi>y</mi></msub></math> = 1.0 の拡大縮小と、α= 45 の回転を考えてみましょう。おそらく {@fig:rotatescale}a のようなものを期待するでしょうが、実際に得られるのは {@fig:rotatescale}b です。スプライトは回転していますが向きが逆で、拡大ではなく縮小されており、さらに余計なせん断までかかっています。もちろん「こうなるのを狙っていた」と言い張ることはいつでもできますが、たぶんそれは本当ではないでしょう。
 
 <div style="display: flex; margin: 20px">
 <div class="cpt" style="width:160px;">
 
 <img src="./img/affine/metr_rs_good.png" id="fig:rotatescale">  
 
-**{*@fig:rotatescale}a**: when you say ‘rotate and scale’, you probably expect this…
+**{*@fig:rotatescale}a**: 「回転して拡大縮小」と言うとき、おそらく期待するのはこれでしょう…
 
 </div>
 &nbsp;
@@ -61,27 +61,27 @@ Now, this is indeed a rotation and scale matrix. Unfortunately, it's also the <s
 <img src="./img/affine/metr_rs_bad.png" id="fig:rotatescale">  
 
 
-**{*@fig:rotatescale}b**: but with **P** from {@eq:incorrect_transform_matrix}, this is what you get.
+**{*@fig:rotatescale}b**: しかし {@eq:incorrect_transform_matrix} の **P** を使うと、こうなります。
 </div>
 </div>
 
-Unfortunately, there is a lot of incorrect or misleading information on the transformation matrix around; the matrix of {@eq:incorrect_transform_matrix} is just one aspect of it. This actually starts with the moniker “Rot/Scale”, which does not fit with what actually occurs, continues with the fact that the terms used are never properly defined and that most people often just copy-paste from others without even considering checking whether the information is correct or not. The irony is that the principle reference document, GBATEK, gives the correct descriptions of each of the elements, but somehow it got lost in the translation to matrix form in the tutorials.
+残念ながら、変換行列については間違った情報や誤解を招く情報がたくさん出回っています。{@eq:incorrect_transform_matrix} の行列は、その一例にすぎません。そもそも「Rot/Scale」という呼び名からして実際に起きることと合っていませんし、使われる用語がきちんと定義されることもなく、しかも多くの人は情報が正しいかどうか確かめようともせずに、他人の説明をそのままコピーしてしまいます。皮肉なことに、一番の拠り所であるリファレンス文書の GBATEK は各要素を正しく説明しているのですが、チュートリアルで行列の形に書き直されるときに、なぜかそれが失われてしまったのです。
 
-In this chapter, I'll provide the **correct** interpretation of the **P**-matrix; how the GBA uses it and how to construct one yourself. To do this, though, I'm going into full math-mode. If you don't know your way around vector and matrix calculations you may have some difficulties understanding the finer points of the text. There is an appendix on [linear algebra](matrix.html) for some pointers on this subject.
+この章では、**P** 行列の**正しい**解釈を説明します。GBA がそれをどう使うのか、そして自分でどう組み立てるのかです。ただし、そのために完全に数学モードに入ります。ベクトルや行列の計算に慣れていないと、細かいところを理解するのに少し苦労するかもしれません。この話題の手がかりとして、[線形代数](matrix.html)の付録を用意してあります。
 
-This is going to be a purely theoretical page: you will find nothing that relates directly to sprites or backgrounds here; that's what the next two sections are for. Once again, we will be assisted by the lovely metroid (keep in cold storage for safe use). Please mind the direction of the y-axis and the angles, and do *not* leave without reading the [finishing up](#sec-finish) paragraph. This contains several key implementation details that will be ignored in the text preceding it, because they will only get in the way at that point.
+このページは純粋に理論の話です。スプライトや背景に直接関係することは何も出てきません。それは次の 2 つの節の役目です。今回もまた、愛らしいメトロイドに手伝ってもらいます（安全に使うため、冷凍保存しておいてください）。y 軸と角度の向きに注意してください。そして、[仕上げ](#sec-finish)の段落は*必ず*読んでください。そこには、実装上の重要な点がいくつも書いてあります。それより前の本文では、話の邪魔になるだけなので、それらの点は無視しています。
 
-:::warning Be wary of documents covering affine parameters
+:::warning アフィンパラメータを扱う文書には気をつけよう
 
-It's true. Pretty much every document I've seen that deals with this subject is problematic in some way. A lot of them give the wrong rotate-scale matrix (namely, the one in {@eq:incorrect_transform_matrix}), or misname and/or misrepresent the matrix and its elements.
+本当です。この話題を扱った文書で私が見たものは、ほとんどすべて何かしら問題を抱えています。多くは間違った回転・拡大縮小行列（つまり {@eq:incorrect_transform_matrix} の行列）を載せているか、行列やその要素の名前や説明を誤っています。
 
 :::
 
-## Texture mapping and affine transformations.
+## テクスチャマッピングとアフィン変換
 
-### General 2D texture mapping
+### 一般的な 2D テクスチャマッピング
 
-What the GBA does to get sprites and tiled backgrounds on screen is very much like texture mapping. So forget about the GBA right now and look at how texture mapping is done. In {@fig:metroid_texture}a, we see a metroid texture. For convenience I am using the standard Cartesian 2D coordinate system (y-axis points up) and have normalised the texture, which means that the right and top side of the texture correspond precisely with the unit-vectors <math><msub><mi>e</mi><mi>x</mi></msub></math> and <math><msub><mi>e</mi><mi>y</mi></msub></math> (which are of length 1). The texture mapping brings **p** (in texture space) to a point **q** (in screen space). The actual mapping is done by a 2×2 matrix **A**:
+GBA がスプライトやタイル背景を画面に出すためにしていることは、テクスチャマッピングにとてもよく似ています。そこで、GBA のことはいったん忘れて、テクスチャマッピングがどう行われるのかを見てみましょう。{@fig:metroid_texture}a は、メトロイドのテクスチャです。便宜上、標準的なデカルト座標系の 2D 座標（y 軸が上向き）を使い、テクスチャを正規化しています。つまり、テクスチャの右辺と上辺は、ちょうど単位ベクトル <math><msub><mi>e</mi><mi>x</mi></msub></math> と <math><msub><mi>e</mi><mi>y</mi></msub></math>（長さは 1）に対応します。テクスチャマッピングは、（テクスチャ空間の）**p** を（画面空間の）点 **q** に移します。実際の写像は、2×2 行列 **A** で行います。
 
 <math class="block">
     <mi>𝗾</mi>
@@ -91,7 +91,7 @@ What the GBA does to get sprites and tiled backgrounds on screen is very much li
     <mi>𝗽</mi>
 </math>
 
-So how do you find **A**? Well, that's actually not that hard. The matrix is formed by lining up the transformed base vectors, which are **u** and **v** (this works in any number of dimensions, btw), so that gives us:
+では、**A** はどうやって求めるのでしょうか？ 実は、そんなに難しくありません。この行列は、変換後の基底ベクトル **u** と **v** を並べてできます（ちなみに、これは何次元でも成り立ちます）。したがって次のようになります。
 
 <math class="block">
     <mi>𝗔</mi>
@@ -116,7 +116,7 @@ So how do you find **A**? Well, that's actually not that hard. The matrix is for
 <div class="cpt" style="width:128px;" markdown>
 <img src="./img/affine/metr_tex.png" id="fig:metroid_texture">  
 
-**{*@fig:metroid_texture}a**: a texture.
+**{*@fig:metroid_texture}a**: テクスチャ。
 </div>
 
 <span style="font-size: 3em; display: inline-flex; flex-direction: column; padding: 10px">
@@ -127,19 +127,19 @@ A <br>
 <div class="cpt" style="width:128px;" markdown>
 <img src="./img/affine/metr_texmapA.png" id="fig:metroid_texture">  
 
-**{*@fig:metroid_texture}b**: a texture mapped
+**{*@fig:metroid_texture}b**: マッピングされたテクスチャ
 </div>
 </div>
 
-A forward texture mapping via affine matrix **A**.
+アフィン行列 **A** による順方向のテクスチャマッピング。
 
-### Affine transformations
+### アフィン変換
 
-The transformations you can do with a 2D matrix are called <dfn>[affine](https://en.wikipedia.org/wiki/Affine_geometry)</dfn> transformations. The technical definition of an affine transformation is one that preserves parallel lines, which basically means that you can write them as matrix transformations, or that a rectangle will become a parallelogram under an affine transformation (see {@fig:metroid_texture}b).
+2D の行列でできる変換は、<dfn>[アフィン](https://en.wikipedia.org/wiki/Affine_geometry)</dfn>変換と呼ばれます。アフィン変換の技術的な定義は「平行な線を平行なまま保つ変換」です。これは基本的に、行列による変換として書けるということであり、長方形がアフィン変換によって平行四辺形になるということでもあります（{@fig:metroid_texture}b を見てください）。
 
-Affine transformations include rotation and scaling, but *also* shearing. This is why I object to the name “Rot/Scale”: that term only refers to a special case, not the general transformation. It is akin to calling colors shades of red: yes, reds are colors too, but not all colors are reds, and to call them that would give a distorted view of the subject.
+アフィン変換には、回転と拡大縮小だけでなく、せん断*も*含まれます。私が「Rot/Scale」という名前に反対するのはこのためです。この用語は特殊な場合を指しているだけで、一般の変換を指してはいません。これは、色のことを「赤の色合い」と呼ぶようなものです。たしかに赤も色ですが、すべての色が赤というわけではありませんし、そう呼んでしまうと対象を歪めて捉えることになります。
 
-As I said, there are three basic 2d transformations, though you can always describe one of these in terms of the other two. The transformations are: rotation (**R**), scaling (**S**) and shear (**H**). {*@tbl:transformation_matrices_and_their_inverses} shows what each of the transformations does to the regular metroid sprite. The black axes are the normal base vectors (note that *y* points down!), the blue axes are the transformed base vectors and the cyan variables are the arguments of the transformation. Also given are the matrix and inverse matrix of each transformation. Why? You'll see.
+先ほど述べたように、基本的な 2D の変換は 3 つあります。ただし、どれか 1 つはいつでも残りの 2 つで表せます。その変換とは、回転（**R**）、拡大縮小（**S**）、せん断（**H**）です。{*@tbl:transformation_matrices_and_their_inverses} は、それぞれの変換が普通のメトロイドのスプライトをどう変えるかを示しています。黒い軸は通常の基底ベクトル（*y* が下向きなのに注意！）、青い軸は変換後の基底ベクトル、シアンの変数は変換の引数です。各変換の行列と逆行列も載せてあります。なぜかって？ そのうちわかります。
 
   
 <math id="eq:transformation_matrix_and_inverse" class="block">
@@ -191,14 +191,14 @@ As I said, there are three basic 2d transformations, though you can always descr
     </mrow>
 </math>
 
-{*@tbl:transformation_matrices_and_their_inverses}: transformation matrices and their inverses.
+{*@tbl:transformation_matrices_and_their_inverses}: 変換行列とその逆行列。
 <table id="tbl:transformation_matrices_and_their_inverses" class="table-data">
     <thead>
         <tr>
-            <th>Identity</th>
-            <th>Rotation</th>
-            <th>Scaling</th>
-            <th>Shear</th>
+            <th>恒等変換</th>
+            <th>回転</th>
+            <th>拡大縮小</th>
+            <th>せん断</th>
         </tr>
     </thead>
     <tbody>
@@ -366,7 +366,7 @@ As I said, there are three basic 2d transformations, though you can always descr
     </tbody>
 </table>
 
-We can now use these definitions to find the correct matrix for enlargements by <math><msub><mi>s</mi><mi>x</mi></msub></math> and <math><msub><mi>s</mi><mi>y</mi></msub></math>, followed by a **counter-clockwise** rotation by α (=−θ), by matrix multiplication.
+これらの定義を使えば、<math><msub><mi>s</mi><mi>x</mi></msub></math> と <math><msub><mi>s</mi><mi>y</mi></msub></math> による拡大のあとに α（=−θ）による**反時計回り**の回転をする、正しい行列を行列の積で求められます。
 
 <math id="eq:inverse_transform" class="block">
     <mo>(</mo>
@@ -395,57 +395,57 @@ We can now use these definitions to find the correct matrix for enlargements by 
     </mrow>
 </math>
 
-… ermm, wait a sec … I'm having this strange sense of déja-vu here …
+…えーと、ちょっと待ってください…なんだか妙な既視感が…
 
-:::note Clockwise vs counterclockwise
+:::note 時計回りと反時計回り
 
-It's a minor issue, but I have to mention it. If the definition of **R** uses a clockwise rotation, why am I suddenly using a counter-clockwise one? Well, traditionally **R** is given as that particular matrix, in which the angle runs from the x-axis towards the y-axis. Because *y* is downward, this comes down to clockwise. However, the affine routines in BIOS use a counter-clockwise rotation, and I thought it'd be a good idea to use that as a guideline for my functions.
-
-:::
-
-:::note Nomenclature: Affine vs Rot/Scale
-
-The matrix **P** is not a rotation matrix, not a scaling matrix, but a general affine transformation matrix. Rotation and scaling may be what the matrix is mostly used for, but that does not mean they're the only things possible, as the term ‘Rot/Scale’ would imply.
-
-To set them apart from regular backgrounds and sprites, I suppose ‘Rotation’ or ‘Rot/Scale’ are suitable enough, just not entirely accurate. However, calling the **P**-matrix by those names is simply wrong.
+細かい話ですが、触れておかなければなりません。**R** の定義が時計回りの回転なのに、なぜ急に反時計回りを使うのでしょうか？ 実は、**R** は伝統的にあの形の行列で表され、その角度は x 軸から y 軸に向かって進みます。*y* が下向きなので、これは時計回りになります。しかし、BIOS のアフィン関数は反時計回りの回転を使っているので、私の関数でもそれを指針にするのがよいと考えたのです。
 
 :::
 
-## “Many of the truths we cling to depend greatly upon our own point of view.”
+:::note 用語: Affine と Rot/Scale
+
+行列 **P** は回転行列でも拡大縮小行列でもなく、一般的なアフィン変換の行列です。この行列は主に回転と拡大縮小に使われるかもしれませんが、だからといって、「Rot/Scale」という用語が示すように、それしかできないわけではありません。
+
+通常の背景やスプライトと区別するためなら、「Rotation」や「Rot/Scale」でも、完全に正確ではないにせよ十分だと思います。しかし、**P** 行列をそうした名前で呼ぶのは、単純に間違いです。
+
+:::
+
+## 「我々が信じている真実の多くは、自分自身の物の見方次第なのじゃ。」
 
 <div class="cpt_fr" style="width:160px">
 
 <img src="./img/affine/metr_texmapA.png" id="fig:human_pov">  
 
-**{*@fig:human_pov}**: Mapping process as seen by humans. **u** and **v** are the columns of **A** (in screen space).
+**{*@fig:human_pov}**: 人間から見た写像の過程。**u** と **v** は（画面空間での）**A** の列です。
 
 </div>
 
-As you must have noticed, {@eq:inverse_transform} is identical to {@eq:incorrect_transform_matrix}, which I said was incorrect. So what gives? Well, if you enter this matrix into the `pa-pd` elements you do indeed get something different than what you'd expect. Only now I've proven what you were supposed to expect in the first place (namely a scaling by <math><msub><mi>s</mi><mi>x</mi></msub></math> and <math><msub><mi>s</mi><mi>y</mi></msub></math>, followed by a counter-clockwise rotation by α). The *real* question is of course, why doesn't this work? To answer this I will present two different approaches to the 2D mapping process.
+お気づきのとおり、{@eq:inverse_transform} は、私が間違いだと言った {@eq:incorrect_transform_matrix} とまったく同じです。いったいどういうことでしょうか？ たしかに、この行列を `pa-pd` の要素に入れると、期待とは違うものが得られます。ただし今回は、そもそも何を期待すべきだったのか（つまり、<math><msub><mi>s</mi><mi>x</mi></msub></math> と <math><msub><mi>s</mi><mi>y</mi></msub></math> による拡大縮小のあとに、α による反時計回りの回転）を、きちんと証明しました。*本当の*問題はもちろん、なぜこれがうまくいかないのか、です。これに答えるために、2D の写像の過程について 2 つの異なる見方を紹介します。
 
-### Human point of view
+### 人間の視点
 
-“Hello, I am Cearn's brain. I grok geometry and can do matrix- transformations in my head. Well, his head actually. When it comes to texture mapping I see the original map (in texture space) and then visualize the transformation. I look at the original map and look at where the map's pixels end up on screen. The transformation matrix for this is **A**, which ties texel **p** to screen pixel **q** via **q**= **A · p**. The columns of **A** are simply the transformed unit matrices. Easy as π.”
+「こんにちは、Cearn の脳です。私は幾何学を理解していて、行列の変換を頭の中でできます。まあ、正確には彼の頭の中ですが。テクスチャマッピングでは、元のマップ（テクスチャ空間にあるもの）を見て、それから変換を思い描きます。元のマップを見て、マップのピクセルが画面上のどこに行き着くかを見るのです。このための変換行列が **A** で、**q**= **A · p** によってテクセル **p** を画面のピクセル **q** に結びつけます。**A** の列は、単に変換後の単位ベクトルです。π のように簡単です。」
 
-### Computer point of view
+### コンピュータの視点
 
 <div class="cpt_fr" style="width:160px">
 
 <img src="./img/affine/metr_texmapB.png" id="fig:comp_pov">  
 
-**{*@fig:comp_pov}**: Mapping process as seen by computers. **u** and **v** (in texture space) are the columns of **B** and are mapped to the principle axes in screen space.
+**{*@fig:comp_pov}**: コンピュータから見た写像の過程。（テクスチャ空間での）**u** と **v** は **B** の列で、画面空間の主軸に写されます。
 
 </div>
 
-“Hello, I am Cearn's GBA. I'm a lean, mean gaming machine that fits in your pocket, and I can push pixels like no one else. Except perhaps my owner's GeForce 4 Ti4200, the bloody show-off. Anyway, one of the things I do is texture mapping. And not just ordinary texture-mapping, I can do cool stuff like rotation and scaling as well. What I do is fill pixels, all I need to know is for you to tell me where I should get the pixel's color from. In other words, to fill screen pixel **q**, I need a matrix **B** that gives me the proper texel **p** via **p = B · q**. I'll happily use any matrix you give me; I have complete confidence in your ability to supply me with the matrix for the transformation you require.”
+「こんにちは、Cearn の GBA です。ポケットに収まる、無駄のない凶悪なゲームマシンで、ピクセルを押し出すことにかけては誰にも負けません。まあ、持ち主の GeForce 4 Ti4200 は別かもしれませんが、あの見せびらかし屋め。それはともかく、私の仕事の 1 つがテクスチャマッピングです。それも普通のテクスチャマッピングではなく、回転や拡大縮小のようなかっこいいこともできます。私がするのはピクセルを埋めることです。私が知る必要があるのは、ピクセルの色をどこから取ってくればいいのか、それだけです。言い換えると、画面のピクセル **q** を埋めるには、**p = B · q** で正しいテクセル **p** を教えてくれる行列 **B** が必要です。どんな行列を渡されても喜んで使います。あなたが望む変換の行列をちゃんと用意してくれると、全面的に信頼していますから。」
 
-### Resolution
+### 結論
 
-I hope you spotted the crucial difference between the two points of view. **A** maps *from* texture space *to* screen space, while **B** does the exact opposite (i.e., <math><mi>𝗕</mi><mo>=</mo><msup><mi>𝗔</mi><mn>-1</mn></msup></math>). I think you know which one you should give the GBA by now. That's right: **P = B**, not **A**. This one bit of information is the crucial piece of the affine matrix puzzle.
+2 つの視点の決定的な違いに気づいたでしょうか。**A** はテクスチャ空間*から*画面空間*へ*写しますが、**B** はちょうどその逆です（つまり <math><mi>𝗕</mi><mo>=</mo><msup><mi>𝗔</mi><mn>-1</mn></msup></math>）。GBA にどちらを渡すべきか、もうわかりますね。そうです。**P = B** であって、**A** ではありません。この 1 つの情報こそが、アフィン行列のパズルを解く決定的なピースなのです。
 
-So now you can figure out **P**'s elements in two ways. You can stick to the human POV and invert the matrix at the end. That's why I gave you the inverses of the affine transformations as well. You could also try to see things in the GBA's way and get the right matrix directly. Tonc's main affine functions (<i>tonc_video.h</i>, <i>tonc_obj_affine.c</i> and <i>tonc_bg_affine.c</i>) do things the GBA way, setting **P** directly; but inverted functions are also available using an "`_inv`" affix. Mind you, these are a little slower. Except for when scaling is involved; then it's a *lot* slower.
+ですから、**P** の要素は 2 通りの方法で求められます。人間の視点のまま考えて、最後に行列を逆行列にする方法。アフィン変換の逆行列も載せておいたのはこのためです。あるいは、GBA の見方で物事を捉えて、正しい行列を直接求める方法もあります。Tonc の主なアフィン関数（<i>tonc_video.h</i>、<i>tonc_obj_affine.c</i>、<i>tonc_bg_affine.c</i>）は GBA の方法で **P** を直接設定しますが、"`_inv`" という接尾辞の付いた逆方向の関数も用意しています。ただし、こちらは少し遅くなります。拡大縮小がからむ場合は別で、その場合は*ずっと*遅くなります。
 
-In case you're curious, the proper matrix for scale by (<math><msub><mi>s</mi><mi>x</mi></msub></math>, <math><msub><mi>s</mi><mi>y</mi></msub></math>) and counter-clockwise rotation by α is:
+気になる人のために書いておくと、(<math><msub><mi>s</mi><mi>x</mi></msub></math>, <math><msub><mi>s</mi><mi>y</mi></msub></math>) による拡大縮小と、α による反時計回りの回転の正しい行列は次のとおりです。
 
 <math class="block">
     <mi>𝗔</mi>
@@ -489,7 +489,7 @@ In case you're curious, the proper matrix for scale by (<math><msub><mi>s</mi><m
     </mtable>
 </math>
 
-Using the inverse matrices given earlier, we find
+先ほどの逆行列を使うと、次のようになります。
 
 <math id="eq:correct_matrix" class="block">
     <mo>(</mo>
@@ -550,36 +550,36 @@ Using the inverse matrices given earlier, we find
 </math>
 
 <div class="note" markdown>
-Just to make it perfectly clear:
+念のため、はっきりさせておきます。
 
-The affine matrix **P** maps from screen space *to* texture space, not the other way around!
+アフィン行列 **P** は画面空間からテクスチャ空間*へ*写すのであって、その逆ではありません！
 
-In other words:  
+言い換えると:  
 
-&nbsp;<math><msub><mi>p</mi><mi>a</mi></msub></math>: texture *x*-increment / pixel
+&nbsp;<math><msub><mi>p</mi><mi>a</mi></msub></math>: ピクセルあたりのテクスチャの *x* の増分
 
-&nbsp;<math><msub><mi>p</mi><mi>b</mi></msub></math>: texture *x*-increment / scanline
+&nbsp;<math><msub><mi>p</mi><mi>b</mi></msub></math>: スキャンラインあたりのテクスチャの *x* の増分
 
-&nbsp;<math><msub><mi>p</mi><mi>c</mi></msub></math>: texture *y*-increment / pixel
+&nbsp;<math><msub><mi>p</mi><mi>c</mi></msub></math>: ピクセルあたりのテクスチャの *y* の増分
 
-&nbsp;<math><msub><mi>p</mi><mi>d</mi></msub></math>: texture *y*-increment / scanline
+&nbsp;<math><msub><mi>p</mi><mi>d</mi></msub></math>: スキャンラインあたりのテクスチャの *y* の増分
 </div>
 
-## Finishing up {#sec-finish}
+## 仕上げ {#sec-finish}
 
-Knowing what the **P**-matrix is used for is one thing, knowing how to use them properly is another. There are three additional points you need to remember when you're going to deal with affine objects/backgrounds and the affine matrices.
+**P** 行列が何に使われるのかを知ることと、それを正しく使う方法を知ることは別の話です。アフィンのオブジェクトや背景、アフィン行列を扱うときに覚えておくべき点が、さらに 3 つあります。
 
-1.  Datatypes
-2.  Luts
-3.  Initialisation
+1.  データ型
+2.  ルックアップテーブル
+3.  初期化
 
-### Data types of affine elements
+### アフィンの要素のデータ型
 
-Affine transformations are part of mathematics and, generally speaking, math numbers will be real numbers. That is to say, floating point numbers. However, if you were to use floating points for the **P** elements, you'd be in for two rude surprises.
+アフィン変換は数学の一部であり、一般的に言って、数学の数は実数です。つまり浮動小数点数です。しかし、**P** の要素に浮動小数点数を使おうとすると、2 つの手痛い驚きが待っています。
 
-The first one is that the matrix elements are not floats, but integers. The reason behind this is that <span class="ack">the GBA has no floating point unit!</span> All floating-point operations have to be done in software and without an FPU, that's going to be pretty slow. Much slower than integer math, at any rate. Now, when you think about this, it does create some problems with precision and all that. For example, the (co)sine and functions have a range between −1 and 1, a range which isn't exactly large when it comes to integers. However, the range would be much greater if one didn't count in units of 1, but in fractions, say in units of 1/256. The \[−1, +1\] range then becomes \[−256, +256\],
+1 つ目は、行列の要素が浮動小数点数ではなく整数だということです。その理由は、<span class="ack">GBA には浮動小数点演算ユニットがないから</span>です！ 浮動小数点の演算はすべてソフトウェアで行わなければならず、FPU なしではかなり遅くなります。いずれにせよ、整数の演算よりはずっと遅いです。さて、こう考えると、精度などの問題がいくつか出てきます。たとえば、サイン・コサインの関数の値域は −1 から 1 で、整数にとってはあまり広いとは言えない範囲です。しかし、1 単位ではなく、たとえば 1/256 単位のような分数で数えれば、範囲はずっと広くなります。すると \[−1, +1\] の範囲は \[−256, +256\] になります。
 
-This strategy of representing real numbers with scaled integers is known as <dfn>fixed point arithmetic</dfn>, which you can read more about in [this appendix](fixed.html) and on [wikipedia](https://en.wikipedia.org/wiki/Fixed-point_arithmetic). The GBA makes use of fixed point for its affine parameters, but you can use it for other things as well. The **P**-matrix elements are 8.8 fixed point numbers, meaning a halfword with 8 integer bits and 8 fractional bits. To set a matrix to identity (1s on the diagonals, 0s elsewhere), you wouldn't use this:
+実数をスケールした整数で表すこの方法は、<dfn>固定小数点演算</dfn>と呼ばれます。詳しくは[こちらの付録](fixed.html)や [Wikipedia](https://en.wikipedia.org/wiki/Fixed-point_arithmetic) を読んでください。GBA はアフィンパラメータに固定小数点を使いますが、ほかのことにも使えます。**P** 行列の要素は 8.8 の固定小数点数です。つまり、整数部 8 ビットと小数部 8 ビットのハーフワードです。行列を単位行列（対角成分が 1、それ以外が 0）にするには、次のようには書かず、
 
 ```c
     // Floating point == Bad!!
@@ -587,7 +587,7 @@ This strategy of representing real numbers with scaled integers is known as <dfn
     pb= pc= 0.0;
 ```
 
-but this:
+次のように書きます。
 
 ```c
     // .8 Fixed-point == Good
@@ -595,27 +595,27 @@ but this:
     pb= pc= 0;
 ```
 
-In a fixed point system with *Q* fractional bits, ‘1’ (‘one’) is represented by <math><msup><mn>2</mn><mi>Q</mi></msup></math> or 1<<*Q*, because simply that's how fractions work.
+小数部が *Q* ビットの固定小数点の体系では、「1」は <math><msup><mn>2</mn><mi>Q</mi></msup></math>、つまり 1<<*Q* で表されます。単純に、分数とはそういうものだからです。
 
-Now, fixed point numbers are still just integers, but there are different types of integers, and it is important to use the right ones. 8.8f are 16bit variables, so the logical choice there is `short`. However, this should be a *signed* short: `s16`, not `u16`. Sometimes is doesn't matter, but if you want to do any arithmetic with them they'd better be signed. Remember that internally the CPU works in words, which are 32bit, and the 16bit variable will be converted to that. You really want, say, a 16bit "−1" (`0xFFFF`) to turn into a 32bit "−1" (`0xFFFFFFFF`), and not "65535" (`0x0000FFFF`), which is what happens if you use unsigned shorts. Also, when doing fixed point math, it is recommended to use signed ints (the 32bit kind) for them, anything else will slow you down and you might get overflow problems as well.
+さて、固定小数点数も結局はただの整数ですが、整数にもいろいろな型があり、正しい型を使うことが大事です。8.8f は 16 ビットの変数なので、`short` を選ぶのが自然です。ただし、これは*符号付き*の short、つまり `u16` ではなく `s16` にするべきです。どちらでもかまわない場合もありますが、算術演算をするなら符号付きにしたほうがよいでしょう。CPU は内部では 32 ビットのワード単位で動いていて、16 ビットの変数はそれに変換されることを思い出してください。たとえば 16 ビットの "−1"（`0xFFFF`）は 32 ビットの "−1"（`0xFFFFFFFF`）になってほしいはずで、符号なしの short を使うと起きてしまう "65535"（`0x0000FFFF`）にはなってほしくないはずです。また、固定小数点の計算をするときは、符号付きの int（32 ビットのもの）を使うことをおすすめします。それ以外の型を使うと遅くなりますし、オーバーフローの問題が起きるかもしれません。
 
   
 
-:::tip Use 32-bit signed ints for affine temporaries
+:::tip アフィンの一時変数には 32 ビットの符号付き int を使おう
 
-Of course you should use 32bit variables for everything anyway (unless you actually *want* your code to bloat and slow down). If you use 16bit variables (`short` or `s16`), not only will your code be slower because of all the extra instructions that are added to keep the variables 16bit, but overflow problems can occur much sooner.
+もちろん、どのみちすべてに 32 ビットの変数を使うべきです（コードを肥大させて遅くしたいのでない限り）。16 ビットの変数（`short` や `s16`）を使うと、変数を 16 ビットに保つための余分な命令が追加されるのでコードが遅くなるだけでなく、オーバーフローの問題もずっと早く起きる可能性があります。
 
-Only in the final step to hardware should you go to 8.8 format. Before that, use the larger types for both speed and accuracy.
+8.8 形式にするのは、ハードウェアに渡す最後の段階だけにしましょう。それまでは、速度と精度の両方のために、大きな型を使ってください。
 
 :::
 
-### LUTs {#sec-luts}
+### ルックアップテーブル {#sec-luts}
 
-So fixed point math is used because floating point math is just to slow for efficient use. That's all fine and good for your own math, but what about mathematical functions like sin() and cos()? Those are still floating point internally (even worse, *`double`s*!), so those are going to be ridiculously slow.
+固定小数点演算を使うのは、浮動小数点演算が効率よく使うには遅すぎるからです。自分で書く計算ならそれで十分ですが、sin() や cos() のような数学関数はどうでしょうか？ これらは内部ではやはり浮動小数点（さらに悪いことに *`double`*！）なので、とんでもなく遅くなります。
 
-Rather than using the functions directly, we'll use a time-honored tradition to weasel our way out of using costly math functions: we're going to build a <dfn>look-up table</dfn> (LUT) containing the sine and cosine values. There are a number of ways to do this. If you want an easy strategy, you can just declare two arrays of 360 8.8f numbers and fill them at initialization of your program. However, this is a poor way of doing things, for reasons explained in the [section on LUTs](fixed.html#sec-lut) in the appendix.
+関数を直接使う代わりに、コストの高い数学関数を使わずに済ませる昔ながらの方法を使います。サインとコサインの値を収めた<dfn>ルックアップテーブル</dfn>（LUT）を作るのです。作り方はいくつかあります。簡単な方法がよければ、360 個の 8.8f の数値の配列を 2 つ宣言して、プログラムの初期化時に埋めればよいでしょう。しかしこれは良くないやり方で、その理由は付録の [LUT の節](fixed.html#sec-lut)で説明しています。
 
-Tonclib has a single sine lut which can be used for both sine and cosine values. The lut is called `sin_lut`, a `const short` array of 512 4.12f entries (12 fractional bits), created by my [excellut](http://www.coranac.com/projects/#excellut) lut creator. In <i>tonc_math.h</i> you can find two inline functions that retrieve sine and cosine values:
+Tonclib には、サインとコサインの両方に使えるサインのテーブルが 1 つだけあります。このテーブルは `sin_lut` という名前で、512 個の 4.12f（小数部 12 ビット）のエントリを持つ `const short` の配列です。私の LUT 作成ツール [excellut](http://www.coranac.com/projects/#excellut) で作ったものです。<i>tonc_math.h</i> には、サインとコサインの値を取り出す 2 つのインライン関数があります。
 
 ```c
 //! Look-up a sine and cosine values
@@ -630,27 +630,27 @@ INLINE s32 lu_cos(uint theta)
 {   return sin_lut[((theta>>7)+128)&0x1FF];     }
 ```
 
-Now, note the angle range: 0-10000h. Remember you don't *have* to use 360 degrees for a circle; in fact, on computers it's better to divide the circle in a power of two instead. In this case, the angle is in 2<sup>16</sup> parts for compatibility with BIOS functions, which is brought down to a 512 range inside the look-up functions.
+ここで、角度の範囲に注意してください。0-10000h です。円を 360 度に分ける*必要は*ないことを思い出してください。実際、コンピュータでは円を 2 の累乗で分けたほうがよいのです。ここでは、BIOS の関数との互換性のために角度は 2<sup>16</sup> 分割になっていて、ルックアップ関数の中で 512 の範囲に落とされます。
 
-### Initialization
+### 初期化
 
-When flagging a background or object as affine, you *must* enter at least some values into `pa-pd`. Remember that these are zeroed out by default. A zero-offset means it'll use the first pixel for the whole thing. If you get a single-colored background or sprite, this is probably why. To avoid this, set **P** to the identity matrix or any other non-zero matrix.
+背景やオブジェクトをアフィンに設定したら、`pa-pd` に少なくとも何らかの値を入れ*なければなりません*。これらはデフォルトでゼロになっていることを思い出してください。オフセットがゼロだと、全体に最初のピクセルが使われてしまいます。背景やスプライトが単色になってしまったら、おそらくこれが原因です。これを避けるには、**P** を単位行列か、ゼロでないほかの行列にしておきましょう。
 
-## Tonc's affine functions
+## Tonc のアフィン関数
 
-Tonclib contains a number of functions for manipulating the affine parameters of objects and backgrounds, as used by the `OBJ_AFFINE` and `BG_AFFINE` structs. Because the affine matrix is stored differently in both structs you can't set them with the same function, but the functionality is the same. In {@tbl:affine_functions} you can find the basic formats and descriptions; just replace *foo* with `obj_aff` or `bg_aff` and *FOO* with `OBJ` or `BG` for objects and backgrounds, respectively. The functions themselves can be found in <i>tonc_obj_affine.c</i> for objects, <i>tonc_bg_affine.c</i> for backgrounds, and inlines for both in `tonc_video.h` … somewhere.
+Tonclib には、`OBJ_AFFINE` 構造体と `BG_AFFINE` 構造体で使われる、オブジェクトや背景のアフィンパラメータを操作するための関数がいくつかあります。アフィン行列の格納のされ方が両者で違うので同じ関数では設定できませんが、機能は同じです。{@tbl:affine_functions} に基本的な形と説明を載せてあります。オブジェクトなら *foo* を `obj_aff` に、*FOO* を `OBJ` に、背景なら `bg_aff` と `BG` にそれぞれ置き換えてください。関数そのものは、オブジェクト用は <i>tonc_obj_affine.c</i>、背景用は <i>tonc_bg_affine.c</i> にあり、両方のインライン関数は `tonc_video.h` の…どこかにあります。
 
 <table class="cblock table-data" id="tbl:affine_functions">
     <thead>
         <tr>
-            <th>Function</th>
-            <th>Description</th>
+            <th>関数</th>
+            <th>説明</th>
         </tr>
     </thead>
     <tbody>
         <tr>
             <td>void <i>foo</i>_copy(FOO_AFFINE *dst, const FOO_AFFINE *src, uint count);</td>
-            <td>Copy affine parameters</td>
+            <td>アフィンパラメータをコピーする</td>
         </tr>
         <tr>
             <td>void <i>foo</i>_identity(FOO_AFFINE *oaff);</td>
@@ -662,43 +662,43 @@ Tonclib contains a number of functions for manipulating the affine parameters of
         </tr>
         <tr>
             <td>void <i>foo</i>_premul(FOO_AFFINE *dst, const FOO_AFFINE *src);</td>
-            <td>Pre-multiply: <math><mi>D</mi><mo>=</mo><mi>S</mi><mo>&middot;</mo><mi>D</mi></math></td>
+            <td>左から掛ける: <math><mi>D</mi><mo>=</mo><mi>S</mi><mo>&middot;</mo><mi>D</mi></math></td>
         </tr>
         <tr>
             <td>void <i>foo</i>_rotate(FOO_AFFINE *aff, u16 alpha);</td>
-            <td>Rotate counter-clockwise by α·π/8000h.</td>
+            <td>α·π/8000h だけ反時計回りに回転する。</td>
         </tr>
         <tr>
             <td>void <i>foo</i>_rotscale(FOO_AFFINE *aff, FIXED sx, FIXED sy, u16 alpha);</td>
-            <td>Scale by <math><mfrac><mn>1</mn><msub><mi>s</mi><mi>x</mi></msub></mfrac></math> and <math><mfrac><mn>1</mn><msub><mi>s</mi><mi>y</mi></msub></mfrac></math>, then rotate counter-clockwise by α·π/8000h.</td>
+            <td><math><mfrac><mn>1</mn><msub><mi>s</mi><mi>x</mi></msub></mfrac></math> と <math><mfrac><mn>1</mn><msub><mi>s</mi><mi>y</mi></msub></mfrac></math> で拡大縮小してから、α·π/8000h だけ反時計回りに回転する。</td>
         </tr>
         <tr>
             <td>void <i>foo</i>_rotscale2(FOO_AFFINE *aff, const AFF_SRC *as);</td>
-            <td>As <code><i>foo</i>_rotscale()</code>, but input stored in an <code>AFF_SRC</code> struct.</td>
+            <td><code><i>foo</i>_rotscale()</code> と同じだが、入力は <code>AFF_SRC</code> 構造体に格納する。</td>
         </tr>
         <tr>
             <td>void <i>foo</i>_scale(FOO_AFFINE *aff, FIXED sx, FIXED sy);</td>
-            <td>Scale by <math><mfrac><mn>1</mn><msub><mi>s</mi><mi>x</mi></msub></mfrac></math> and <math><mfrac><mn>1</mn><msub><mi>s</mi><mi>y</mi></msub></mfrac></math></td>
+            <td><math><mfrac><mn>1</mn><msub><mi>s</mi><mi>x</mi></msub></mfrac></math> と <math><mfrac><mn>1</mn><msub><mi>s</mi><mi>y</mi></msub></mfrac></math> で拡大縮小する</td>
         </tr>
         <tr>
             <td>void <i>foo</i>_set(FOO_AFFINE *aff, FIXED pa, FIXED pb, FIXED pc, FIXED pd);</td>
-            <td>Set P's elements</td>
+            <td>P の要素を設定する</td>
         </tr>
         <tr>
             <td>void <i>foo</i>_shearx(FOO_AFFINE *aff, FIXED hx);</td>
-            <td>Shear top-side right by <math><msub><mi>h</mi><mi>x</mi></msub></math></td>
+            <td>上辺を <math><msub><mi>h</mi><mi>x</mi></msub></math> だけ右にせん断する</td>
         </tr>
         <tr>
             <td>void <i>foo</i>_sheary(FOO_AFFINE *aff, FIXED hy);</td>
-            <td>Shear left-side down by <math><msub><mi>h</mi><mi>y</mi></msub></math></td>
+            <td>左辺を <math><msub><mi>h</mi><mi>y</mi></msub></math> だけ下にせん断する</td>
         </tr>
     </tbody>
 </table>
-**{*@tbl:affine_functions}**: affine functions
+**{*@tbl:affine_functions}**: アフィン関数
 
-### Sample rot/scale function
+### 回転・拡大縮小関数の例
 
-My code for a object version of the scale-then-rotate function (à la {@eq:correct_matrix}) is given below. Note that it is from the computer's point of view, so that `sx` and `sy` scale down. Also, the alpha `alpha` uses 10000h/circle (i.e., the unit of α is π/8000h = 0.096 mrad, or 180/8000h = 0.0055°) and the sine lut is in .12f format, which is why the shifts by 12 are required. The background version is identical, except in name and type. If this were C++, templates would have been mighty useful here.
+（{@eq:correct_matrix} のような）拡大縮小してから回転する関数の、オブジェクト版の私のコードを以下に示します。これはコンピュータの視点で書かれているので、`sx` と `sy` は縮小する方向に効くことに注意してください。また、角度 `alpha` は 1 周を 10000h とする単位を使っていて（つまり α の単位は π/8000h = 0.096 mrad、または 180/8000h = 0.0055°）、サインのテーブルは .12f 形式なので、12 ビットのシフトが必要です。背景版は、名前と型以外はまったく同じです。もしこれが C++ なら、テンプレートがとても役に立ったでしょう。
 
 ```c
 void obj_aff_rotscale(OBJ_AFFINE *oaff, int sx, int sy, u16 alpha)
@@ -710,6 +710,6 @@ void obj_aff_rotscale(OBJ_AFFINE *oaff, int sx, int sy, u16 alpha)
 }
 ```
 
-With the information in this chapter, you know most of what you need to know about affine matrices, starting with why they should be referred to *affine* matrices, rather than merely rotation or rot/scale or the other names you might see elsewhere. You should now know what the thing actually does, and how you can set up a matrix for the effects you want. You should also know a little bit about fixed point numbers and luts (for more, look in the [appendices](fixed.html)) and why they're Good Things; if it hadn't been clear before, you should be aware that the choice of the data types you use actually *matters*, and you should not just use the first thing that comes along.
+この章の内容で、アフィン行列について知っておくべきことのほとんどがわかったはずです。まず、なぜこれを単なる回転行列や rot/scale 行列など、よそで見かけるほかの名前ではなく、*アフィン*行列と呼ぶべきなのか。そして、この行列が実際に何をするのか、望む効果のための行列をどう組み立てるのか。固定小数点数とルックアップテーブルについても少しわかったでしょうし（詳しくは[付録](fixed.html)を見てください）、なぜそれらが良いものなのかもわかったはずです。それまで明らかでなかったなら、使うデータ型の選択が実際に*重要*であり、最初に思いついたものをそのまま使うべきではないことにも気づいたはずです。
 
-What has not been discussed here is how you actually set-up objects and backgrounds to use affine transformation, which is what the next two chapters are for. For more on affine transformations, try searching for ‘linear algebra’
+ここで説明していないのは、オブジェクトや背景を実際にアフィン変換を使うように設定する方法です。それは次の 2 つの章で扱います。アフィン変換についてさらに知りたければ、「linear algebra（線形代数）」で検索してみてください。
