@@ -1,40 +1,40 @@
-# 22. Tonc's Text Engine
+# 22. Tonc のテキストエンジン
 
 <!-- toc -->
 
-## Introduction {#sec-intro}
+## はじめに {#sec-intro}
 
-The [other page on text](text.html) described how you could get text on backgrounds and objects. It worked, but there were several limitations. For instance, it was limited to 8×8 fonts, didn't support all video modes and had no formatted text capabilities.
+[テキストについてのもう 1 つのページ](text.html)では、背景やオブジェクトに文字を出す方法を説明しました。それで動きはしましたが、制限がいくつもありました。たとえば、8×8 のフォントに限られ、すべてのビデオモードには対応しておらず、書式付きのテキストの機能もありませんでした。
 
-Tonc's Text Engine (TTE) remedies many of these shortcomings. In this chapter I'll describe the goals and basic design of the system and some of the implementation details. In particular, I'll describe how to build writers for use of the different kinds of surfaces. In some cases, I'll optimize the living hell out of them because it is possible for a glyph renderer to take multiple scanlines for a single character if you don't pay attention. And yes, this will be done in assembly.
+Tonc のテキストエンジン（TTE）は、こうした欠点の多くを解消します。この章では、このシステムの目標と基本的な設計、そして実装の細部のいくつかを説明します。特に、いろいろな種類の描画先に使う書き込み処理の作り方を説明します。場合によっては、徹底的に最適化します。注意していないと、グリフの描画処理が 1 文字に何スキャンラインもかかることがあるからです。そして、ええ、それはアセンブリで行います。
 
-I'll also show how you can add some basic scripting to change cursor positions, colors and even fonts dynamically. A few years ago, Wintermute changed the standard C library in devkitARM to make the stdio routines accessible for GBA and NDS. I'll also show how you can make use of this.
+カーソルの位置、色、さらにはフォントまで動的に変えるための、基本的なスクリプトの機能を加える方法も示します。数年前、Wintermute が devkitARM の標準 C ライブラリを変更して、GBA と NDS から stdio のルーチンを使えるようにしました。これを活用する方法も示します。
 
-And, of course, there will be demos. Oh, will there be demos. There are about 10 of them in fact, so I'm going to do things a little bit differently than before: there will be one project containing a menu with all the examples. Not all examples will be shown here because that'd just be too much.
+そしてもちろん、デモがあります。いやもう、デモだらけです。実は 10 個ほどあるので、これまでとは少しやり方を変えます。すべての例をまとめたメニュー付きのプロジェクトを 1 つ用意します。多すぎるので、すべての例をここで示すわけではありません。
 
-Lastly, it is expected that by now you have a decent knowledge of GBA programming, so I'm going to keep the amount of GBA-specific exposition to a minimum. When you see functions used that haven't been covered already, turn to GBATEK, the project's code or libtonc's code for details.
+最後に、ここまで来ればもう GBA のプログラミングについてそれなりの知識があるものとして、GBA 固有の説明は最小限にとどめます。まだ扱っていない関数が使われているのを見かけたら、詳しくは GBATEK、プロジェクトのコード、libtonc のコードを見てください。
 
-## Basic design {#sec-design}
+## 基本の設計 {#sec-design}
 
-### TTE Goals {#ssec-design-goals}
+### TTE の目標 {#ssec-design-goals}
 
-The following list has the things I most wanted in TTE:
+TTE に一番欲しかったものを挙げます。
 
-- **A comprehensive and extensible set of glyph writers, usable for all occasions**. Well _almost_ all occasions. The old system worked for regular backgrounds, bitmap modes and objects, I'm now extending that set to affine backgrounds and tile-rendering. If what you need isn't present in the standard set, you can easily create your own writer and use that one instead. The writer will accept [UTF-8](https://en.wikipedia.org/wiki/UTF-8) strings, meaning you're not limited to 256 characters.
-- **Fonts: arbitrary widths and heights and variable width characters**. Instead of being limited to 8x8@1 glyphs; the standard writers in TTE are able to use fonts of any width and height (within reason: no screen-filling glyphs please) and variable width fonts (again, within reason: VWF for tilemaps makes little sense). In principle, there are possibilities to use arbitrary bitdepths as well, but the standard renderers are limited to 1bpp.
-- **A simple writer-interface independent of surface details**. For the old system I had `m3_puts()`, `se_puts()`, `obj_puts()` and such. This worked, but it meant you had to use something different for the different modes. In TTE, there are different initializers for the different modes to set up the system, and a single string writer `tte_write()` that just works.
-- **Scripting for text parameters**. By that I mean that you can control parameters like position and output color by the strings themselves. The functionality for this is pretty basic, but it works well enough. Note: this is _not_ a full dialog system! That said, it should be possible to build one around it.
-- **`printf()` support**. For rather obvious reasons.
+- **あらゆる場面で使える、網羅的で拡張可能なグリフの書き込み処理のセット**。まあ、_ほぼ_あらゆる場面です。古いシステムは通常の背景、ビットマップモード、オブジェクトで動きました。今回はそれをアフィン背景とタイルへの描画にまで広げます。必要なものが標準のセットになければ、自分の書き込み処理を簡単に作って、代わりにそれを使えます。書き込み処理は [UTF-8](https://en.wikipedia.org/wiki/UTF-8) の文字列を受け付けるので、256 文字に限られることはありません。
+- **フォント: 任意の幅と高さ、可変幅の文字**。8x8@1 のグリフに限られる代わりに、TTE の標準の書き込み処理は、どんな幅と高さのフォントも（常識の範囲内で。画面いっぱいのグリフはやめてください）、可変幅のフォントも（これも常識の範囲内で。タイルマップで可変幅フォントはあまり意味がありません）使えます。原理的には任意のビット深度を使う可能性もありますが、標準の描画処理は 1bpp に限られます。
+- **描画先の詳細に依存しない、単純な書き込みのインターフェース**。古いシステムでは、`m3_puts()`、`se_puts()`、`obj_puts()` などがありました。それで動きはしましたが、モードごとに別のものを使わなければなりませんでした。TTE では、システムを準備するための初期化関数はモードごとに違いますが、文字列の書き込み処理は、とにかく動く `tte_write()` 1 つだけです。
+- **テキストのパラメータのためのスクリプト**。つまり、位置や出力の色のようなパラメータを、文字列そのもので制御できるということです。この機能はかなり基本的なものですが、十分うまく動きます。注意: これは完全な会話システムでは_ありません_！ とはいえ、これを中心にそういうものを作ることはできるはずです。
+- **`printf()` への対応**。理由はかなり明らかでしょう。
 
-### Structures and main components {#ssec-design-items}
+### 構造体と主な部品 {#ssec-design-items}
 
-All the relevant information for TTE is kept gathered in three structs: a <dfn>text context</dfn>, `TTC`; a <dfn>font description</dfn>, `TFont`; and a <dfn> graphic surface description</dfn>, `TSurface`.
+TTE に関係する情報はすべて、3 つの構造体にまとめて保持されます。<dfn>テキストコンテキスト</dfn> `TTC`、<dfn>フォントの記述</dfn> `TFont`、そして<dfn>グラフィックの描画先の記述</dfn> `TSurface` です。
 
-The `TTC` struct contains the main parameters for the engine: information about the surface were rendering to, cursor positions, font information, color attributes and a few other things. It also contains two callbacks for drawing and erasing glyphs.
+`TTC` 構造体には、エンジンの主なパラメータが入っています。描画先についての情報、カーソルの位置、フォントの情報、色の属性、そのほかいくつかのものです。グリフを描いたり消したりするための 2 つのコールバックもあります。
 
-The `TFont` struct has a pointer to the glyph data, glyph/cell dimensions and a few other things. There are also pointers to width and height tables to allow variable width and height fonts. I've hacked a `TFont` creator into [usenti](http://www.coranac.com/projects/#usenti) a while back so that I could easily create these things from standard fonts, but you can also make your own from scratch.
+`TFont` 構造体には、グリフのデータへのポインタ、グリフやセルの寸法、そのほかいくつかのものがあります。可変幅や可変高さのフォントのための、幅と高さの表へのポインタもあります。しばらく前に [usenti](http://www.coranac.com/projects/#usenti) に `TFont` を作る機能をむりやり付け加えたので、標準のフォントからこれらを簡単に作れますが、ゼロから自分で作ることもできます。
 
-The `TSurface` struct actually has nothing to do with text. Instead, it's a struct describing the kind of surface we're rendering on. This can be bitmaps, tiles, tilemaps or whatever. Tonclib has basic pixel, line and rectangle routines for dealing with these surfaces, so I might as well use them.
+`TSurface` 構造体は、実はテキストとは何の関係もありません。描画する先の面（サーフェス）の種類を表す構造体です。ビットマップ、タイル、タイルマップなど何でもかまいません。Tonclib にはこれらの描画先を扱うための基本的なピクセル、線、長方形のルーチンがあるので、それを使わない手はありません。
 
 ```c{#cd-tte-types}
 //# From tonc_tte.h : main TTE types.
@@ -104,41 +104,41 @@ typedef struct TSurface
 } TSurface;
 ```
 
-#### TFont details
+#### TFont の詳細
 
 <div class="cpt_fr" style="width:128px;">
   <img src="img/tte/verdana9.png" id="fig:img-verdana9" width="128" alt="">
   <br>
-  <b>{*@fig:img-verdana9}</b>: Verdana 9 character sheet
+  <b>{*@fig:img-verdana9}</b>: Verdana 9 の文字シート
 </div>
 
-{\*@fig:img-verdana9} shows a character sheet that `TFont` can use. The sheet is a matrix of <dfn>cell</dfn>s and each cell contains a character. The `cellW/H` members are the dimensions of these cells; `cellSize` is the number of bytes per cell.
+{\*@fig:img-verdana9} は、`TFont` で使える文字シートです。シートは<dfn>セル</dfn>の行列で、各セルに 1 文字が入っています。`cellW/H` メンバはこれらのセルの寸法で、`cellSize` はセルあたりのバイト数です。
 
-Each cell has one glyph, but the actual glyphs can be smaller than the cells (white vs magenta parts). This does waste a bit of memory, but it also has several benefits. One of the benefits is that you can use `cellSize` to quickly find the address of any given glyph. Second, because I want by fonts to be usable for both bitmaps _and_ tiles, my glyph boxes would have to be multiples of 8 anyway. Additionally, this particular font will be 1bpp, meaning that even with the wasted parts I'll still have a very low memory footprint (3.5kB).
+各セルには 1 つのグリフがありますが、実際のグリフはセルより小さくてもかまいません（白とマゼンタの部分）。これはメモリを少し無駄にしますが、いくつかの利点もあります。利点の 1 つは、`cellSize` を使って任意のグリフのアドレスをすばやく求められることです。次に、私のフォントはビットマップ_と_タイルの両方で使えるようにしたいので、グリフの枠はどのみち 8 の倍数にする必要があります。さらに、このフォントは 1bpp なので、無駄な部分があっても、メモリの使用量はとても小さく済みます（3.5kB）。
 
-For fixed-width or fixed-height fonts, members `charW` and `charH` denote the actual character width and height. For fonts of variable widths, the `widths` member points to the a byte-array containing the widths of the glyphs and something similar is true for the `heights`. `charOffset` is the (ASCII) character the data starts at. Font sheets often start at a space (' '), so this tends to be 32. `charCount` is the number of characters and can be used if you need to copy the whole sheet to VRAM (like in the case of tile-mapping).
+固定幅や固定高さのフォントでは、メンバ `charW` と `charH` が実際の文字の幅と高さを表します。可変幅のフォントでは、`widths` メンバがグリフの幅を入れたバイトの配列を指し、`heights` についても同じようなことが言えます。`charOffset` は、データが始まる（ASCII の）文字です。フォントのシートはたいてい空白（' '）から始まるので、これはたいてい 32 です。`charCount` は文字の数で、シート全体を VRAM にコピーする必要がある場合（タイルマップの場合など）に使えます。
 
-Please note that how the data in a `TFont` is used depends almost entirely on the glyph renderer. Most renderers that come with libtonc expect this format:
+`TFont` のデータがどう使われるかは、ほぼ完全にグリフの描画処理しだいだということに注意してください。libtonc に付属するほとんどの描画処理は、次の形式を前提にしています。
 
-- Bitpacked to **1 bpp**, for size reasons. And for rendering speed too, actually, since memory loads are expensive.
-- Tiled-by-glyph. The data for each glyph is contingent with `cellSize` bytes between each glyph. This is similar to how 1D object work with one important difference:
-- the tiles in each glyph are **column-major** (tile 1 is under tile 0). This in contrast to objects, which tend to be [row-major](https://en.wikipedia.org/wiki/Row-major_order) (tile 1 is to the right of tile 0). I will refer to this format as **tile-strips**. The reason behind this choice will be given later.
+- 大きさのために、**1 bpp** にビットパックされている。実は描画の速さのためでもあります。メモリからの読み込みは高くつくからです。
+- グリフごとにタイル化されている。各グリフのデータは連続していて、グリフどうしの間隔は `cellSize` バイトです。これは 1D のオブジェクトの仕組みと似ていますが、重要な違いが 1 つあります。
+- 各グリフの中のタイルは**列優先**です（タイル 1 はタイル 0 の下にあります）。これは、[行優先](https://en.wikipedia.org/wiki/Row-major_order)（タイル 1 はタイル 0 の右にあります）になりがちなオブジェクトとは対照的です。この形式を**タイルストリップ**と呼ぶことにします。これを選んだ理由はあとで説明します。
 
-There are exceptions to this, but most renderers presented here will use this format. If you want to make your own renderers, you're free to use any format for the data you think is appropriate.
+例外もありますが、ここで示すほとんどの描画処理はこの形式を使います。自分の描画処理を作りたいなら、データには適切だと思う形式を自由に使ってかまいません。
 
-#### TTC details
+#### TTC の詳細
 
-The text context, `TTC`, contains the most important data of the system. Starting at the top: the surface, `dst`. This defines the surface we're rendering to. The most relevant items there are its memory address, **pitch**: the number of bytes per scanline. The pitch is a _very_ important parameter for rendering, more important than the width and height in fact. The surface also has palette members, which can be used to access its colors. Much like the `TFont` members, how this data is used largely depends on the renderer.
+テキストコンテキスト `TTC` には、システムの最も重要なデータが入っています。上から順に見ていきましょう。まず描画先 `dst` です。これは描画する先の面を定義します。そこで最も重要な項目は、そのメモリアドレスと、**ピッチ**、つまりスキャンラインあたりのバイト数です。ピッチは描画にとって_とても_重要なパラメータで、実は幅や高さより重要です。描画先にはパレットのメンバもあり、その色にアクセスするのに使えます。`TFont` のメンバと同じく、このデータがどう使われるかは描画処理しだいです。
 
-The members `cursorX/Y` are for the current cursor position. The `margin` rectangle indicates which part of the screen should be used for text. If the cursor exceeds the right margin, it will be moved to the left margin and one line down. The margins are also used for screen-clears and returning to the top of the page.
+メンバ `cursorX/Y` は現在のカーソルの位置です。`margin` の長方形は、画面のどの部分をテキストに使うかを示します。カーソルが右のマージンを超えると、左のマージンに移り、1 行下がります。マージンは画面のクリアやページの先頭に戻るときにも使われます。
 
-The `cattr` table is something special. Its entries are <dfn>color attribute</dfn>s. Parameters for ink (foreground color), shadow, paper (background color) are put here, along with a ‘special’ field which is very much context-specific. Note that these color attributes do not necessarily represent colors. In modes 3 and 5 they're colors, but for mode 4 and tile writers they're color indices. There's probably a nicer name for this than ‘color attribute’, but sodomy non sapiens.
+`cattr` の表は特別なものです。そのエントリは<dfn>色の属性</dfn>です。インク（前景色）、影、紙（背景色）のパラメータがここに入り、さらにとても状況に依存する「特殊」なフィールドがあります。これらの色の属性は、必ずしも色を表すわけではないことに注意してください。モード 3 と 5 では色ですが、モード 4 やタイルの書き込み処理では色のインデックスです。「色の属性」よりもっと良い名前がおそらくあるのでしょうが、sodomy non sapiens（訳注: 「知るもんか」という意味の英語の俗語をもじった、偽ラテン語のジョークです）。
 
-Rendering glyphs and erasing (parts of) the screen is done through the callbacks `drawgProc` and `eraseProc`. The idea is that you initialize the system with the routines appropriate for your text format and TTE uses them to do the actual writing. I should point out that using callbacks for rendering a single glyph can have a significant overhead, especially for the simpler kinds of text like tilemaps.
+グリフの描画や画面（の一部）の消去は、コールバック `drawgProc` と `eraseProc` を通して行います。考え方としては、テキストの形式に合ったルーチンでシステムを初期化し、TTE がそれらを使って実際の書き込みを行うというものです。1 つのグリフを描くのにコールバックを使うと、特にタイルマップのような単純な種類のテキストでは、かなりのオーバーヘッドになりうることは指摘しておくべきでしょう。
 
-### Main TTE variables and functions. {#ssec-design-writer}
+### TTE の主な変数と関数 {#ssec-design-writer}
 
-The state of the TTE system is kept in a `TTC` variable accessible through `tte_get_context()`. All changes to the system go through there. In _some_ cases, it is useful to have two sets of state and switch between them when appropriate (like when you have two screens. Y hello thar, NDS). For that you can use `tte_set_context)` to redirect the pointer.
+TTE のシステムの状態は、`tte_get_context()` でアクセスできる `TTC` の変数に保持されます。システムへの変更はすべてそこを通ります。_場合によっては_、状態を 2 組用意して、適宜切り替えると便利なことがあります（画面が 2 つある場合などです。やあ、NDS）。そのためには、`tte_set_context)` を使ってポインタを差し替えます。
 
 ```c {#cd-ttc-funcs}
 TTC __tte_main_context;
@@ -156,7 +156,7 @@ void tte_set_context(TTC *tc)
 }
 ```
 
-To print characters, you can use `tte_putc()` and `tte_write()`.
+文字を表示するには、`tte_putc()` と `tte_write()` を使います。
 
 ```c {#cd-tte-putc}
 //! Get the glyph index of character \a ch.
@@ -237,73 +237,73 @@ int tte_write(const char *text)
 }
 ```
 
-I've omitted the code for a few things here, the idea should be clear. First, read a character. Then, check whether it's a special character (new line, tab, formatting command) and if so, act accordingly. Because `tte_write()` supports UTF-8, we also check for that and decode the string for a full UFT-8 character. After that's all done, we pass the character on to `tte_putc()`, which translates it to a glyph index, draws the glyph and advances the cursor.
+ここではいくつかの部分のコードを省きましたが、考え方はわかるはずです。まず文字を読みます。次に、それが特殊な文字（改行、タブ、書式のコマンド）かどうかを確認し、そうならそれに応じて処理します。`tte_write()` は UTF-8 に対応しているので、それも確認し、文字列をデコードして UTF-8 の文字全体を得ます。それがすべて済んだら、その文字を `tte_putc()` に渡します。この関数はそれをグリフのインデックスに変換し、グリフを描いて、カーソルを進めます。
 
-Note: the way described here is _a_ method of doing things; it's not _the_ method, because that doesn't actually exist. Several steps done here may be overkill for the kind of text you had in mind. For example, getting from the character to the glyph index is done by the font's character offset and a potential character look-up table, neither of which is strictly necessary. Likewise, wrapping at the edges may already be done in the string itself with newline characters. On the other hand, you might like more complex wrapping, text alignment, scrolling, and who knows what else. If you want these things, creating your own routine shouldn't be too difficult.
+注意: ここで説明したやり方は、物事を行う_ひとつの_方法であって、_唯一の_方法ではありません。そんなものは実際には存在しないからです。ここで行っているいくつかの手順は、考えているテキストの種類によってはやりすぎかもしれません。たとえば、文字からグリフのインデックスを得るのに、フォントの文字のオフセットと、場合によっては文字のルックアップテーブルを使っていますが、どちらも厳密には必要ありません。同様に、端での折り返しは、文字列そのものの中で改行文字によってすでに行われているかもしれません。一方で、もっと複雑な折り返し、文字の揃え、スクロール、その他何でも欲しいかもしれません。そうしたものが欲しければ、自分のルーチンを作るのはそれほど難しくないはずです。
 
-### On nomenclature {#ssec-design-names}
+### 用語について {#ssec-design-names}
 
-Some terms I use in TTE have a very specific meaning. Because the differences between terms can be subtle, it is important to define the term explicitly. Additionally, TTE uses several acronyms and abbreviations that need to be clarified.
+TTE で使ういくつかの用語には、とても特定の意味があります。用語の違いは微妙なことがあるので、明示的に定義しておくことが大事です。また、TTE では説明が必要な頭字語や略語もいくつか使います。
 
-- **char(acter) vs glyph index**. ‘Character’ refers to the ASCII character; the ‘glyph index’ is the corresponding index in the font. For example, ‘A’ is character 65, but if the font starts at a space (' ', ASCII 32) the ‘A’ is glyph index 65−32=33. As a rule, variables named `ch` are characters and `gid` means glyph index. The input of the renderers is the glyph index, and not the character.
+- **文字（char(acter)）とグリフのインデックス**。「文字」は ASCII の文字を指し、「グリフのインデックス」はフォントの中の対応するインデックスです。たとえば「A」は文字 65 ですが、フォントが空白（' '、ASCII 32）から始まるなら、「A」はグリフのインデックス 65−32=33 です。原則として、`ch` という名前の変数は文字で、`gid` はグリフのインデックスを意味します。描画処理の入力は文字ではなく、グリフのインデックスです。
 
-- **Surface**. Surface is the term I'm using to describe whatever I'm manipulating to show text. This is usually VRAM, but can be other things as well, like OBJ_ATTRs for object text.
+- **描画先（サーフェス）**。サーフェスは、文字を表示するために操作するものを何でも表すのに使っている用語です。普通は VRAM ですが、オブジェクトのテキストでの OBJ_ATTR のように、ほかのものでもかまいません。
 
-- **Pitch**. The pitch is actually a common term in graphics, but since graphics terms may not be so common, it's worth repeating. Technically, the <dfn>pitch</dfn> is the number of scanlines between rows. I'm extending it a little to mean the _characteristic major distance_ for matrices. Matrices are 2D entities, and they'll have adjacent elements in one direction and a larger distance for the other. These usually are _x_ and _y_, respectively, but not always. The _minor_ distance will be referred to as <dfn>stride</dfn>.
+- **ピッチ**。ピッチは実はグラフィックではよく使われる用語ですが、グラフィックの用語はそれほど一般的ではないかもしれないので、繰り返しておく価値があります。厳密には、<dfn>ピッチ</dfn>は行と行の間のスキャンラインの数です（訳注: 通常はバイト数で、本章の TTC の詳細でもスキャンラインあたりのバイト数と説明しています）。ここではこれを少し広げて、行列の_特徴的な主方向の間隔_という意味で使います。行列は 2D のもので、一方の方向には隣り合った要素があり、もう一方の方向にはもっと大きな間隔があります。普通、これらはそれぞれ _x_ と _y_ ですが、いつもそうとは限りません。_副_方向の間隔は<dfn>ストライド</dfn>と呼ぶことにします。
 
-- **Color vs color attribute**. The ‘color’ is the real 5.5.5 BGR color; the ‘color attribute’ is whatever the renderer will use on the surface. This can be a color, but it can also be a palette index or something else entirely. The interpretation is up to the renderer.
+- **色と色の属性**。「色」は本当の 5.5.5 の BGR の色で、「色の属性」は描画処理が描画先で使うものなら何でもです。それは色のこともありますが、パレットのインデックスや、まったく別のもののこともあります。解釈は描画処理しだいです。
 
-- **Render/Text family**. This is a conceptual group-name for a specific kind of text. {\*@tbl:tte-family} gives an overview of the families available. This largely corresponds to the `TSurface` types.
+- **描画/テキストのファミリー**。これは、特定の種類のテキストを表す概念上のグループ名です。{\*@tbl:tte-family} に、使えるファミリーの概要を示します。これはおおむね `TSurface` の種類に対応します。
 
-- **Renderer types**. Within each family there can be different renderers for different kinds of fonts and effects. For example, when rendering to an 8bpp bitmap (the bmp8 family), you can have different renderers for different font bitdepths (1bpp or 8bpp, for example) or glyph layouts (bitmapped or tiled). They can render some pixels transparently, or apply anti-aliasing. Or any combination of those. The point is there are a _lot_ of options here.
+- **描画処理の種類**。各ファミリーの中には、いろいろな種類のフォントや効果のための、別々の描画処理がありえます。たとえば、8bpp のビットマップ（bmp8 ファミリー）に描画するときは、フォントのビット深度（たとえば 1bpp か 8bpp）やグリフの配置（ビットマップかタイルか）ごとに別の描画処理を持てます。一部のピクセルを透明に描いたり、アンチエイリアスをかけたりもできます。あるいは、それらのどんな組み合わせでも。要するに、ここには_たくさん_の選択肢があるということです。
 
-  Because I really don't like names that span a whole line, I will use abbreviations in the renderer's name to indicate what it does; see {@tbl:tte-drawg} for what they mean. For the most part, the renderers will be for fonts with arbitrary width and height, with a 1bpp tile-stripped glyphs, with they will draw them transparently and re-coloring of pixels. This is indicated by `*_b1cts`.
+  1 行まるごとを占めるような名前は本当に嫌いなので、描画処理の名前には、それが何をするかを示す略語を使います。それらの意味は {@tbl:tte-drawg} を見てください。描画処理のほとんどは、任意の幅と高さを持つフォントで、グリフは 1bpp のタイルストリップ、それを透明に描き、ピクセルの色を付け直すものです。これを `*_b1cts` で表します。
 
 <div class="lblock">
   <table id="tbl:tte-family" class="table-data">
     <caption align="bottom">
-      <b>{*@tbl:tte-family}</b>: TTE render family indicators and initializers. 4bpp Tiles can be row or column major (<code>crh4r</code> or <code>chr4c</code>).
+      <b>{*@tbl:tte-family}</b>: TTE の描画ファミリーの識別子と初期化関数。4bpp のタイルは行優先にも列優先にもできます（<code>crh4r</code> か <code>chr4c</code>）。
     </caption>
     <tr>
-      <th width=25%>Family</th>	
-      <th>prefix</th> 
-      <th>Initializer</th>		
+      <th width=25%>ファミリー</th>	
+      <th>接頭辞</th> 
+      <th>初期化関数</th>		
     </tr>
     <tr>
-	    <td>Regular tilemap (mode 0/1)</td>	
+	    <td>通常のタイルマップ（モード 0/1）</td>	
       <td>se</td>
 	    <td>
         void tte_init_se(int bgnr, u16 bgcnt, SCR_ENTRY se0, u32 colors, u32 bupofs, const TFont *font, fnDrawg proc);
       </td>
     </tr>
     <tr>
-	    <td>Affine tilemap (mode 1/2)</td>
+	    <td>アフィンのタイルマップ（モード 1/2）</td>
       <td>ase</td>
 	    <td>
         void tte_init_ase(int bgnr, u16 bgcnt, u8 ase0, u32 colors, u32 bupofs, const TFont *font, fnDrawg proc);
       </td>
     </tr>
     <tr>
-	    <td>4bpp Tiles (modes 0/1/obj)</td>	
+	    <td>4bpp のタイル（モード 0/1/obj）</td>	
       <td>chr4<i>(c/r)</i></td>
 	    <td>
         void tte_init_chr4<i>(c/r)</i>(int bgnr, u16 bgcnt, u32 cattrs, u32 colors, const TFont *font, fnDrawg proc);
       </td>
     </tr>
     <tr>
-	    <td>8bpp bitmap (mode 4)</td>
+	    <td>8bpp のビットマップ（モード 4）</td>
       <td>bmp8</td>
 	    <td>
         void tte_init_bmp(int vmode, const TFont *font, fnDrawg proc);
       </td>
     </tr>
     <tr>
-	    <td>16bpp bitmap (mode3/5)</td>
+	    <td>16bpp のビットマップ（モード 3/5）</td>
       <td>bmp16</td>
 	    <td>void tte_init_bmp(int vmode, const TFont *font, fnDrawg proc);</td>
     </tr>
     <tr>
-	    <td>objects</td>
+	    <td>オブジェクト</td>
       <td>obj</td>
 	    <td>
         void tte_init_obj(OBJ_ATTR *dst, u32 attr0, u32 attr1, u32 attr2, u32 colors, u32 bupofs, const TFont *font, fnDrawg proc);
@@ -315,102 +315,102 @@ Some terms I use in TTE have a very specific meaning. Because the differences be
 <div class="lblock">
   <table id="tbl:tte-drawg" class="table-data">
     <caption align="bottom">
-      <b>{*@tbl:tte-drawg}</b>: Render type summary.
+      <b>{*@tbl:tte-drawg}</b>: 描画処理の種類のまとめ。
     </caption>
     <tr>
-      <th>Code</th>
-      <th>Description</th>
+      <th>コード</th>
+      <th>説明</th>
     </tr>
     <tr>
       <td>b<i>x</i></td>
-      <td><b>B</b>itdepth of source font. (<code>b1</code> = 1 bpp)</td>
+      <td>元のフォントの<b>ビット</b>深度。（<code>b1</code> = 1 bpp）</td>
     </tr>
     <tr>
       <td>w<i>x</i></td>
-      <td>Specific <b>w</b>idth (<code>w8</code> = width 8)</td>
+      <td>特定の<b>幅</b>（width。<code>w8</code> = 幅 8）</td>
     </tr>
     <tr>
       <td>h<i>x</i></td>
-      <td>Specific <b>h</b>eight (<code>h8</code> = height 8)</td>
+      <td>特定の<b>高さ</b>（height。<code>h8</code> = 高さ 8）</td>
     </tr>
     <tr>
       <td>c</td>
       <td>
-        Re-<b>c</b>oloring. Color attributes are applied to the pixels in some way.
+        色の付け直し（re-<b>c</b>oloring）。色の属性が何らかの形でピクセルに適用されます。
       </td>
     </tr>
     <tr>
       <td>t/o</td>
-      <td><b>T</b>ransparent or <b>o</b>paque paper pixels.</td>
+      <td>紙のピクセルが<b>透明</b>（transparent）か<b>不透明</b>（opaque）か。</td>
     </tr>
     <tr>
       <td>s</td>
-      <td>Glyphs are in tile-<b>s</b>trip format.</td>
+      <td>グリフがタイル<b>ストリップ</b>（tile-strip）形式。</td>
     </tr>
   </table>
 </div>
 
-Lastly, a note on some of the abbreviations I use in the rendering code. A number of terms come up again and again, and I've taken to use a shorthand notation for these items. The basic format is `fooX` where `foo` is the relevant bitmap/surface and `X` is a one-letter code for things like width, height, data and others. Yes, the use of single-letter names is frowned upon and I don't advocate their use in general, but I've found that in this particular case, if used judiciously, they have helped me read my own code.
+最後に、描画のコードで使っている略語について少し説明します。いくつかの用語は何度も何度も出てくるので、それらに略記を使うことにしています。基本の形は `fooX` で、`foo` は関係するビットマップや描画先、`X` は幅、高さ、データなどを表す 1 文字のコードです。そう、1 文字の名前を使うのは嫌われますし、一般にはおすすめしませんが、この特定の場合には、慎重に使えば、自分のコードを読む助けになることがわかりました。
 
 <div class="lblock">
   <table id="tbl:tte-brevs" class="table-data">
     <caption align="bottom">
-       <b>{*@tbl:tte-brevs}</b>: Abbreviations used in rendering code.
+       <b>{*@tbl:tte-brevs}</b>: 描画のコードで使う略語。
     </caption>
     <tr> 
-      <th>Term</th>
-      <th>Meaning</th>
+      <th>用語</th>
+      <th>意味</th>
     </tr>
     <tr>
       <td><code>fooW</code></td>
-      <td>Width of <code>foo</code></td>
+      <td><code>foo</code> の幅</td>
     </tr>
     <tr>
       <td><code>fooH</code></td>
-      <td>Height of <code>foo</code></td>
+      <td><code>foo</code> の高さ</td>
     </tr>
     <tr>
       <td><code>fooB</code></td>
-      <td>Bitdepth of <code>foo</code></td>
+      <td><code>foo</code> のビット深度</td>
     </tr>
     <tr>
       <td><code>fooP</code></td>
-      <td>Pitch of <code>foo</code></td>
+      <td><code>foo</code> のピッチ</td>
     </tr>
     <tr>
       <td><code>fooD</code></td>
-      <td>Primary data-pointer for <code>foo</code></td>
+      <td><code>foo</code> の主なデータのポインタ</td>
     </tr>
     <tr>
       <td><code>fooL</code></td>
-      <td>Secondary data-pointer for <code>foo</code></td>
+      <td><code>foo</code> の副のデータのポインタ</td>
     </tr>
     <tr>
       <td><code>fooS</code></td>
-      <td>Size of <code>foo</code></td>
+      <td><code>foo</code> の大きさ</td>
     </tr>
     <tr>
       <td><code>fooN</code></td>
-      <td>Number/count of <code>foo</code></td>
+      <td><code>foo</code> の数</td>
     </tr>
   </table>
 </div>
 
-## Tilemapped text {#sec-map}
+## タイルマップのテキスト {#sec-map}
 
-### Regular tilemap text {#ssec-map-reg}
+### 通常のタイルマップのテキスト {#ssec-map-reg}
 
-Tilemapped text is the easiest to implement, because you don't really have to render anything at all. You simply load up all the font's tiles into a charblock and place screen-entries for the actual text.
+タイルマップのテキストは、実装するのが一番簡単です。実際には何も描画する必要がないからです。フォントのタイルをすべてキャラブロックに読み込み、実際のテキストのためにスクリーンエントリを置くだけです。
 
-The initializer for regular tilemaps is `tte_init_se()`. It's identical to [`txt_init_se()`](text.html#cd-txt-init-se) except for the two extra parameters at the end: `font` and `proc`. These represent the font to use and the renderer that does the surface manipulation. Every initializer in TTE has those two parameters. It's safe to pass NULL to them if you're not sure what to use; in that case, the default option for that family will be used.
+通常のタイルマップの初期化関数は `tte_init_se()` です。最後の 2 つの追加のパラメータ `font` と `proc` を除けば、[`txt_init_se()`](text.html#cd-txt-init-se) と同じです。これらは使うフォントと、描画先の操作を行う描画処理を表します。TTE のすべての初期化関数にこの 2 つのパラメータがあります。何を使えばいいかわからなければ、NULL を渡しても安全です。その場合は、そのファミリーのデフォルトの選択肢が使われます。
 
-If `font` is NULL, you'll get the default font. This is either [`system8Font`](text.html#img-tonc-font) for fixed-width occasions or `verdana9Font` ({@fig:img-verdana9}) when variable width is suitable. These can also be referenced via `fwf_default` and `vwf_default`, respectively.
+`font` が NULL なら、デフォルトのフォントになります。これは、固定幅の場面では [`system8Font`](text.html#img-tonc-font)、可変幅が適している場面では `verdana9Font`（{@fig:img-verdana9}）です。これらはそれぞれ `fwf_default` と `vwf_default` でも参照できます。
 
-Each family also has a default renderer, #defined as _`foo`_`_drawg_default`, where _foo_ is the family prefix. The default renderers are the general routines, suitable for all character widths and heights (fixed or variable fonts). Of course, this does mean that they will be slower than routines written to work with a specific glyph size. This is particularly true for tilemapped text, and for that reasons specific `_w8h8` and `_w8h16` versions are available there as well.
+各ファミリーにはデフォルトの描画処理もあり、_`foo`_`_drawg_default` として #define されています。ここで _foo_ はファミリーの接頭辞です。デフォルトの描画処理は汎用のルーチンで、すべての文字の幅と高さ（固定でも可変のフォントでも）に対応しています。もちろん、それは特定のグリフの大きさ向けに書かれたルーチンより遅いということでもあります。これは特にタイルマップのテキストに当てはまり、そのため、そこでは特定の `_w8h8` 版と `_w8h16` 版も用意しています。
 
-The initializers tend to be long and boring, so I won't waste too much space on them here. Basically, they clear out the text context, assign some sensible values to the margins and surface variables, set up the font, the renderer and the eraser. They also fill some of the palette and color attributes.
+初期化関数は長くて退屈になりがちなので、ここではあまり紙幅を割きません。基本的には、テキストコンテキストをクリアし、マージンと描画先の変数に妥当な値を入れ、フォント、描画処理、消去処理を準備します。パレットと色の属性もいくらか埋めます。
 
-The code I'll show in this chapter will mostly be about the renderers themselves. Below you can see the code for the default screen-entry writer, `se_drawg_s()`, and the one specific for 8×8 fonts, `se_drawg_w8h8`
+この章で示すコードは、ほとんどが描画処理そのものについてです。下に、デフォルトのスクリーンエントリの書き込み処理 `se_drawg_s()` と、8×8 のフォント専用のもの `se_drawg_w8h8` のコードを示します。
 
 ```c {#cd-se-drawg .proglist}
 //! Character-plot for reg BGs, any sized, vertically tiled font.
@@ -452,17 +452,17 @@ void se_drawg_w8h8(uint gid)
 }
 ```
 
-Let's start with the simpler one: `se_drawg_w8h8()`. An 8×8 glyph on a GBA tilemap simply means write a single screen-entry to the right place. The right place here is derived from the cursor position and the surface data (`tc->dst`). The ‘special’ color attribute is used as a modifier to the glyph index for things like palette swapping.
+単純なほうから始めましょう。`se_drawg_w8h8()` です。GBA のタイルマップに 8×8 のグリフを描くということは、単に正しい場所にスクリーンエントリを 1 つ書くことです。ここでの正しい場所は、カーソルの位置と描画先のデータ（`tc->dst`）から求めます。「特殊」な色の属性は、パレットの切り替えなどのために、グリフのインデックスを修正するのに使われます。
 
-Note that the routine just handles plotting the glyph. Transforming from ASCII to glyph index and repositioning the cursor is all done elsewhere.
+このルーチンはグリフを描くことだけを扱っていることに注意してください。ASCII からグリフのインデックスへの変換やカーソルの位置の変更は、すべてほかのところで行います。
 
-The more generalized routine, `se_drawg_s()` is a little more complex. It still starts by getting a pointer to the glyph's destination, `dstD`, and pitch (the distance to the next line), `dstP`. **All** renderers start with something like this. All renderers also retrieve the character's width and height – unless the sizes are specified in advance. The names I use for rendering are always the same, so you should be able to tell what means what even when the formulas for initializing them can be a tad icky.
+もっと汎用のルーチン `se_drawg_s()` は少し複雑です。それでもまず、グリフの描画先へのポインタ `dstD` と、ピッチ（次の行までの距離）`dstP` を得るところから始まります。**すべての**描画処理は、このようなもので始まります。また、大きさが前もって決まっていない限り、すべての描画処理は文字の幅と高さも取得します。描画で使う名前は常に同じなので、それらを初期化する式が少しややこしくても、何が何を意味するかはわかるはずです。
 
-Anyway, after getting the pointer and pitch, the tile-index for the top-left of the glyph is calculated and put this into `se`. After that, we loop over the different tiles of the glyph in both directions. Note that the order of the loop is column-major, not row-major, because that's the way the default fonts were ordered.
+ともかく、ポインタとピッチを得たら、グリフの左上のタイルのインデックスを計算して `se` に入れます。そのあとで、グリフのタイルを両方向にループでたどります。デフォルトのフォントがそう並んでいるので、ループの順序は行優先ではなく列優先であることに注意してください。
 
-As it happens, column-major rendering tends to be more efficient for text, because glyphs are usually higher than they are wide. Also, for tilemap text `charW` and `charH` tend to be small – often 1 or 2. This means that it is extremely inefficient to use loops; we'll see how inefficient in the ["Profiling the renderers" subsection](#ssec-misc-profile).. Unrolling them, like `se_drawg_w8h8()` and `se_drawg_w8h16()` do, gives a much better performance.
+実際、グリフはたいてい幅より高さのほうが大きいので、列優先の描画のほうがテキストでは効率が良くなりがちです。また、タイルマップのテキストでは `charW` と `charH` は小さくなりがちで、多くの場合 1 か 2 です。つまり、ループを使うのはきわめて非効率です。どれほど非効率かは、[「描画処理のプロファイリング」の小節](#ssec-misc-profile)で見ます。`se_drawg_w8h8()` や `se_drawg_w8h16()` のようにループを展開すると、ずっと良い性能が得られます。
 
-### Regular tilemap example {#ssec-test-se4}
+### 通常のタイルマップの例 {#ssec-test-se4}
 
 ```c {#cd-test-se4 .proglist}
 void test_tte_se4()
@@ -516,11 +516,11 @@ void test_tte_se4()
 }
 ```
 
-The code above demonstrates a few of the things you can do with TTE for tilemaps. The call to `tte_init_se()` initializes the system to display text on BG 0, using charblock 0 and screenblock 31 and to use the default font and renderer. Parameter five is the bit-unpack offset; by setting it to 14, all the 1-valued pixels in the font move to 14+1=15, the last index in a palette bank. I'm also setting a few other colors so that the palette will look like {@fig:img-test-se4}b.
+上のコードは、タイルマップで TTE を使ってできることをいくつか示しています。`tte_init_se()` の呼び出しは、キャラブロック 0 とスクリーンブロック 31 を使って背景 0 にテキストを表示し、デフォルトのフォントと描画処理を使うようにシステムを初期化します。5 つ目のパラメータはビットの展開のオフセットです。これを 14 にすることで、フォントの値が 1 のピクセルはすべて 14+1=15、つまりパレットバンクの最後のインデックスに移ります。パレットが {@fig:img-test-se4}b のようになるように、ほかの色もいくつか設定しています。
 
-In step 3, I print some text with `tte_write()`. The different colors are done by using `#{cx:`_`num`_`}` in the string, which sets the special color-attribute to _num_. More on these kinds of commands in the ["Scripting, console IO and other niceties" section](#sec-misc).. Since the `se`-renderers add this value to the glyph index for the final output, it can be used for palette swapping.
+手順 3 では、`tte_write()` でテキストをいくつか表示しています。色の違いは、文字列の中で `#{cx:`_`num`_`}` を使うことで実現しています。これは特殊な色の属性を _num_ に設定します。この種のコマンドについては、[「スクリプト、コンソール入出力、そのほかの便利なもの」の節](#sec-misc)で詳しく説明します。`se` の描画処理は最終的な出力のためにこの値をグリフのインデックスに加えるので、パレットの切り替えに使えます。
 
-Step 4 demonstrates how to load up and use a second font. The `cyber16Font` is a rendition of the 8×16 font used in ye olde SNES game, Cybernator (see {@fig:img-cyber16}). This font was exported as 4bpp data so I can just copy it into VRAM directly, but I do need to use an offset because I want to keep the old font as well. The charblock now has two sets of glyphs (see {@fig:img-test-se4}c).
+手順 4 では、2 つ目のフォントを読み込んで使う方法を示しています。`cyber16Font` は、懐かしのスーパーファミコンのゲーム、重装機兵ヴァルケン（Cybernator）で使われていた 8×16 のフォントを再現したものです（{@fig:img-cyber16} を見てください）。このフォントは 4bpp のデータとして書き出したので、そのまま VRAM にコピーできますが、古いフォントも残しておきたいので、オフセットを使う必要があります。これでキャラブロックには 2 組のグリフがあります（{@fig:img-test-se4}c を見てください）。
 
 <div class="cblock">
   <table width=60%>
@@ -529,14 +529,14 @@ Step 4 demonstrates how to load up and use a second font. The `cyber16Font` is a
 	      <div class="cpt_fl" style="width:128px;">
 	        <img src="img/tte/cyber16.png" id="fig:img-cyber16" alt="Cybernator font: 8&times;16.">
           <br>
-	        <b>{*@fig:img-cyber16}</b>: Cybernator font: 8&times;16.
+	        <b>{*@fig:img-cyber16}</b>: Cybernator のフォント: 8&times;16。
 	      </div>
       </td>
       <td>
 	      <div class="cpt" style="width:240px;">
 	        <img src="img/tte/test_tte_se4.png" id="fig:img-test-se4" alt="test_tte_se4">
           <br>
-	        <b>{*@fig:img-test-se4}a</b>: <code>test_tte_se4</code> output.
+	        <b>{*@fig:img-test-se4}a</b>: <code>test_tte_se4</code> の出力。
 	      </div>
       </td>
     </tr>
@@ -545,27 +545,27 @@ Step 4 demonstrates how to load up and use a second font. The `cyber16Font` is a
 	      <div class="cpt" style="width:128px;">
 	        <img src="img/tte/tte_se4_pal.png" alt="Palette for <code>test_tte_se4</code>.">
           <br>
-	        <b>{*@fig:img-test-se4}b</b>: Palette.
+	        <b>{*@fig:img-test-se4}b</b>: パレット。
 	      </div>
       </td>
       <td>
 	      <div class="cpt" style="width:256px;">
 	        <img src="img/tte/tte_se4_tiles.png" alt="VRAM Tiles for <code>test_tte_se4</code>.">
           <br>
-	        <b>{*@fig:img-test-se4}c</b>: Tileset.
+	        <b>{*@fig:img-test-se4}c</b>: タイルセット。
 	      </div>
       </td>
     </tr>
   </table>
 </div>
 
-In principle, all I need to do to use a different font is to select it with `tte_set_font()`, but since the tiles are at an offset, I also need to adjust the special color attribute. The value of 0x4100 is used here to account for the offset (0x0100) as well as the palette-bank (0x4000). I'm also selecting a different renderer for the occasion, although that's mostly for show here because the default renderer can handle 8×16 fonts just as well. After that, I just call `tte_write()` again to print a new string in using the new font.
+原理的には、別のフォントを使うには `tte_set_font()` でそれを選ぶだけでいいのですが、タイルがずれた位置にあるので、特殊な色の属性も調整する必要があります。ここでは、オフセット（0x0100）とパレットバンク（0x4000）の両方を考慮して、値 0x4100 を使っています。この機会に別の描画処理も選んでいますが、デフォルトの描画処理でも 8×16 のフォントを同じように扱えるので、これはほとんど見せるためです。そのあとは、新しいフォントで新しい文字列を表示するために、また `tte_write()` を呼ぶだけです。
 
-### Affine tilemap text {#ssec-map-affine}
+### アフィンのタイルマップのテキスト {#ssec-map-affine}
 
-Text for affine tilemaps works almost the same as for regular tilemaps; you just have to remember the differences between the two kinds of backgrounds, like map size and available bitdepth. The functions' prototypes are the same, except that `se` is replaced by `ase`.
+アフィンのタイルマップのテキストは、通常のタイルマップとほとんど同じように動きます。マップの大きさや使えるビット深度など、2 種類の背景の違いを覚えておくだけです。関数のプロトタイプは、`se` が `ase` に置き換わっていること以外は同じです。
 
-Internally, the only real difference is in what the renderers are to output, namely bytes instead of halfwords. And here we run into that quaint little fact of VRAM again: you can't write single bytes to VRAM. This means that the renderers will be a little more complicated. But only a little: simply call a byte-plotting routine for the screen-entry placement. Because affine maps are essentially 8bpp bitmap surfaces, I can use the standard plotter for 8bpp bitmap surfaces: `_sbmp8_plot()`. Aside from this one difference, the `ase_` renderers are identical to the `se_` counterparts.
+内部での唯一の本当の違いは、描画処理が出力するもの、つまりハーフワードではなくバイトであることです。そしてここで、VRAM のあの風変わりな事実にまたぶつかります。VRAM には 1 バイトだけを書き込めないのです。つまり、描画処理が少し複雑になります。でも少しだけです。スクリーンエントリを置くのに、バイトを描くルーチンを呼ぶだけです。アフィンのマップは本質的に 8bpp のビットマップの描画先なので、8bpp のビットマップの描画先のための標準の描画関数 `_sbmp8_plot()` が使えます。この 1 つの違いを除けば、`ase_` の描画処理は `se_` のものと同じです。
 
 ```c {#cd-ase-drawg .proglist}
 
@@ -595,7 +595,7 @@ void ase_drawg_s(int gid)
 }
 ```
 
-The demo for affine map text is `text_tte_ase()`. The idea is simple here: set up the text for a 256×256 pixel map, write some text onto it and rotate the background to illustrate that it is indeed an affine background. The center of rotation is the “o” at the center of the screen. To place it there, I've used the `#{P:x,y}` code; this sets the cursor to the absolute position given by (x, y). The other string is also positioned on the map in this manner.
+アフィンのマップのテキストのデモは `text_tte_ase()` です。考え方は単純で、256×256 ピクセルのマップにテキストを準備し、そこに文字を書いて、本当にアフィン背景であることを示すために背景を回転させます。回転の中心は、画面の中央の「o」です。そこに置くのに、`#{P:x,y}` コードを使っています。これはカーソルを (x, y) で与えられる絶対位置に設定します。もう 1 つの文字列も、この方法でマップ上に配置しています。
 
 ```c {#cd-test-ase .proglist}
 void test_tte_ase()
@@ -639,12 +639,12 @@ void test_tte_ase()
 <div class="cpt" style="width:240px;">
   <img src="img/tte/test_tte_ase.png" id="fig:img-test-ase"
     alt="<code>test_tte_ase</code>."><br>
-  <b>{*@fig:img-test-ase}</b>: <code>test_tte_ase</code>.
+  <b>{*@fig:img-test-ase}</b>: <code>test_tte_ase</code>。
 </div>
 
-## Bitmapped text {#sec-bmp}
+## ビットマップのテキスト {#sec-bmp}
 
-Bitmap text rendering is a little different from map text and can range in difficulty from easy to insane, depending on your wishes. At its core, though, it's always the same process: loop over all pixels and draw them on the destination surface. For example, a generic glyph renderer that draws pixels transparently could look something like this.
+ビットマップのテキストの描画はマップのテキストとは少し違い、望むものによって、難しさは簡単なものから正気の沙汰でないものまであります。でも、その核心は常に同じ処理です。すべてのピクセルをたどって、描画先に描くのです。たとえば、ピクセルを透明に描く汎用のグリフの描画処理は、次のようなものになるでしょう。
 
 ```c {.proglist}
 // Pseudo code for a general glyph printer.
@@ -668,11 +668,11 @@ void foo_drawg(uint gid)
 }
 ```
 
-Here, _`foo`_ can mean any rendering family. `foo_plot()` is a general pixel plotter and `font_get_pixel()` a pixel retriever. The implementations of those functions depend on the specifics of the font and surface, but the glyph renderer doesn't need to know about that.
+ここで _`foo`_ はどんな描画ファミリーでもかまいません。`foo_plot()` は汎用のピクセルの描画関数で、`font_get_pixel()` はピクセルの取得関数です。これらの関数の実装はフォントと描画先の詳細によりますが、グリフの描画処理はそれを知る必要がありません。
 
-### Basic bmp16 to bmp16 glyph printer {#ssec-bmp16-base}
+### bmp16 から bmp16 への基本のグリフ表示処理 {#ssec-bmp16-base}
 
-This next function is an example of a 16bpp font to 16bpp bitmap printer.
+次の関数は、16bpp のフォントを 16bpp のビットマップに表示する処理の例です。
 
 ```c {#cd-bmp16-drawg .proglist}
 //! Glyph renderer from bmp16 glyph to bmp16 destination.
@@ -704,15 +704,15 @@ void bmp16_drawg(uint gid)
 }
 ```
 
-Blocks 1a and 1b set up the main variables to use in the loop. The most important are the source and destination pointers, `srcD` and `dstD`, and their pitches, `srcP` and `dstP`. Notice that the source pitch, `srcP`, is the not the character width, but the cell width, because the fonts are organized on a cell-grid. The code at point 2 selectively copies pixels from the font to the surface.
+ブロック 1a と 1b は、ループで使う主な変数を準備します。最も重要なのは、読み込み元と書き込み先のポインタ `srcD` と `dstD`、そしてそれらのピッチ `srcP` と `dstP` です。フォントはセルのグリッドで構成されているので、読み込み元のピッチ `srcP` は文字の幅ではなく、セルの幅であることに注意してください。ポイント 2 のコードは、フォントから描画先へピクセルを選択的にコピーします。
 
-#### Intermezzo : considerations for performance
+#### 幕間: 性能についての検討
 
-You may wonder why `bmp16_drawg()` doesn't follow the pattern in the earlier `foo_drawg()` more closely. The answer is, of course, performance. And before anyone quotes Knuth on me: not every effort to make your code fast is premature optimization. When you can improve the speed of the code without spending too much effort of a loss of readability, there's not much reason not to.
+なぜ `bmp16_drawg()` が先ほどの `foo_drawg()` の形にもっと忠実に従っていないのか、不思議に思うかもしれません。答えはもちろん性能です。そして、誰かが私に Knuth を引用する前に言っておくと、コードを速くしようとする努力のすべてが早すぎる最適化というわけではありません。それほど手間をかけずに、読みやすさを損なうことなくコードの速さを上げられるなら、そうしない理由はあまりありません。
 
-In this case, the optimizations I've applied here fall into two categories: local variables and pointer arithmetic. These techniques – that every C programmer _should_ know – managed to boost the speed by a factor of 5.
+この場合、ここで適用した最適化は 2 つの種類に分けられます。ローカル変数とポインタ演算です。これらの技法は、すべての C プログラマが知っている_べき_ものですが、これで速さを 5 倍に上げられました。
 
-Let's start with pointers. I'm using pointer to my advantage in two places here. First, instead of using the font-data pointer and destination pointer directly, I create pointers `srcD` and `dstD` and direct them the top-lefts of the glyph and where it will be rendered to. Short-circuiting the accesses like this means that I don't have to apply extra offsets to get to where I want to go in the loop. This will be both faster and in fact more readable as well, because the loops won't contain any non-essential expressions.
+ポインタから始めましょう。ここでは 2 か所でポインタを活用しています。まず、フォントのデータのポインタと書き込み先のポインタを直接使う代わりに、ポインタ `srcD` と `dstD` を作り、グリフの左上と、それを描画する先に向けています。このようにアクセスを近道させると、ループの中で行きたいところに行くために余分なオフセットを加える必要がなくなります。ループに本質的でない式が入らないので、速くなるうえに、実は読みやすくもなります。
 
 ```c {.proglist}
 //# Example of a more standard bitmap copier.
@@ -721,13 +721,13 @@ for(iy=0; iy < charH; iy++)
         dstD[iy*dstP + ix]= srcD[iy*srcP+ix];
 ```
 
-A second point here is using incremental offsets instead of the `y*pitch+x` form (see above). I suppose this is mostly a matter of preference, but avoiding the wholly unnecessary multiplications does matter.
+2 つ目の点は、`y*pitch+x` の形の代わりに、増分のオフセットを使うことです（上を見てください）。これはほとんど好みの問題だと思いますが、まったく不要な乗算を避けることは効いてきます。
 
-The second optimization is local variables. By this I mean loading variables that reside in memory (globals and struct members) or oft-used function results in local temporaries. This may seem like a silly thing to point out, but the amount of time you can save with this is actually quite high.
+2 つ目の最適化はローカル変数です。つまり、メモリにある変数（グローバル変数や構造体のメンバ）や、よく使う関数の結果を、ローカルの一時変数に読み込んでおくということです。指摘するのもばかばかしく思えるかもしれませんが、これで節約できる時間は実はかなり大きいのです。
 
-Consider the use of `tte_get_glyph_width()` here. I _know_ the width of a glyph won't change during the loop, so calling a function to get the width in the loop-condition itself is just stupid. Another example of this would be calling `strlen()` when looping over all characters in a string. For those who do this: NO! Bad programmer, bad! Save the value in a local variable and use that instead.
+ここでの `tte_get_glyph_width()` の使い方を考えてみてください。グリフの幅がループの間に変わらないことは_わかっている_ので、ループの条件そのものの中で幅を得るために関数を呼ぶのはただの愚かなことです。別の例は、文字列のすべての文字をループでたどるときに `strlen()` を呼ぶことです。そうしている人へ: だめ！ 悪いプログラマ、だめですよ！ 値をローカル変数に保存して、代わりにそれを使ってください。
 
-The other point is to pre-load things like globals and struct/class members if you use them more than once. Consider the following code. It's the same as the one given before, only now I have not loaded character height and the pitches into local temporaries.
+もう 1 つの点は、グローバル変数や構造体/クラスのメンバのようなものを、2 回以上使うなら前もって読み込んでおくことです。次のコードを考えてみてください。先ほどのものと同じですが、今度は文字の高さとピッチをローカルの一時変数に読み込んでいません。
 
 ```c {.proglist}
 //# Another bitmap-copy example. DO NOT USE THIS !!!
@@ -736,43 +736,43 @@ for(iy=0; iy < font->charH; iy++)
         dstD[iy*tc->dst.pitch/2 + ix]= srcD[iy*font->cellW + ix];
 ```
 
-The result: the speed of the function was **halved**! I expected it to be slower, but that this innocuous-looking modification would actually cost me a factor two was quite a surprise to me.
+結果: 関数の速さは**半分**になりました！ 遅くなるとは予想していましたが、この無害に見える変更で実際に 2 倍も遅くなるとは、かなりの驚きでした。
 
-So yes, spam your code width locals for loop-invariant, memory-based quantities. This avoids them being loaded from memory every time. As a bonus, the loops themselves win contain less text and be more generalized, making it more reusable.
+ですから、そう、ループの中で変わらないメモリ上の量には、ローカル変数をどんどん使ってください。そうすれば、毎回メモリから読み込まれずに済みます。おまけに、ループそのものの記述が短くなり、より一般化されるので、再利用しやすくなります。
 
-Both the pointer work and pre-loading variables are actually the job of the compiler's optimizer, but the current version of GCC doesn't do these very well or at all. Also, sometimes it _can't_ do this optimization. When functions are called between memory dereferences, the compiler has to reload the data because those functions may have changed their contents. Obviously, this wouldn't happen for locals.
+ポインタの工夫も変数の事前の読み込みも、本当はコンパイラの最適化の仕事なのですが、現在の版の GCC はこれらをあまりうまくやらないか、まったくやりません。また、この最適化が_できない_こともあります。メモリの参照の間に関数が呼ばれると、それらの関数が中身を変えたかもしれないので、コンパイラはデータを読み込み直さなければなりません。当然、ローカル変数ではそういうことは起きません。
 
-:::tip Use local variables for struct members and globals
+:::tip 構造体のメンバやグローバル変数にはローカル変数を使おう
 
-Struct members and global variables live in memory, not CPU registers. Before the CPU can use their data, they have to be loaded from memory into registers first, and this often happen more times then necessary. Since memory access (especially ROM access) is slower than register access, this can really bog down an algorithm if the thing is used more than once. You can avoid this needless work by creating local variables for them.
+構造体のメンバやグローバル変数は、CPU のレジスタではなくメモリにあります。CPU がそのデータを使えるようになる前に、まずメモリからレジスタに読み込む必要があり、これは必要以上に何度も起きることがよくあります。メモリへのアクセス（特に ROM へのアクセス）はレジスタへのアクセスより遅いので、それを 2 回以上使うと、アルゴリズムの足を本当に引っ張りかねません。ローカル変数を作れば、この無駄な作業を避けられます。
 
-Aside from the speed-boost, local variables can use shorter names, resulting in shorter and more readable code in the parts that actually do the work. It's win-freakin'-win, baby.
+速さが上がるだけでなく、ローカル変数には短い名前を使えるので、実際に仕事をする部分のコードが短く読みやすくなります。どっちに転んでも得しかありませんよ、ベイビー。
 
 :::
 
-### Glyph and surface formats {#ssec-srf-format}
+### グリフと描画先の形式 {#ssec-srf-format}
 
-The renderer described above assumes that the glyphs are in formatted as 16-bpp bitmaps. However, TTE's default fonts are in a 1-bpp tilestrip format, so I'll have to use something else. Before I go into the details of that function, I'd like to discuss the different glyph formats and why I'm using tile-strips instead of just plain bitmaps.
+上で説明した描画処理は、グリフが 16bpp のビットマップの形式であることを前提にしています。しかし、TTE のデフォルトのフォントは 1bpp のタイルストリップ形式なので、別のものを使う必要があります。その関数の詳細に入る前に、いろいろなグリフの形式と、なぜ普通のビットマップではなくタイルストリップを使っているのかを説明しておきます。
 
-When I say glyph formats, what I really mean is the order in which pixels are accessed. Three key variations exist.
+グリフの形式と言うとき、本当に意味しているのは、ピクセルにアクセスする順序です。主な変種は 3 つあります。
 
-- **Linear** or **bitmap** layout. This is a simple, row-major matrix. This gives you two loops; one for _y_ and one for _x_.
-- **Tiled**. In particular: 8×8 tiled. This is the standard GBA tile format where each group of 8×8 pixels form a row-major matrix, and then the tiles themselves are part of a larger row-major matrix again. Going through this required **four** loops: two for each matrix.
-- **Tile-strips**. This also uses 8×8 tiles, but this time the tiles ordered in a column-major order. In other words, tile 1 comes below tile 0 instead of to the right. This has the rather nice property that the rows in successive tiles are consecutive. It eliminates the break in the _y_ direction, resulting in only 3 loops and has simpler code to boot.
+- **線形**または**ビットマップ**の配置。これは単純な行優先の行列です。ループは 2 つで、_y_ 用と _x_ 用です。
+- **タイル**。具体的には 8×8 のタイルです。これは GBA の標準のタイル形式で、8×8 ピクセルの各グループが行優先の行列を作り、さらにタイルそのものがまたより大きな行優先の行列の一部になっています。これをたどるには**4 つ**のループが必要です。それぞれの行列に 2 つずつです。
+- **タイルストリップ**。これも 8×8 のタイルを使いますが、今度はタイルが列優先の順序で並んでいます。言い換えると、タイル 1 はタイル 0 の右ではなく下に来ます。これには、続くタイルの行が連続しているというなかなか素敵な性質があります。_y_ 方向の切れ目がなくなるので、ループは 3 つで済み、しかもコードが単純になります。
 
-{\*@fig:img-src-loops} shows these three layouts, including the loop structure and the order in which the pixels are traversed for 1bpp fonts. The case is a little bit different because of the bit-packing: 1 bpp means 8 pixels per byte. As a result, the bitmap-_x_ loops have to be broken up into groups of 8, so that the bitmap format now uses three nests of loops instead of just two. There is no difference for the tiled formats, as those are grouped by 8 pixels anyway. Not only that, if you were to calculate the total loop-overhead for commonly used glyph sizes it turns out that this arrangement actually works particularly well for tile-strips. This is left as an exercise for the reader (hint: count the number of comparisons).
+{\*@fig:img-src-loops} は、これら 3 つの配置を、ループの構造と、1bpp のフォントでピクセルをたどる順序も含めて示しています。ビットパックのせいで、事情は少し違います。1 bpp は 1 バイトに 8 ピクセルということです。その結果、ビットマップの _x_ のループは 8 個ずつのグループに分けなければならず、ビットマップの形式では 2 つではなく 3 つの入れ子のループを使うことになります。タイルの形式では、どのみち 8 ピクセルずつまとまっているので違いはありません。それだけでなく、よく使われるグリフの大きさについてループのオーバーヘッドの合計を計算してみると、この配置は実はタイルストリップで特にうまくいくことがわかります。これは読者への演習として残しておきます（ヒント: 比較の回数を数えてください）。
 
 <div class="cblock">
   <div class="cpt" style="width:600px;">
     <img src="img/tte/src_loops.png" id="fig:img-src-loops" width=600 alt="Pixel traversal in glyphs for bitmap, tile and tile-strip formats. ">
     <br>
-    <b>{*@fig:img-src-loops}</b>: Pixel traversal in glyphs for 1-bpp bitmap, tile and tile-strip formats. The numbers indicate the loops and their nestings.
+    <b>{*@fig:img-src-loops}</b>: 1bpp のビットマップ、タイル、タイルストリップの形式での、グリフのピクセルのたどり方。数字はループとその入れ子を示します。
   </div>
 </div>
 
-### bmp16_drawg_b1cts : 1- to 16-bpp with transparency and coloring {#ssec-bmp16-std}
+### bmp16_drawg_b1cts: 透明と色付けありの 1bpp から 16bpp {#ssec-bmp16-std}
 
-The next routine takes 1-bpp tile-strip glyphs and turns them into output suitable for 16-bpp bitmap backgrounds. The output will use the ink attribute for color and it will only draw a pixel if the bit was 1 in the source data, giving us transparency. The three macros at the top declare and define the basic variables, comparable to step 1a in `bmp16_drawg()`.
+次のルーチンは、1bpp のタイルストリップのグリフを取り、16bpp のビットマップ背景に合った出力に変えます。出力は色にインクの属性を使い、元のデータでビットが 1 の場合にだけピクセルを描くので、透明になります。先頭の 3 つのマクロは基本の変数を宣言、定義するもので、`bmp16_drawg()` の手順 1a に相当します。
 
 <pre><code class="language-c hljs">
 void bmp16_drawg_b1cts(uint gid)
@@ -806,15 +806,15 @@ void bmp16_drawg_b1cts(uint gid)
 }
 </code></pre>
 
-The routine starts by calls to three macros: `TTE_CHAR_VARS()`, `TTE_CHAR_VARS` and `TTE_DST_VARS()`. These declare and define most of the relevant local variables, similar to step 1a in `bmp16_drawg()`. Note that two of the arguments here are datatype identifiers for the source and destination pointers, respectively. `srcD` and `srcL` will initially point to the start of the source data. The other pointers, `dstD` and `dstL`, point to the start _of the scanline_ in the destination area. They haven't been corrected for the _x_-position just yet; that's done right after it.
+このルーチンは、3 つのマクロ `TTE_CHAR_VARS()`、`TTE_CHAR_VARS`、`TTE_DST_VARS()` の呼び出しで始まります。これらは関係するローカル変数のほとんどを宣言、定義するもので、`bmp16_drawg()` の手順 1a と似ています。ここでの引数のうち 2 つは、それぞれ読み込み元と書き込み先のポインタのデータ型の識別子であることに注意してください。`srcD` と `srcL` は、最初は読み込み元のデータの先頭を指します。ほかのポインタ `dstD` と `dstL` は、書き込み先の領域の_スキャンラインの_先頭を指します。まだ _x_ の位置は補正されていません。それはそのすぐあとで行います。
 
-The reason I'm using two pairs of pointers here (a main _data_ pointer, `fooD` and a _line_ pointer `fooL`) is because of the pointer arithmetic. The data-pointer stays fixed and the line-pointer moves around in the inner loop.
+ここで 2 組のポインタ（主な_データ_のポインタ `fooD` と_ライン_のポインタ `fooL`）を使っているのは、ポインタ演算のためです。データのポインタは固定したままで、ラインのポインタが内側のループの中で動き回ります。
 
-The tile-strip portion of {@fig:img-src-loops} illustrates how the routine moves over all the pixels. Because it's for a 1-bpp bitpacked font and because there are 8 pixels per tile-line, we can get an entire line's worth of pixels in one byte-read. Rendering transparently gives us a nice chance for optimization as well: if the tile-line is empty (i.e., `raw`==0), we have no more visible pixels in that line and we can move on to the next. A glance at the verdana 9 font in {@fig:img-verdana9}, will tell you that you may be able to skip 50% of the pixels because of this.
+{@fig:img-src-loops} のタイルストリップの部分は、このルーチンがすべてのピクセルをどう動いていくかを示しています。1bpp でビットパックされたフォントで、タイルの 1 ラインあたり 8 ピクセルなので、1 回のバイトの読み込みで 1 ラインぶんのピクセルをまるごと得られます。透明に描くことで、良い最適化の機会も得られます。タイルのラインが空（つまり `raw`==0）なら、そのラインにはもう見えるピクセルはないので、次に進めます。{@fig:img-verdana9} の verdana 9 のフォントをちらっと見れば、このおかげでピクセルの 50% を飛ばせるかもしれないことがわかるでしょう。
 
-### bmp8_drawg_b1cts : 1 to 8 bpp with transparency and coloring {#ssec-bmp8-std}
+### bmp8_drawg_b1cts: 透明と色付けありの 1bpp から 8bpp {#ssec-bmp8-std}
 
-The 8 bpp counterpart of the previous function is called `bmp8_drawg_b1cts()`, and is given below. The code is very similar to the 16 bpp function, but because the pixels are now bytes there are a few differences in the details.
+前の関数の 8bpp 版は `bmp8_drawg_b1cts()` という名前で、下に示します。コードは 16bpp の関数ととてもよく似ていますが、今度はピクセルがバイトなので、細かいところでいくつか違いがあります。
 
 <pre><code class="language-c hljs">void bmp8_drawg_b1cts(uint gid)
 {
@@ -850,7 +850,7 @@ The 8 bpp counterpart of the previous function is called `bmp8_drawg_b1cts()`, a
 
 </code></pre>
 
-The only real difference with `bmp16_drawg_b1cts` is in the inner-most loop. The no-byte-write issue for VRAM means that we need to write two pixels in one pass. To do this, I retrieve and unpack two bits into two bytes and use them to create the new pixels and the pixel masks. The first line in the inner loop does the unpacking. It transforms the bit-pattern _`ab`_ into `0000 000`_`a`_` 0000 000`_`b`_. Both bytes in this halfword are now 0 or 1, depending on whether _a_ and _b_ were on or off. By multiplying with `ink` and 255, you can get the colored pixels and the appropriate mask for insertion.
+`bmp16_drawg_b1cts` との唯一の本当の違いは、一番内側のループにあります。VRAM にはバイト単位で書き込めないという問題があるので、1 回で 2 ピクセルを書く必要があります。そのために、2 つのビットを取り出して 2 つのバイトに展開し、それらを使って新しいピクセルとピクセルのマスクを作ります。内側のループの最初の行が展開を行います。ビットのパターン _`ab`_ を `0000 000`_`a`_` 0000 000`_`b`_ に変換します。これで、このハーフワードの両方のバイトは、_a_ と _b_ がオンかオフかに応じて 0 か 1 になります。`ink` と 255 を掛ければ、色の付いたピクセルと、挿入のための適切なマスクが得られます。
 
 <pre><code class="language-sh hljs"># 2-bit to 2-byte unpacking.
 0000 0000  hgfe dcb<b>a</b>    p  = raw (start)
@@ -859,39 +859,39 @@ The only real difference with `bmp16_drawg_b1cts` is in the inner-most loop. The
 0000 000<b>b</b>  0000 000<b>a</b>    p &amp;= ~0xFE;
 </code></pre>
 
-Preparing the right halfword is only part of the work. If `cursorX` (i.e., `x0`) is odd, then the glyph should be plotted to an odd starting location as well. However, the destination pointer `dstL` is halfword pointer and these must always be halfword aligned. To take care of this, note that unpacking the pattern ‘`abcd efgh`’ to an odd boundary is equivalent to unpacking ‘`a bcde fgh`**`0`**’ to an even boundary. This is exactly what the extra shift by `odd` is for.
+正しいハーフワードを用意するのは仕事の一部にすぎません。`cursorX`（つまり `x0`）が奇数なら、グリフも奇数の開始位置に描かなければなりません。しかし、書き込み先のポインタ `dstL` はハーフワードのポインタで、常にハーフワード境界に揃っていなければなりません。これに対処するには、パターン「`abcd efgh`」を奇数の境界に展開するのは、「`a bcde fgh`**`0`**」を偶数の境界に展開するのと同じであることに注目します。`odd` による余分なシフトは、まさにそのためのものです。
 
-### Example : sub-pixel rendering {#ssec-bmp-demo}
+### 例: サブピクセルレンダリング {#ssec-bmp-demo}
 
-For the demo of this section, I'd like to use a technique called [<dfn>sub-pixel rendering</dfn>](https://en.wikipedia.org/wiki/Subpixel_rendering). This is a method for effectively tripling the horizontal resolution for rendering by ‘borrowing’ colors from other pixels.
+この節のデモでは、[<dfn>サブピクセルレンダリング</dfn>](https://en.wikipedia.org/wiki/Subpixel_rendering)と呼ばれる技法を使ってみたいと思います。これは、ほかのピクセルから色を「借りる」ことで、描画の横方向の解像度を実質的に 3 倍にする方法です。
 
-Consider the letter ‘A’ as shown in {@fig:img-subpx}a. As you know, each pixel is composed of three colors: red, green and blue. These are the sub-pixels. The letter on the sub-pixel grid looks like {@fig:img-subpx}b. Notice how the colors are still grouped by pixels, which on the sub-pixel grid gives very jagged edges. The trick to sub-pixel rendering is to shift groups of sub-pixels left or right, resulting in smoother edges ({@fig:img-subpx}c). Now combine the pixels to RGB colors again to get {@fig:img-subpx}d. Zoomed in as it is in {@fig:img-subpx}, sub-pixel rendering may not look like much, but when used in the proper size the effects can be quite stunning.
+{@fig:img-subpx}a に示す文字「A」を考えてください。ご存じのとおり、各ピクセルは赤、緑、青の 3 つの色でできています。これらがサブピクセルです。サブピクセルのグリッド上では、文字は {@fig:img-subpx}b のようになります。色がまだピクセル単位でまとまっていて、サブピクセルのグリッド上ではとてもギザギザの縁になっていることに注目してください。サブピクセルレンダリングのコツは、サブピクセルのまとまりを左右にずらして、縁をなめらかにすることです（{@fig:img-subpx}c）。それからピクセルをまた RGB の色に組み合わせると、{@fig:img-subpx}d になります。{@fig:img-subpx} のように拡大すると、サブピクセルレンダリングは大したことがないように見えるかもしれませんが、適切な大きさで使うと、その効果はかなり見事なものになりえます。
 
 <div class="cblock">
   <div class="cpt" style="width:576px;">
     <img src="img/tte/subpx.png" id="fig:img-subpx" alt="Subpixel rendering. Left: ">
     <br>
-    <b>{*@fig:img-subpx}</b>: Subpixel rendering.
-    <b>a</b>: &lsquo;A&rsquo; on 8&times;8 grid.
-    <b>b</b>: as left, in R,G,B sub-grid.
-    <b>c</b>: shifting rows to distribute sub-pixels evenly.
-    <b>d</b>: new color distribution in pixels (black/white inverted).
+    <b>{*@fig:img-subpx}</b>: サブピクセルレンダリング。
+    <b>a</b>: 8&times;8 のグリッド上の「A」。
+    <b>b</b>: 左と同じものを R、G、B のサブグリッドで。
+    <b>c</b>: サブピクセルを均等に分配するために行をずらしたもの。
+    <b>d</b>: ピクセルでの新しい色の分布（黒と白は反転）。
   </div>
 </div>
 
-Sub-pixel rendering isn't useful for everything. Because it muddles the concept of pixel and color a little, it's only useful for gray-scale images. This does make it great for text, of course. Secondly, the order in which the sub-pixels are ordered also matters. The process shown in **{@fig:img-subpx}** will work for RGB-ordered screens, but would fail quite spectacularly when the pixels are BGR-ordered. Going into all the gritty details it too much to do here, so I'll refer you to [http://www.grc.com/ctwhat.htm](https://www.grc.com/ctwhat.htm), which explains the concept in more detail and gives a few examples too.
+サブピクセルレンダリングは何にでも役立つわけではありません。ピクセルと色の概念を少し混ぜてしまうので、グレースケールの画像にしか役立ちません。もちろん、だからこそテキストにはうってつけなのです。次に、サブピクセルの並び順も重要です。**{@fig:img-subpx}** に示した処理は RGB の順の画面ではうまくいきますが、ピクセルが BGR の順なら見事に失敗します。細かいことを全部説明するのはここでは多すぎるので、[http://www.grc.com/ctwhat.htm](https://www.grc.com/ctwhat.htm) を紹介しておきます。そこでは考え方をもっと詳しく説明していて、例もいくつか載っています。
 
 <div class="cpt_fr" style="width:128px;">
   <img src="img/tte/yesh1.png" id="fig:img-yesh" width=128 alt="4&times;8 subpixel font">
   <br>
-  <b>{*@fig:img-yesh}</b>: 4&times;8 subpixel font
+  <b>{*@fig:img-yesh}</b>: 4&times;8 のサブピクセルフォント
 </div>
 
-JanoS ([http://www.haluz.org/yesh/](http://www.haluz.org/yesh/)) has created nice 4×8 sub-pixel font for use on GBA and NDS (see {@fig:img-yesh}). A width of 4 is really tiny; it's impossible to have glyphs of that size with normal rendering and still have readable text. With sub-pixel rendering, however, it still looks good and now you can have many more characters on the screen than usual.
+JanoS（[http://www.haluz.org/yesh/](http://www.haluz.org/yesh/)）が、GBA と NDS で使える素敵な 4×8 のサブピクセルフォントを作りました（{@fig:img-yesh} を見てください）。幅 4 は本当に小さく、普通の描画ではその大きさのグリフで読めるテキストにすることは不可能です。しかし、サブピクセルレンダリングならまだ見栄えが良く、普段よりずっと多くの文字を画面に出せます。
 
-The output of the demo can be seen in {@fig:img-test-bmp16}. Because sub-pixel rendering is so closely tied to the hardware you're viewing with, it will probably look crummy on most screens or paper. You really have to see it on a GBA screen for the full effect.
+デモの出力は {@fig:img-test-bmp16} で見られます。サブピクセルレンダリングは見ているハードウェアに強く結びついているので、ほとんどの画面や紙ではおそらくひどく見えるでしょう。効果を十分に味わうには、本当に GBA の画面で見る必要があります。
 
-In this particular case, I've converted the font to work with `bmp16_drawg()`: a 16bpp font in bitmap layout. Creating an 8-bit version would not be very hard either. A 1-bpp bitpacked font would of course be impossible because the font has more than two colors. To make sub-pixel fonts look right, you'll actually need a lot of colors: one for each combination of R,G,B, and with difference shades of each. That said, JanoS has managed to reduce the amount of colors to 20 here without too much loss in quality. If anyone wants it, I also have a 15-color version to use with 4bpp fonts.
+この場合は、フォントを `bmp16_drawg()` で使えるように変換しました。ビットマップの配置の 16bpp のフォントです。8 ビット版を作るのもそれほど難しくないでしょう。このフォントには 2 色より多くの色があるので、1bpp にビットパックしたフォントはもちろん不可能です。サブピクセルフォントを正しく見せるには、実はたくさんの色が必要です。R、G、B の組み合わせごとに 1 色、しかもそれぞれの異なる濃淡が必要です。とはいえ、JanoS は質をあまり落とさずに色の数を 20 にまで減らしてくれました。欲しい人がいれば、4bpp のフォントで使うための 15 色版もあります。
 
 ```c {#cd-tte-test-bmp16 .proglist}
 //! Testing a bitmap renderer with JanoS' sub-pixel font.
@@ -924,23 +924,23 @@ void test_tte_bmp16()
   <div class="cpt" style="width:240px;">
     <img src="img/tte/test_tte_bmp16.png" id="fig:img-test-bmp16" alt="Sub-pixel rendering demo">
     <br>
-    <b>{*@fig:img-test-bmp16}</b>: Sub-pixel rendering demo
+    <b>{*@fig:img-test-bmp16}</b>: サブピクセルレンダリングのデモ
   </div>
 </div>
 
-## Object text {#sec-obj}
+## オブジェクトのテキスト {#sec-obj}
 
-Object text is useful if you want the characters to move around a bit, or if you simply don't have any room on a background. There are a few possibilities for object text. The most obvious one is to load all the characters into object VRAM and set the tile-indices of the objects to use the right tiles. This is what the TTE object system uses.
+オブジェクトのテキストは、文字を少し動かしたいときや、単に背景に空きがないときに役立ちます。オブジェクトのテキストにはいくつかの可能性があります。一番明らかなのは、すべての文字をオブジェクトの VRAM に読み込み、オブジェクトのタイルのインデックスを正しいタイルを使うように設定することです。TTE のオブジェクトのシステムはこれを使います。
 
-In many ways, this kind of object text is similar to tilemap text. The tiles are loaded up front and you change the relevant mapping entries (in this case `attr2` of the objects) to the right number. Of course, there are some notable differences as well.
+多くの点で、この種のオブジェクトのテキストはタイルマップのテキストと似ています。タイルは前もって読み込んでおき、関係する対応づけのエントリ（この場合はオブジェクトの `attr2`）を正しい番号に変えます。もちろん、目立った違いもいくつかあります。
 
-For one thing, the positions of the characters must be written to the objects. But not only that, the objects also need to know how big they're supposed to be, and whether they have any other interesting qualities like rotation and palettes. For that reason, I've chosen to use the color attributes 0, 1 and 2 to store the object attributes 0, 1 and 2.
+1 つには、文字の位置をオブジェクトに書き込まなければなりません。それだけでなく、オブジェクトは自分がどれくらいの大きさになるべきか、回転やパレットのようなほかの興味深い性質を持つかどうかも知る必要があります。そのため、色の属性 0、1、2 を使ってオブジェクトの属性 0、1、2 を格納することにしました。
 
-Another problem is which objects to use and how many. This last one could present a big problem, actually, because you may also want to use objects for normal sprites and it would be a really bad idea if they were suddenly overridden by the text system.
+もう 1 つの問題は、どのオブジェクトを、いくつ使うかです。後者は実は大きな問題になりえます。普通のスプライトにもオブジェクトを使いたいかもしれず、それが突然テキストシステムに上書きされたら、本当にまずいことになるからです。
 
-For the latter issue, I use (or perhaps abuse) the `dst` member of the context. Each glyph is represented by an object, so I'll need an object array, but I'm doing it with a little twist. I'm going to start at the _end_ of the array, so that the lower objects can still be used for sprites as normal. Essentially, I'm using OAM as an empty-descending stack. In this arrangement, `dst.data` points to the top of the stack (i.e., the last element in the array), `dst.pitch` is the index to the current object, and `dst.width` is the length of the stack.
+後者の問題には、コンテキストの `dst` メンバを使います（あるいは悪用します）。各グリフは 1 つのオブジェクトで表されるので、オブジェクトの配列が必要ですが、ちょっとひねったやり方をします。配列の_最後_から始めて、下のほうのオブジェクトは普通どおりスプライトに使えるようにするのです。要するに、OAM を空の下降スタックとして使っています。この構成では、`dst.data` はスタックの頂上（つまり配列の最後の要素）を指し、`dst.pitch` は現在のオブジェクトのインデックス、`dst.width` はスタックの長さです。
 
-The default plotter of objects is `obj_drawg`. Remember, `dst.pitch` is used as an index here and `dst.data` is the top of the stack, so a _negative_ index is used to get the current object. After that, the coordinates and the correct glyph index are merged with the color attributes to create the final object.
+オブジェクトのデフォルトの描画関数は `obj_drawg` です。ここでは `dst.pitch` はインデックスとして使われ、`dst.data` はスタックの頂上なので、現在のオブジェクトを得るには_負の_インデックスを使うことを思い出してください。そのあとで、座標と正しいグリフのインデックスを色の属性と組み合わせて、最終的なオブジェクトを作ります。
 
 ```c {#cd-obj-drawg .proglist}
 //! Glyph-plotter using objects.
@@ -962,29 +962,29 @@ void obj_drawg(uint gid)
 }
 ```
 
-And, yes, I know that this use of the `dst` member is somewhat … unorthodox; but it wasn't used here anyway so why not. I am considering using something more proper, but not just yet. Also, remember that this system assumes that the font is already loaded into VRAM and that this can take up a _lot_ of the available tiles. Using the verdana 9 font, that'd be 2\*240 = 480 tiles. That's nearly half of object VRAM. A safer alternative would be to load the necessary tiles dynamically, but that would require more resource management.
+そして、ええ、`dst` メンバのこの使い方が少し……型破りなのはわかっています。でも、どのみちここでは使われていなかったので、別にいいでしょう。もっとまともなものを使うことも考えていますが、まだです。また、このシステムはフォントがすでに VRAM に読み込まれていることを前提にしていて、それが使えるタイルの_かなり_の部分を占めうることも覚えておいてください。verdana 9 のフォントを使うと、2\*240 = 480 タイルになります。それはオブジェクトの VRAM のほぼ半分です。もっと安全な代わりの方法は、必要なタイルを動的に読み込むことですが、それにはもっとリソースの管理が必要になります。
 
-:::warning TTE object text is ugly
+:::warning TTE のオブジェクトのテキストは見苦しい
 
-The way object text is handled in TTE works, but it the implementation is not exactly pretty. The way I'm using `TTC.dst` here is, well, bad. There is a good chance I'll clean it up a bit later, or at the very least hide the implementation better.
+TTE でのオブジェクトのテキストの扱い方は動きはしますが、実装はきれいとは言えません。ここでの `TTC.dst` の使い方は、まあ、良くありません。あとで少しきれいにするか、少なくとも実装をもっとうまく隠す可能性は高いです。
 
 :::
 
-### Example: letters. Onna path {#ssec-obj-demo}
+### 例: 文字たち。経路の上で {#ssec-obj-demo}
 
-The defining characteristic of objects is that they're separate from backgrounds; they can move around the screen independently. Object text is most likely used for text that is dynamic or has to travel along some sort of path. In this case, I'll make them fly on a parameterized path called a [Lissajous curve](https://en.wikipedia.org/wiki/Lissajous_curve) (see {@fig:img-test-obj}).
+オブジェクトの決定的な特徴は、背景から独立していて、画面上を自由に動き回れることです。オブジェクトのテキストは、動的なテキストや、何らかの経路に沿って移動しなければならないテキストに使われることが多いでしょう。この場合は、[リサージュ曲線](https://en.wikipedia.org/wiki/Lissajous_curve)と呼ばれる媒介変数表示の経路の上を飛ばします（{@fig:img-test-obj} を見てください）。
 
 <div class="cpt_fr" style="width:240px;">
   <img src="img/tte/test_tte_obj.png" id="fig:img-test-obj" alt="Object text on a path.">
   <br>
-  <b>{*@fig:img-test-obj}</b>: Object text on a path.
+  <b>{*@fig:img-test-obj}</b>: 経路の上のオブジェクトのテキスト。
 </div>
 
-The code is given below. After initializing the usual suspects, `tte_init_obj()` is called. The object stack starts at the back of OAM, which is also what the system defaults to if `NULL` passed as the first parameter. The next three are the object attributes. Because I want to use the default variable width font, verdana 9, the attributes should be set to 8×16 objects. The bitdepth of the tiles will always be 4 to keep the number of used tiles within limits. The rest of the initialization should be easy to understand.
+コードを下に示します。いつもの面々を初期化したあとで、`tte_init_obj()` を呼びます。オブジェクトのスタックは OAM の後ろから始まります。最初のパラメータに `NULL` を渡した場合も、システムはそれをデフォルトにします。次の 3 つはオブジェクトの属性です。デフォルトの可変幅のフォント verdana 9 を使いたいので、属性は 8×16 のオブジェクトに設定するべきです。使うタイルの数を制限内に収めるため、タイルのビット深度は常に 4 です。初期化の残りは簡単に理解できるはずです。
 
-Making the string itself is done at step 2. Note that the string also set the paper color attribute (which corresponds to obj.attr2) to 0x1000 to make the “omg” red. After these few lines, the text handling itself is complete.
+文字列そのものを作るのは手順 2 です。“omg” を赤くするために、文字列で紙の色の属性（obj.attr2 に対応します）も 0x1000 に設定していることに注意してください。この数行で、テキストの処理自体は完了です。
 
-In step 3, the coordinates on the path are calculated. The `t` parameter indicates the how far along the path we are. It is used to calculate the coordinates of each letter – the first one using `t` itself, and the rest are essentially time-delayed. Don't be distracted by the magic numbers: the only reason for their values is to make the effect look alright. Try tweaking them a little to see what they do exactly.
+手順 3 では、経路上の座標を計算します。`t` パラメータは、経路上をどれだけ進んだかを示します。これを使って各文字の座標を計算します。最初の文字は `t` そのものを使い、残りは基本的に時間を遅らせたものです。マジックナンバーに気を取られないでください。それらの値の理由は、効果を見栄え良くすることだけです。少しいじってみて、正確に何をするのか確かめてみてください。
 
 ```c {#cd-test-obj .proglist}
 // Object text demo
@@ -1039,38 +1039,38 @@ void test_tte_obj()
 }
 ```
 
-## Rendering to tiles {#sec-chr}
+## タイルへの描画 {#sec-chr}
 
-Using tilemaps for text is nice, but will only work if the dimensions of the glyphs are multiples of 8. There are a few drawbacks in terms of readability: narrow characters such as ‘i’ will seem either overly wide, or be surrounded by many empty pixels. Also, you can't put many characters on a line because there are only so many tiles.
+テキストにタイルマップを使うのは便利ですが、グリフの寸法が 8 の倍数の場合にしか使えません。読みやすさの点でもいくつか欠点があります。「i」のような細い文字は、幅が広すぎるように見えるか、たくさんの空のピクセルに囲まれてしまいます。また、タイルの数には限りがあるので、1 行にたくさんの文字を置けません。
 
-Variable-width fonts (<dfn>vwf</dfn>; also known as proportional fonts) solve this problem. Using variable-width fonts on bitmaps is quite easy, as shown in the ["Bitmapped text" section](#sec-bmp).. However, using it in tilemap modes is a little trickier: how do you draw on a tilemap where the tiles are 8×8 in size?
+可変幅のフォント（<dfn>vwf</dfn>。プロポーショナルフォントとも呼ばれます）はこの問題を解決します。[「ビットマップのテキスト」の節](#sec-bmp)で示したように、ビットマップで可変幅のフォントを使うのはとても簡単です。しかし、タイルマップのモードで使うのは少しやっかいです。タイルの大きさが 8×8 のタイルマップに、どうやって描けばいいのでしょうか？
 
-Well, you don't. Not exactly. The key is not to draw to the map, but to the tiles that the map shows.
+まあ、描かないのです。正確には違います。鍵は、マップに描くのではなく、マップが表示しているタイルに描くことです。
 
-### Basic tile rendering {#ssec-chr-base}
+### 基本のタイルへの描画 {#ssec-chr-base}
 
-The usual way to work with tilemaps is that you load up a tileset, and then select the ones you want to show up on the screen by filling the tilemap. In those circumstances, the tileset is often static, with the map being updated for things like scrolling. Rendering to tiles reverses that procedure.
+タイルマップの普通の使い方は、タイルセットを読み込み、タイルマップを埋めることで、画面に表示したいタイルを選ぶというものです。その場合、タイルセットは静的なことが多く、スクロールなどのためにマップのほうを更新します。タイルへの描画は、その手順を逆にします。
 
-First, you need to set up a map where each entry points to a unique tile. This essentially forms a graphical surface out of the tiles, which you can then draw to like any other. The most obvious way to do this is to simply fill up the screenblock with consecutive numbers (see {@fig:img-chr4-map}a). However, a better way to map the tiles is by mapping tiles in column-major order (see {@fig:img-chr4-map}b) , for the same reason I chose it for the glyph format: the words in a column of tiles are consecutive.
+まず、各エントリが固有のタイルを指すマップを準備する必要があります。これで基本的に、タイルからグラフィックの描画先ができ、ほかのものと同じようにそこに描けるようになります。一番明らかなやり方は、スクリーンブロックを単に連続した番号で埋めることです（{@fig:img-chr4-map}a を見てください）。しかし、もっと良いやり方は、タイルを列優先の順序で対応づけることです（{@fig:img-chr4-map}b を見てください）。グリフの形式でそれを選んだのと同じ理由で、タイルの列の中のワードが連続するからです。
 
 <div class="cblock" id="fig:img-chr4-map">
   <table border=0 cellpadding=4 cellspacing=0 width=70%>
     <tr>
       <td>
         <img src="img/tte/chr4r_map.png" alt="">
-        <b>{*@fig:img-chr4-map}a</b>. Row-major tile indexing.
+        <b>{*@fig:img-chr4-map}a</b>。行優先のタイルのインデックス。
       </td>
       <td>
         <img src="img/tte/chr4c_map.png" alt="">
-        <b>{*@fig:img-chr4-map}b</b>. Column-major tile indexing.
+        <b>{*@fig:img-chr4-map}b</b>。列優先のタイルのインデックス。
       </td>
     </tr>
   </table>
 </div>
 
-Preparing the map is the easy part; the problem is knowing which part of which tile to edit to plot a pixel. First, you need to split the coordinates into tile coordinates and pixel-in-tile coordinates. This comes down to division and modulo by 8, respectively. Note that in column-major mode you only need to do this for the _x_ coordinate. With this information, you can find the right word. The horizontal in-tile coordinate tells you which nybble in the word to update and at that point it's the usual bitfield insertion.
+マップの準備は簡単な部分です。問題は、ピクセルを描くのに、どのタイルのどの部分を編集すればいいかを知ることです。まず、座標をタイルの座標と、タイルの中のピクセルの座標に分ける必要があります。これは、それぞれ 8 による除算と剰余になります。列優先のモードでは、これを _x_ 座標についてだけ行えばよいことに注意してください。この情報で、正しいワードを見つけられます。タイルの中の横方向の座標から、ワードのどの 4 ビットを更新すればいいかがわかり、そこからはいつものビットフィールドの挿入です。
 
-Tonclib has routines for drawing onto 4bpp, column-major tiles (referred to as <dfn>chr4c</dfn> mode). The plotter and the map preparation functions are given below, along with a demonstration routine to explain their use.
+Tonclib には、4bpp で列優先のタイル（<dfn>chr4c</dfn> モードと呼びます）に描くためのルーチンがあります。描画関数とマップの準備の関数を、その使い方を説明するためのデモのルーチンとともに下に示します。
 
 ```c {#cd-chr4c-test .proglist}
 //# From tonc_schr4c.c
@@ -1139,11 +1139,11 @@ void test_chr4()
 }
 ```
 
-The pixel plotter starts by finding the tile-column that the desired pixel is in. The column-index is simply _x_/8; this is multiplied by the pitch to get a pointer to the top of the column. Note that pitch is used a little different than usual. Normally, it denotes the number of bytes to the next scanline, but in this case it's used as the byte-offset to next tile-column. For a column-major mode, this comes down to the *height*×*bpp*\*8/8, but all that is done in `srf_init()`. Once you have the right tile, the pixel you want is in the _x_%8<sup>th</sup> nybble, meaning the required shift for the insertion is _x_%8\*4. After that, it's just a matter of inserting the color. <span class="mini">(For the curious: I'm casting _x_ to unsigned int first because division and modulo will then be optimized to shifts/masks properly.)</span>
+ピクセルの描画関数は、目的のピクセルがあるタイルの列を求めるところから始まります。列のインデックスは単に _x_/8 です。これにピッチを掛けて、その列の一番上へのポインタを得ます。ピッチの使い方がいつもと少し違うことに注意してください。普通は次のスキャンラインまでのバイト数を表しますが、この場合は次のタイルの列までのバイトのオフセットとして使っています。列優先のモードでは、これは *高さ*×*bpp*\*8/8 になりますが、それはすべて `srf_init()` の中で行われます。正しいタイルが得られたら、目的のピクセルは _x_%8<sup>th</sup> の 4 ビットにあるので、挿入に必要なシフトは _x_%8\*4 です。そのあとは色を挿入するだけです。<span class="mini">（気になる人のために: _x_ を最初に unsigned int にキャストしているのは、そうすると除算と剰余がきちんとシフトとマスクに最適化されるからです。）</span>
 
-The `schr4c_prep_map()` function just initializes the map in the order given in {@fig:img-chr4-map}b. Well, almost.I'm also adding a value to each screen-entry like I usually do for palettes and tile-offsets.
+`schr4c_prep_map()` 関数は、{@fig:img-chr4-map}b に示した順序でマップを初期化するだけです。まあ、ほぼそうです。パレットやタイルのオフセットのためにいつもしているように、各スクリーンエントリに値を加えてもいます。
 
-The output of `test_chr4()` can be seen in {@fig:img-chr4-test}a. It's a white rectangle with red, green and blue lines, as expected. {\*@fig:img-chr4-test}b is a picture taken from VBA's tile viewer, showing how the contents of the surface. Doesn't quite look what's on the screen, does it? Still, if you look closely, you can figure out how it works. Each set of 20 tiles forms one tile-column on the screen (indicated by yellow blocks). When you place these tiles on top of each other, you'll see the picture of {@fig:img-chr4-test}a emerge.
+`test_chr4()` の出力は {@fig:img-chr4-test}a で見られます。予想どおり、赤、緑、青の線がある白い長方形です。{\*@fig:img-chr4-test}b は VBA のタイルビューアから取った画像で、描画先の中身がどうなっているかを示しています。画面に映っているものとはあまり似ていませんね？ それでも、よく見れば仕組みがわかります。20 タイルずつの組が、画面上のタイルの 1 列になっています（黄色のブロックで示しています）。これらのタイルを縦に積み重ねると、{@fig:img-chr4-test}a の絵が浮かび上がってきます。
 
 <div class="cblock">
   <table width=60% id="fig:img-chr4-test">
@@ -1152,25 +1152,25 @@ The output of `test_chr4()` can be seen in {@fig:img-chr4-test}a. It's a white r
 	      <div class="cpt" style="width:80px;">
 	        <img src="img/tte/chr4_test.png" alt="Output of chr4_test">
           <br>
-	        <b>{*@fig:img-chr4-test}a</b>: chr4_test() output
+	        <b>{*@fig:img-chr4-test}a</b>: chr4_test() の出力
 	      </div>
       </td>
       <td>
 	      <div class="cpt" style="width:289px;">
 	        <img src="img/tte/chr4_test_tiles.png" alt="Output of chr4_test">
           <br>
-	        <b>{*@fig:img-chr4-test}b</b>: chr4_test() tiles. The yellow blocks indicate tiles of a single column.
+	        <b>{*@fig:img-chr4-test}b</b>: chr4_test() のタイル。黄色のブロックは 1 列ぶんのタイルを示します。
 	      </div>
       </td>
     </tr>
   </table>
 </div>
 
-### Text rendering on tiles {#ssec-chr-drawg}
+### タイルへのテキストの描画 {#ssec-chr-drawg}
 
-#### Version 1 : pixel by pixel
+#### 版 1: 1 ピクセルずつ
 
-The easiest way to render glyphs to tiles is to follow the template from the ["Bitmapped text" section](#sec-bmp).. This is done in the function below.
+グリフをタイルに描く一番簡単な方法は、[「ビットマップのテキスト」の節](#sec-bmp)のひな形に従うことです。それを次の関数で行っています。
 
 ```c {#cd-chr4-drawg-b1cts-a .proglist}
 //! Simple version of chr4 renderer.
@@ -1199,17 +1199,17 @@ void chr4_drawg_b1cts_base(uint gid)
 }
 ```
 
-Now, you may think that this runs pretty slowly thanks to all the recalculations in `schr4c_plot()`. And you'd be right, but in truth, it's not as bad as I originally thought. It is possible to speed it up by simply inlining things, but the real gain comes from drawing pixels in parallel.
+さて、`schr4c_plot()` での計算のやり直しのせいで、これはかなり遅く動くと思うかもしれません。そのとおりですが、実のところ、最初に思っていたほど悪くはありません。単にインライン化するだけでも速くできますが、本当の向上は、ピクセルを並列に描くことから来ます。
 
-#### Version 2 : 8 pixels at once.
+#### 版 2: 8 ピクセルを同時に
 
-Instead of plotting pixel individually, you can also plot multiple pixels simultaneously. The `bmp8_drawg_b1cts()` renderer we saw earlier did this: it unpacked 2 pixels and drew together. In the case of 4bpp tiles, you can unpack the source byte into one (32bit) word and plot _eight_ pixels at once. The only downside is that you'll probably have to split it over two tiles.
+ピクセルを 1 つずつ描く代わりに、複数のピクセルを同時に描くこともできます。前に見た `bmp8_drawg_b1cts()` の描画処理はこれをしていました。2 ピクセルを展開して一緒に描いていたのです。4bpp のタイルの場合は、元のバイトを 1 つの（32 ビットの）ワードに展開して、_8_ ピクセルを同時に描けます。唯一の欠点は、おそらく 2 つのタイルに分けなければならないことです。
 
-The next function is TTE's main glyph renderer for tiles, and it is a doozy. There are two stages for the rendering in the inner loop: bit unpacking the source byte, `raw` and splitting the prepared pixel `px` into two adjacent tiles. These correspond to steps 3 and 4, respectively.
+次の関数は、TTE のタイル用の主なグリフの描画処理で、これがなかなかの代物です。内側のループには描画の 2 つの段階があります。元のバイト `raw` のビットの展開と、用意したピクセル `px` を隣り合った 2 つのタイルに分けることです。これらはそれぞれ手順 3 と 4 に対応します。
 
-Normally, the bitunpack is done in a loop, but sometimes it's faster to do it in other ways. For details, see my document on [bit tricks](https://www.coranac.com/documents/bittrick/#sec-bup). The first five lines of step 3 do the unpacking. For example, it turns a binary `0001 1011` into a hexadecimal `0x00011011`. This is then multiplied by 15 and `ink` to give the pixel mask `pxmask` and the colored pixels `px`, respectively.
+普通、ビットの展開はループで行いますが、別の方法のほうが速いこともあります。詳しくは、私の[ビットの技](https://www.coranac.com/documents/bittrick/#sec-bup)についての文書を見てください。手順 3 の最初の 5 行が展開を行います。たとえば、2 進数の `0001 1011` を 16 進数の `0x00011011` に変換します。それから、これに 15 と `ink` を掛けて、それぞれピクセルのマスク `pxmask` と色の付いたピクセル `px` を得ます。
 
-Step 4 distributes the word with the pixels over two tiles if necessary. In step 1, left and right shifts were prepared to supply the bit offsets for this procedure. Now, for larger glyphs this will mean that certain destination words are used twice, but this can't be helped (actually it can, but the procedure is ugly and possibly not worth it). An alternative to this is using the destination once and read (and unpack/color) the source twice; however, as VRAM is considerably faster than ROM I doubt this would be beneficial.
+手順 4 では、必要ならピクセルの入ったワードを 2 つのタイルに分配します。手順 1 で、この処理のためのビットのオフセットとなる左右のシフトを用意しておきました。さて、大きなグリフでは、書き込み先のワードのいくつかが 2 回使われることになりますが、これは仕方がありません（実は仕方がなくはないのですが、その手順は見苦しく、おそらくその価値はありません）。代わりの方法として、書き込み先を 1 回だけ使い、元のデータを 2 回読む（そして展開/色付けする）こともできます。しかし、VRAM は ROM よりかなり速いので、それが得になるとは思えません。
 
 <pre><code class="language-c hljs">//! Render 1bpp fonts to 4bpp tiles; col-major order.
 void chr4c_drawg_b1cts(uint gid)
@@ -1265,15 +1265,15 @@ void chr4c_drawg_b1cts(uint gid)
 }
 </code></pre>
 
-`chr4c_drawg_b1cts()` is pretty fast. It certainly is faster than the earlier version by about 33%. It's actually even faster than the bmp8 renderer, but only by a slim margin.
+`chr4c_drawg_b1cts()` はかなり速いです。前の版より約 33% 速いのは確かです。実は bmp8 の描画処理より速いのですが、それはほんのわずかな差です。
 
-Of course, you can always go one better. The various shifts and conditionals make it perfect for ARM code, rather than Thumb. And to make sure it goes exactly according to plan, I'm doing this in assembly.
+もちろん、いつでももう一段上を目指せます。いろいろなシフトや条件があるので、これは Thumb より ARM のコードにうってつけです。そして、確実に計画どおりに動くように、アセンブリで書きます。
 
-#### Version 3: ARM asm
+#### 版 3: ARM アセンブリ
 
-The next function is `chr4_drawg_b1cts_fast()`, the ARM assembly equivalent of version 2. There's an almost one-to-one correspondence between the C and asm loops, so just loop to the C version for the explanation.
+次の関数は `chr4_drawg_b1cts_fast()` で、版 2 の ARM アセンブリ版です。C とアセンブリのループはほぼ 1 対 1 で対応しているので、説明は C の版を見てください。
 
-Speed-wise, the asm version is _much_ better than the C version. Even in ROM, which is _very_ bad for ARM code, it is still faster than the Thumb version. There are one or two tiny details by which you can speed this thing up, but by and large this should be it for fonts of arbitrary dimensions. Of course, if you have fixed sizes for your font and do not require recoloring or transparency, things will be a little different.
+速さの点では、アセンブリ版は C の版より_ずっと_優れています。ARM のコードにとって_とても_不利な ROM の中でさえ、Thumb の版より速いのです。これをさらに速くできる細かい点が 1 つか 2 つありますが、おおむね、任意の寸法のフォントについてはこれで決まりのはずです。もちろん、フォントの大きさが固定で、色の付け直しや透明が必要ないなら、事情は少し違ってきます。
 
 ```armasm {#cd-chr4c-drawg-b1cts-fast .proglist}
 // Include TTC/TFont member offsets plz.
@@ -1402,11 +1402,11 @@ chr4c_drawg_b1cts_fast:
 @ EOF
 ```
 
-### Multi-color and shaded fonts. {#ssec-chr4-drawg-b4}
+### 多色のフォントと影付きのフォント {#ssec-chr4-drawg-b4}
 
-Bitpacked fonts will give you monochrome glyphs. If you want more colors – for shading or anti-aliasing – you'll need to use more bits. The code for this is nearly identical to the 1bpp bitpacked version; the most important differences being a different source datatype and an alternative method for finding the right mask. Oh, and you won't have to unpack the bits anymore, of course.
+ビットパックしたフォントでは、モノクロのグリフになります。影やアンチエイリアスのためにもっと色が欲しければ、もっと多くのビットを使う必要があります。そのコードは 1bpp でビットパックした版とほとんど同じです。最も重要な違いは、元のデータの型が違うことと、正しいマスクを求める方法が違うことです。ああ、それからもちろん、もうビットを展開する必要はありません。
 
-The following snippet shows how you can make a transparency mask out of a word of 4bit pixels. Essentially, you mask all the bits of a nybble together and mask out the other bits of that nybble. This gives 0 if the whole nybble was empty, or 1 is it wasn't. This can then again be multiplied by 15 to give the proper mask.
+次のコードは、4 ビットのピクセルのワードから透明のマスクを作る方法を示しています。基本的には、4 ビットのすべてのビットをまとめて、その 4 ビットのほかのビットをマスクで消します。これで、4 ビット全体が空なら 0、そうでなければ 1 になります。これにまた 15 を掛ければ、正しいマスクになります。
 
 ```c {.proglist}
 // Create pixel mask from 8x 4 bits
@@ -1423,14 +1423,14 @@ pxmask *= 15;
 <div class="cpt_fr" style="width:128px;">
   <img src="img/tte/verdana9_b4.png" id="fig:img-verdana9-b4" width="128" alt="">
   <br>
-  <b>{*@fig:img-verdana9-b4}</b>: Verdana 9, with shade.
+  <b>{*@fig:img-verdana9-b4}</b>: 影付きの Verdana 9。
 </div>
 
-#### Shaded characters
+#### 影付きの文字
 
-No, not shad*y* characters; shad*ed* characters. What you'll often see in games is that the text has either an outline or a bit of shading on one side. While it is possible to create shading with a 1bpp font, it's easier to simply build it into the font itself (see {@fig:img-verdana9-b4}). Because this means more colors than 1bpp can handle, you may be tempted to use a 2bpp font here. However, unless you are _really_ stressed for memory, it's more convenient to use 4bpp here as well.
+いいえ、怪し*げ*な人物（shady characters）ではありません。影*付き*の文字（shaded characters）です。ゲームでよく見かけるのは、テキストに縁取りがあるか、片側に少し影があるものです。1bpp のフォントで影を作ることもできますが、単にフォントそのものに組み込むほうが簡単です（{@fig:img-verdana9-b4} を見てください）。そうすると 1bpp で扱える以上の色が必要になるので、ここでは 2bpp のフォントを使いたくなるかもしれません。しかし、本当にメモリが_ひどく_足りないのでなければ、ここでも 4bpp を使うほうが便利です。
 
-At that point, you can follow the procedure described earlier. But by cleverly using the bits that make up the shading, you can allow the shadow color to be variable as well. For example, you can designate bit 0 as the 'ink' bit, bit 1 as the 'shadow' bit and if necessary bit 2 as the 'paper' bit. Then `raw&0x11111111` gives the 'ink' mask, and `(raw>>1)&0x11111111` gives the 'shadow' mask; these can then be used to apply colors and to create the full mask. The following is a demonstration of how this can be done. Note that each line here corresponds exactly to one ARM instruction, so this should be an efficient method. Well, in ARM code anyway.
+そこからは、先ほど説明した手順に従えます。しかし、影を作っているビットを巧みに使えば、影の色も可変にできます。たとえば、ビット 0 を「インク」のビット、ビット 1 を「影」のビット、必要ならビット 2 を「紙」のビットと決めることができます。そうすると、`raw&0x11111111` で「インク」のマスクが、`(raw>>1)&0x11111111` で「影」のマスクが得られ、これらを使って色を付けたり、完全なマスクを作ったりできます。以下は、これをどうやってできるかの実演です。ここの各行はちょうど 1 つの ARM の命令に対応するので、効率の良い方法のはずです。まあ、いずれにせよ ARM のコードではです。
 
 ```c {.proglist}
 // Use bits 0 and 1 from each nybble to create masks and apply colors.
@@ -1446,7 +1446,7 @@ px      = px * ink;             // Color with ink
 px     += raw* shadow;          // Add shadow pixels
 ```
 
-The `chr4c_drawg_b4cts()` renderer uses this method to color both the ink and shadow pixels. It's essentially `chr4c_drawg_b4cts()` except for the things in bold and the removal of the bit unpacking. Also note the ‘no-pixel’ condition here. If `pxmask` is zero, there's nothing to do; and so we won't.
+`chr4c_drawg_b4cts()` の描画処理は、この方法を使ってインクと影の両方のピクセルに色を付けます。太字の部分とビットの展開がなくなっていることを除けば、基本的に `chr4c_drawg_b4cts()` です（訳注: 比較の対象は 1bpp 版の描画処理と思われます）。ここでの「ピクセルなし」の条件にも注意してください。`pxmask` がゼロなら、することは何もないので、何もしません。
 
 <pre><code class="language-c hljs">//! 4bpp font, tilestrips with ink/shadow coloring.
 void chr4c_drawg_b4cts(uint gid)
@@ -1500,36 +1500,36 @@ void chr4c_drawg_b4cts(uint gid)
 }
 </code></pre>
 
-### Tips for fast tile rendering {#ssec-chr4-tips}
+### タイルへの描画を速くするコツ {#ssec-chr4-tips}
 
-I've done a fair bit of profiling for these tile renderers and think I have a decent knowledge of which techniques will be efficient and which won't. These are some of my observations.
+これらのタイルの描画処理についてはかなりプロファイリングをしたので、どの技法が効率的で、どれがそうでないかについてはそれなりにわかっているつもりです。以下は私の観察の一部です。
 
-- **Profile**. Before conjuring up tricky routines, make sure the original simple version warrants optimizing _and_ that the clever routine is actually faster.
-- **Render transparently**. Now, you'd think that this would be slower, but it may not be. The thing about transparent text is that there are much less foreground pixels then there are background pixels, so the number of pixels to render is lower as well.
-- **Don't buffer**. My first trials had separate stages for unpacking/coloring and inserting into VRAM. It put the prepared pixels into an IWRAM buffer, then copied that to VRAM. If I recall correctly, combining the loops and tossing the buffer saved me 30%.
-- **Parallelize**. The road to getting the right data is long. It helps if you don't have to travel it that much. That said, if you have many empty pixels, drawing 8 of them at once may be a waste of effort. This will depend on the font.
-- **ARM code is teh r0xx0rz**. There are lots of shifts, masks and quantities in these routines. This makes them particularly apt for ARM code instead of Thumb. In fact, even in ROM with its 16-bit bus, the ARM versions beat out the Thumb-compiled ones. Having said that …
-- **Do not let GCC use constant masks in ARM**. There is an unfortunate bug in the ARM optimizer concerning ANDing literals (like 0x11111111). Instead of emitting a simple `ldr`+`and` pair, it will get clever and avoid the load by splitting the mask out over multiple byte-size masks. So instead of one instruction in the inner-loop, you now have four. Perhaps even more, depending on how many extra registers this takes. Note, this _only_ happens for constants and only for ARM-compiled code. A work-around is to have the mask in a global variable to be loaded before the loops. This is in part why I've hand-assembled some of the routines.
-- **Code for special case if you can**. If you only have one font and don't require things like coloring, you can code for that case only and potentially save much time. Using constants for source and destination dimensions instead of using the ones in memory will also help a little.
-- **Use column-major accessing**. The routines presented above require extra code to move from one tile-row to another. If you use the tiles in a column-major layout, you won't have to do this.
+- **プロファイリングする**。凝ったルーチンをひねり出す前に、元の単純な版が最適化に値すること、_そして_賢いルーチンが本当に速いことを確かめてください。
+- **透明に描く**。さて、これは遅くなるだろうと思うかもしれませんが、そうとは限りません。透明なテキストの特徴は、前景のピクセルが背景のピクセルよりずっと少ないことで、そのため描画するピクセルの数も少なくなります。
+- **バッファを使わない**。最初の試作では、展開/色付けと VRAM への挿入の段階が分かれていました。用意したピクセルを IWRAM のバッファに入れ、それから VRAM にコピーしていたのです。記憶が正しければ、ループを 1 つにしてバッファを捨てたことで 30% 節約できました。
+- **並列化する**。正しいデータにたどり着くまでの道のりは長いです。その道をあまり何度も通らずに済めば助かります。とはいえ、空のピクセルが多いなら、8 ピクセルを同時に描くのは努力の無駄かもしれません。これはフォントによります。
+- **ARM のコードは最強**。これらのルーチンには、シフト、マスク、量がたくさんあります。そのため、Thumb より ARM のコードに特に向いています。実際、16 ビットのバスの ROM の中でさえ、ARM 版は Thumb でコンパイルしたものに勝ちます。とはいえ……
+- **ARM では GCC に定数のマスクを使わせない**。（0x11111111 のような）リテラルとの AND に関して、ARM の最適化には残念なバグがあります。単純な `ldr`+`and` の組を出す代わりに、賢く立ち回って、マスクを複数のバイトの大きさのマスクに分けることで読み込みを避けようとするのです。その結果、内側のループで 1 命令で済むはずが 4 命令になります。余分にどれだけのレジスタを使うかによっては、さらに増えるかもしれません。これは定数の場合_だけ_、しかも ARM でコンパイルしたコードの場合だけに起きることに注意してください。回避策は、マスクをグローバル変数に入れておき、ループの前に読み込むことです。いくつかのルーチンを手でアセンブルしたのは、一つにはこのためです。
+- **できるなら特殊な場合のためにコードを書く**。フォントが 1 つしかなく、色付けなどが必要ないなら、その場合だけのためにコードを書けば、大幅に時間を節約できる可能性があります。読み込み元と書き込み先の寸法に、メモリにあるものではなく定数を使うのも少し役立ちます。
+- **列優先のアクセスを使う**。上で示したルーチンは、タイルのある行から別の行に移るための余分なコードを必要とします。タイルを列優先の配置で使えば、それは必要なくなります。
 
-Please apply the standard disclaimer to this list. I've found these techniques to work for my cases, but they won't apply to every case. For example, other systems (\*cough\* NDS) will have different CPU architectures and memory characteristics, and that would affect the speed.
+このリストには、お決まりの但し書きを付けておいてください。これらの技法は私の場合にはうまくいきましたが、すべての場合に当てはまるわけではありません。たとえば、ほかのシステム（\*ゴホン\* NDS）は CPU のアーキテクチャやメモリの特性が違い、それが速さに影響するでしょう。
 
-### Colored text on a dialog window. {#ssec-chr4-demo}
+### 会話ウィンドウの上の色付きのテキスト {#ssec-chr4-demo}
 
 <div class="cpt_fr" style="width:240px;">
   <img src="img/tte/test_tte_chr4.png" id="fig:img-test-chr4" alt="Text on tiles.">
   <br>
-  <b>{*@fig:img-test-chr4}</b>: Text on tiles.
+  <b>{*@fig:img-test-chr4}</b>: タイルの上のテキスト。
 </div>
 
-The situation depicted in {@fig:img-test-chr4} should be familiar. The key point here is that there is a background map, and a dialog box with text in it. This text is static, but the position in the top-left corner is continually updated as you scroll along the map.
+{@fig:img-test-chr4} に描かれている状況はおなじみのはずです。要点は、背景のマップと、テキストの入った会話ボックスがあることです。このテキストは静的ですが、左上の隅の位置は、マップに沿ってスクロールするにつれて絶えず更新されます。
 
-The core function for this demo is `test_tte_chr4()`. The first thing it does is call `tte_init_chr4c()` to initialize the text system for chr4c-mode. The third argument is the offset for map-entries: `0xF000` meaning it uses sub-palette 15. The fourth is a word for the color attributes: 13 for the ink, 15 for the shadow and 0 for the others. For this demonstration, I'm using the 4bpp version of verdana9 (see {@fig:img-verdana9-b4}) and the fast assembly version to render the glyphs.
+このデモの中心となる関数は `test_tte_chr4()` です。最初に、`tte_init_chr4c()` を呼んで、テキストシステムを chr4c モード用に初期化します。3 つ目の引数はマップのエントリのオフセットで、`0xF000` はサブパレット 15 を使うという意味です。4 つ目は色の属性のためのワードで、インクに 13、影に 15、ほかには 0 です。このデモでは、verdana9 の 4bpp 版（{@fig:img-verdana9-b4} を見てください）と、グリフの描画に速いアセンブリ版を使っています。
 
-Step 2 loads the background map and the dialog box. Note that the dialog box is copied to the tiles that the text is rendered to. When the text is printed, this will show that the glyphs indeed are rendered transparently. This does more or less mean that I can't use the standard eraser, because that'd wipe the box as well.
+手順 2 では、背景のマップと会話ボックスを読み込みます。会話ボックスは、テキストを描画するタイルにコピーしていることに注意してください。テキストを表示すると、グリフが本当に透明に描画されていることがわかります。これはつまり、標準の消去処理はボックスまで消してしまうので、ほぼ使えないということでもあります。
 
-The dialog text is drawn in step 3. The `ci` and `cs` tags set the ink and shadow color attributes, respectively. This makes the string “arrows” use colors 1 and 2 (well, 0xF1 and 0xF2), and so forth.
+会話のテキストは手順 3 で描きます。`ci` タグと `cs` タグは、それぞれインクと影の色の属性を設定します。これで、文字列 “arrows” は色 1 と 2（正確には 0xF1 と 0xF2）を使う、という具合になります。
 
 <pre><code class="language-c hljs">//! Set up a rectangle for text, with the non-text layers darkened for contrast.
 void win_textbox(uint bgnr, int left, int top, int right, int bottom, uint bldy)
@@ -1616,28 +1616,28 @@ void test_tte_chr4()
 }
 </code></pre>
 
-I'll close off this section with a word on the text box. If you look carefully, you'll see that it's semi-transparent. Or, to be precise, the text and the box itself are at normal intensity, but the background that it covers is darker than usual. Two things are necessary for this nice, little effect.
+この節の締めくくりに、テキストボックスについて少し説明します。よく見ると、半透明になっているのがわかるでしょう。正確に言うと、テキストとボックス自体は普通の明るさですが、それが覆っている背景が普段より暗くなっています。この素敵でちょっとした効果には、2 つのことが必要です。
 
-- An inside and outside window must be defined. Both windows should contain all layers, but the inner window must be set to use blending (WIN_BLD). This enables blending for the inside only.
-- The blending mode should be set to fade-to-black (BLD_BLACK) for all layers except the background with the text box.
+- 内側と外側のウィンドウを定義しなければなりません。どちらのウィンドウもすべてのレイヤーを含むようにしますが、内側のウィンドウはブレンドを使う（WIN_BLD）ように設定しなければなりません。これで内側でだけブレンドが有効になります。
+- ブレンドのモードは、テキストボックスのある背景を除くすべてのレイヤーについて、黒へのフェード（BLD_BLACK）に設定するべきです。
 
-This is what `win_textbox()` is for. The function also sets the margins so that the text would wrap nicely inside the box.
+`win_textbox()` はそのためのものです。この関数は、テキストがボックスの中できれいに折り返されるようにマージンも設定します。
 
-## Scripting, console IO and other niceties {#sec-misc}
+## スクリプト、コンソール入出力、そのほかの便利なもの {#sec-misc}
 
-### TTE formatting commands {#ssec-misc-tags}
+### TTE の書式のコマンド {#ssec-misc-tags}
 
-The TTE context contains members that control positioning, colors, fonts as well as a few other things. There are two approaches to changing these parameters. The first is to hard code changes in the state through direct member access or functions like `tte_set_ink()`. This works nice and fast, but isn't very flexible. The second is to use <dfn>formatting tags</dfn> in the strings themselves – the system parses the string for these tags and interprets them accordingly. This is basically a form of scripting.
+TTE のコンテキストには、位置、色、フォント、そのほかいくつかのものを制御するメンバがあります。これらのパラメータを変える方法は 2 つあります。1 つ目は、メンバへの直接のアクセスや `tte_set_ink()` のような関数で、状態の変更をハードコードすることです。これは素直で速いのですが、あまり柔軟ではありません。2 つ目は、文字列そのものの中で<dfn>書式のタグ</dfn>を使うことです。システムは文字列からこれらのタグを解析し、それに応じて解釈します。これは基本的に一種のスクリプトです。
 
-The tags that TTE uses look like this:
+TTE が使うタグは次のようなものです。
 
 ```
 #{`_`tag0`_`:`_`args`_`; `_`tag1`_`:`_`args`_`}
 ```
 
-The code itself is starts with \``#{`' and ends with \``}`'. Each command consists of a tag, followed by a colon and comma-separated arguments when appropriate. Multiple commands can be separated by a semi-colon. For example, \``#{es; P:10,16}`' would clear the screen and set the cursor to (10, 16).
+コード自体は \``#{`' で始まり \``}`' で終わります。各コマンドはタグで構成され、必要ならそのあとにコロンとカンマ区切りの引数が続きます。複数のコマンドはセミコロンで区切れます。たとえば、\``#{es; P:10,16}`' は画面をクリアして、カーソルを (10, 16) に設定します。
 
-Now, I could show you how to parse this, but the parser currently in use for this is, well, let's just say it's long and very ugly. Essentially, it's a massive switch-block (sometimes a _double_ switch-block) with stuff like this:
+さて、これの解析の仕方をお見せすることもできますが、今使っているパーサは、まあ、長くてとても見苦しいとだけ言っておきましょう。基本的には、次のようなものが入った巨大な switch ブロック（ときには_二重の_ switch ブロック）です。
 
 <pre><code class="language-c hljs">char *tte_cmd_default(const char *str)
 {
@@ -1674,121 +1674,121 @@ Now, I could show you how to parse this, but the parser currently in use for thi
 }
 </code></pre>
 
-Like I said, ugly; but it'll have to do for now. The incoming pointer points to the first character past the '`#{`'. The command tags are all single or double-lettered; the switch looks for a recognized letter and acts accordingly.
+言ったとおり見苦しいですが、今のところはこれで我慢してもらうしかありません。入ってくるポインタは '`#{`' の次の最初の文字を指しています。コマンドのタグはすべて 1 文字か 2 文字で、switch は認識できる文字を探して、それに応じて処理します。
 
-One of the tags is '`X`', which sets the absolute X-coordinate of the cursor. The `tc->cursorX` will be set to the argument if it is present, or to the left margin if it is not. Note the use of [`strtol()`](https://en.cppreference.com/w/c/string/byte/strtol) here. This is a very interesting function. Not only does it work for both decimal and hex strings, but through the second argument you can retrieve a pointer to right after the number in the string. Alternatives would be `sscanf()` or `atoi()`, but `strtol()` is nicer.
+タグの 1 つは '`X`' で、これはカーソルの絶対的な X 座標を設定します。`tc->cursorX` は、引数があればそれに、なければ左のマージンに設定されます。ここで [`strtol()`](https://en.cppreference.com/w/c/string/byte/strtol) を使っていることに注目してください。これはとても面白い関数です。10 進数と 16 進数の両方の文字列に使えるだけでなく、2 つ目の引数を通して、文字列の中の数値の直後へのポインタを得られます。代わりに `sscanf()` や `atoi()` も使えますが、`strtol()` のほうが便利です。
 
-After handling a tag, it'll look for more tags, or exit if the end delimiter or end of string is found.
+タグを処理したら、さらにタグを探すか、終わりの区切り文字か文字列の終わりが見つかれば抜けます。
 
-{\*@tbl:tte-cmd} shows the available tags. Note that they are case-sensitive and some items can do more than one thing, depending on the number of parameters.
+{\*@tbl:tte-cmd} に、使えるタグを示します。大文字と小文字を区別すること、そしてパラメータの数によっては 2 つ以上のことをする項目もあることに注意してください。
 
 <div class="cblock">
   <table id="tbl:tte-cmd" class="table-data" width= 70%>
     <caption align="bottom">
-      <b>{*@tbl:tte-cmd}</b>: Available TTE formatting tags.
+      <b>{*@tbl:tte-cmd}</b>: 使える TTE の書式のタグ。
     </caption>
     <tr>
-      <th>Code</th>
-      <th>Description</th>
+      <th>コード</th>
+      <th>説明</th>
     </tr>
     <tr>
       <td>P </td>
-      <td>Reset position to top-left margin. </td>
+      <td>位置を左上のマージンに戻す。 </td>
     </tr>
     <tr>
       <td>Pr </td>
-      <td>Restore cursor position (see also <code>Ps</code>). </td>
+      <td>カーソルの位置を復元する（<code>Ps</code> も参照）。 </td>
     </tr>
     <tr>
       <td>Ps </td>
-      <td>Save cursor position. </td>
+      <td>カーソルの位置を保存する。 </td>
     </tr>
     <tr>
       <td>P: <i>x</i>,<i>y</i> </td>
-      <td>Set cursor to coordinates (<i>x</i>,&nbsp;<i>y</i>). </td>
+      <td>カーソルを座標 (<i>x</i>,&nbsp;<i>y</i>) に設定する。 </td>
     </tr>
     <tr>
       <td>X </td>
-      <td>Reset <code>cursorX</code> to left margin.</td>
+      <td><code>cursorX</code> を左のマージンに戻す。</td>
     </tr>
     <tr>
       <td>X: <i>x</i> </td>
-      <td>Set <code>cursorX</code> to <i>x</i>. </td>
+      <td><code>cursorX</code> を <i>x</i> に設定する。 </td>
     </tr>
     <tr>
       <td>Y </td>
-      <td>Reset <code>cursorY</code> to top margin. </td>
+      <td><code>cursorY</code> を上のマージンに戻す。 </td>
     </tr>
     <tr>
       <td>Y: <i>y</i> </td>
-      <td>Set <code>cursorY</code> to <i>y</i>. </td>
+      <td><code>cursorY</code> を <i>y</i> に設定する。 </td>
     </tr>
     <tr>
       <td>c[ispx]:&nbsp;<i>cattr</i> </td>
       <td>
-        Set ink (<code>ci</code>), shadow (<code>cs</code>), paper (<code>cp</code>) or special (<code>cx</code>) color attribute to <i>cattr</i>.
+        インク（<code>ci</code>）、影（<code>cs</code>）、紙（<code>cp</code>）、特殊（<code>cx</code>）の色の属性を <i>cattr</i> に設定する。
       </td>
     </tr>
     <tr>
       <td>e[slbf] </td>
       <td>
-        Erase the screen between margins (<code>es</code>), the current line (<code>el</code>), the current line up to the cursor (<code>eb</code>; backwards), the current line from the cursor (<code>ef</code>; forwards).
+        マージンの間の画面（<code>es</code>）、現在の行（<code>el</code>）、現在の行のカーソルまで（<code>eb</code>。後ろ向き）、現在の行のカーソルから（<code>ef</code>。前向き）を消す。
       </td>
     </tr>
     <tr>
       <td>er: <i>l</i>,<i>t</i>,<i>r</i>,<i>b</i> </td>
-      <td>Erase a rectangle given by (<i>l</i>,<i>t</i>) to (<i>r</i>,<i>b</i>). </td>
+      <td>(<i>l</i>,<i>t</i>) から (<i>r</i>,<i>b</i>) までの長方形を消す。 </td>
     </tr>
     <tr>
       <td>f: <i>idx</i> </td>
-      <td>Set <code>font</code> to <code>TTC.fontTable[<i>idx</i>]</code>. </td>
+      <td><code>font</code> を <code>TTC.fontTable[<i>idx</i>]</code> に設定する。 </td>
     </tr>
     <tr>
       <td>m[ltrb]:&nbsp;<i>value</i> </td>
       <td>
-          Set left (<code>ml</code>), top (<code>mt</code>),right (<code>mr</code>) or bottom (<code>mb</code>) margin to <i>value</i>. 
+          左（<code>ml</code>）、上（<code>mt</code>）、右（<code>mr</code>）、下（<code>mb</code>）のマージンを <i>value</i> に設定する。 
       </td>
     </tr>
     <tr>
       <td>m: <i>l</i>,<i>t</i>,<i>r</i>,<i>b</i> </td>
-      <td>Set margins to rectangle (<i>l</i>,<i>t</i>) - (<i>r</i>,<i>b</i>) </td>
+      <td>マージンを長方形 (<i>l</i>,<i>t</i>) - (<i>r</i>,<i>b</i>) に設定する </td>
     </tr>
     <tr>
       <td>p: <i>dx</i>, <i>dy</i> </td>
-      <td>Move the cursor by (<i>dx</i>, <i>dy</i>). </td>
+      <td>カーソルを (<i>dx</i>, <i>dy</i>) だけ動かす。 </td>
     </tr>
     <tr>
       <td>s: <i>idx</i> </td>
-      <td>Print the <i>idx</i>'th string in <code>TTC.stringTable</code>. </td>
+      <td><code>TTC.stringTable</code> の <i>idx</i> 番目の文字列を表示する。 </td>
     </tr>
     <tr>
       <td>w: <i>count</i> </td>
-      <td>Wait for <i>count</i> frames. </td>
+      <td><i>count</i> フレーム待つ。 </td>
     </tr>
     <tr>
       <td>x: <i>dx</i> </td>
-      <td>Move the cursor to the right by <i>dx</i>. </td>
+      <td>カーソルを <i>dx</i> だけ右に動かす。 </td>
     </tr>
     <tr>
       <td>y: <i>dy</i> </td>
-      <td>Move the cursor down by <i>dy</i>. </td>
+      <td>カーソルを <i>dy</i> だけ下に動かす。 </td>
     </tr>
   </table>
 </div>
 
-I should point out that at present the commands are still fragile, so be careful with this stuff. For example, the positioning commands will simply move the cursor, but not clip to the margins. Also take care with the font and string commands (`f` and `s`, respectively). `tte_cmd_default()` doesn't test whether the index is out of the bounds of the arrays, so you could end up with … odd things. At some point, I hope to fix these things, but it's not a priority right now. If anyone has something more robust that I can use, please speak up.
+今のところ、コマンドはまだ壊れやすいので、気をつけて使ってください。たとえば、位置のコマンドは単にカーソルを動かすだけで、マージンで切り詰めはしません。フォントと文字列のコマンド（それぞれ `f` と `s`）にも注意してください。`tte_cmd_default()` はインデックスが配列の範囲外かどうかを調べないので、……おかしなことになるかもしれません。いつかこれらを直したいと思っていますが、今は優先度が高くありません。私が使えるもっと頑丈なものを持っている人がいれば、ぜひ声をかけてください。
 
-:::warning TTE formatting commands : caveat emptor.
+:::warning TTE の書式のコマンド: 買い手は用心せよ
 
-The current commands in TTE aren't exactly idiot-proof yet. If you stick to sensible things, it should work quite nicely. But it is still easy to shoot yourself in the foot if you're not careful.
+今の TTE のコマンドは、まだ誰が使っても安全というわけではありません。まっとうな使い方をしていれば、かなりうまく動くはずです。でも、注意しないと、自分の足を撃ってしまうのはまだ簡単です。
 
 :::
 
-### Using console I/O {#ssec-misc-conio}
+### コンソール入出力を使う {#ssec-misc-conio}
 
-Something like `tte_write()` is nice for pure strings, but what would really help is if you had something like `printf()`. In the old days (pre-2006), `printf()`, `putc` and other console output functions were unavailable, but Wintermute added a mechanism to devkitArm's standard C library that allows it on consoles as well.
+`tte_write()` のようなものは純粋な文字列には便利ですが、本当に助かるのは `printf()` のようなものがあることです。昔（2006 年より前）は、`printf()`、`putc` などのコンソール出力の関数は使えませんでしたが、Wintermute が devkitArm の標準 C ライブラリに、ゲーム機でもそれを使えるようにする仕組みを加えました。
 
-The key to this is the `devoptab_t` struct, defined in `sys/iosupport.h`. This contains a table of function pointers to device operations. The pointer we're interested in here is `write_r`; this is the function that `printf()` et al. call for the final output.
+その鍵は、`sys/iosupport.h` で定義されている `devoptab_t` 構造体です。これには、デバイスの操作への関数ポインタの表が入っています。ここで興味があるポインタは `write_r` です。これは `printf()` などが最終的な出力のために呼ぶ関数です。
 
 ```c {.proglist}
 // Partial devoptab_t definition
@@ -1803,11 +1803,11 @@ typedef struct {
 } devoptab_t;
 ```
 
-The key to making the standard console routines work on a GBA is to redirect the default `write_r` for console output to one of our own making. Before explaining how this works, I want you to understand that this comes very close to black magic. It involves descending to the roots of the library and there is next to no documentation about how this stuff works. This story is the closest thing I could find to a full description: [Embedding GNU: Newlib, Part 2](https://web.archive.org/web/20100209210107/https://www.embedded.com/story/OEG20020103S0073), but this isn't high on explanations either.
+GBA で標準のコンソールのルーチンを動かす鍵は、コンソール出力のためのデフォルトの `write_r` を、自分で作ったものにすり替えることです。これがどう動くかを説明する前に、これは黒魔術にかなり近いものだということを理解しておいてほしいと思います。ライブラリの根っこまで降りていくことになり、これがどう動くかについての文書はほとんどありません。完全な説明に一番近いものとして見つけられたのはこの記事 [Embedding GNU: Newlib, Part 2](https://web.archive.org/web/20100209210107/https://www.embedded.com/story/OEG20020103S0073) ですが、これも説明が多いとは言えません。
 
-To put it in other way: you're in a cave; it's pitch black and there are [grues](<https://en.wikipedia.org/wiki/Grue_(monster)>) about.
+別の言い方をすると、あなたは洞窟の中にいます。真っ暗で、あたりには [グルー](<https://en.wikipedia.org/wiki/Grue_(monster)>) がいます。
 
-Now that that's done, let's continue. The first step is creating our replacement writer. In TTE's case, this is `tte_con_write()`. It is almost identical to `tte_write()`, but has to fit in the format given by `devoptab_t.write_r`. It comes down to this:
+それが済んだところで、続けましょう。最初の段階は、置き換えの書き込み処理を作ることです。TTE の場合、これは `tte_con_write()` です。`tte_write()` とほとんど同じですが、`devoptab_t.write_r` で決められた形式に合わせなければなりません。結局、次のようになります。
 
 <pre><code class="language-c hljs">//! internal output routine used by printf.
 /*! \param r    Reentrancy parameter.
@@ -1848,21 +1848,21 @@ int tte_con_write(struct _reent *r, int fd, const char *text, int len)
 
 </code></pre>
 
-While I've added documentation for the arguments here, it's mostly based on guesswork. The `r` parameter contains [re-entrancy](https://en.wikipedia.org/wiki/Reentrancy_(computing)) information, useful if you have multiple threads. Since the GBA is a single-thread system, this should not concern us. I believe `fd` is a file handle of some sort, but since we're not writing to files this again does not concern us.
+ここでは引数の説明を付けましたが、ほとんど推測に基づいています。`r` パラメータには[再入可能性](https://en.wikipedia.org/wiki/Reentrancy_(computing))の情報が入っていて、複数のスレッドがある場合に役立ちます。GBA はシングルスレッドのシステムなので、これは気にしなくてよいはずです。`fd` は何らかのファイルハンドルだと思いますが、ファイルに書き込むわけではないので、これも気にしなくてかまいません。
 
-The real arguments of interest are `text` and `len`. The `text` argument points to the buffer with the string to render. In the case of `printf()`, it's the string _after_ formatting: all codes like `%d` are already done. And now for the most important part: `text` is **not** null-terminated. This is why there's a length variable as well.
+本当に興味がある引数は `text` と `len` です。`text` 引数は、描画する文字列の入ったバッファを指します。`printf()` の場合、それは書式化の_あと_の文字列で、`%d` などのコードはすべて処理済みです。そしてここが最も重要な部分です。`text` はヌル終端され**ていません**。だから長さの変数もあるのです。
 
-As far as I can tell, `printf` uses a large buffer (approximately 1300 bytes) on the stack to which it writes the formatted numbers. This buffer isn't cleared you call it again, or terminated by ‘\\0’ when sent to the writer. This has the following consequences:
+私にわかる限り、`printf` はスタック上の大きなバッファ（約 1300 バイト）を使い、そこに書式化した数値を書き込みます。このバッファは、再び呼び出しても消去されず、書き込み処理に送られるときに「\\0」で終端されることもありません。これには次のような影響があります。
 
-- 1300 bytes is a fair bit of IWRAM. Make sure you have enough room for it. Do _not_ call `printf()` from interrupts, as the routine is slow and the things can start to nest and clobber everything.
-- Don't forget the `len` parameter. As the buffer isn't zeroed, remnants of old data may still be there, and you get crap.
-- There's an additional potential danger with respect to parsing of formatting commands here. When strings exceed the buffer length, I imagine that it's broken up into smaller chunks. I don't know what will happen if the break occurs in the middle of a command, but I doubt it's good. Of course, you shouldn't have strings that long anyway, as the screen isn't big enough to fit them.
+- 1300 バイトは IWRAM のかなりの部分です。そのための十分な領域があることを確かめてください。このルーチンは遅く、呼び出しが入れ子になってすべてを破壊し始めかねないので、割り込みから `printf()` を呼ば_ないで_ください。
+- `len` パラメータを忘れないでください。バッファはゼロにされないので、古いデータの残りがまだあるかもしれず、ゴミが出てしまいます。
+- ここには、書式のコマンドの解析に関するさらなる危険もありえます。文字列がバッファの長さを超えると、より小さな塊に分けられるのだと思います。分割がコマンドの途中で起きたらどうなるかはわかりませんが、良いことにはならないでしょう。もちろん、どのみち画面には収まらないので、そんなに長い文字列を使うべきではありません。
 
-Aside from that, `tte_con_write()` is straightforward. As said, the contents of the loop are nearly identical to the one in `tte_write()`. The only real difference is point 3. This is a test for VT100 formatting strings, which will be covered in the next subsection.
+それを除けば、`tte_con_write()` は素直なものです。先ほど言ったように、ループの中身は `tte_write()` のものとほとんど同じです。唯一の本当の違いはポイント 3 です。これは VT100 の書式の文字列の確認で、次の小節で扱います。
 
-To make use of the new writer, you have to hook it into the device list somehow. First, create a `devoptab_t` instance which the writer in the right place. There is a list of device operations called `devoptab_list`. The devices of interest are the streams `stdout` and `stderr`, which are entries `STD_OUT` and `STD_ERR` in the list. Simply point these entries to your own struct.
+新しい書き込み処理を使うには、何らかの方法でそれをデバイスの一覧につなぎ込む必要があります。まず、正しい場所に書き込み処理を入れた `devoptab_t` のインスタンスを作ります。`devoptab_list` というデバイスの操作の一覧があります。興味のあるデバイスはストリーム `stdout` と `stderr` で、これらは一覧のエントリ `STD_OUT` と `STD_ERR` です。これらのエントリを自分の構造体に向けるだけです。
 
-A second item is to set the buffers for these streams. I'm not sure this is really necessary, but that's how it's done in libgba and its author knows this system best so I'm not going to argue here. The function for this is `setvbuf()`. You find the required initialization steps below.
+2 つ目は、これらのストリームのバッファを設定することです。これが本当に必要かどうかはわかりませんが、libgba ではそうしていて、その作者はこの仕組みを一番よく知っているので、ここで異を唱えるつもりはありません。そのための関数は `setvbuf()` です。必要な初期化の手順を下に示します。
 
 ```c {#cd-tte-init-con .proglist}
 
@@ -1895,9 +1895,9 @@ void tte_init_con()
 }
 ```
 
-Calling `tte_init_con()` activates stdio's functionality so you can use `printf()` and such. Note that the raw `printf()` is rather heavy and it also has floating point options, which are rarely used in a GBA environment, if ever. For that reason, you'll usually use its integer-only cousin, `iprintf()`. Also note that TTE's implementation is **different** from libgba's, and the two should not be confused. For that reason, I've hidden the `iprintf()` name behind a `tte_printf` macro.
+`tte_init_con()` を呼ぶと stdio の機能が有効になり、`printf()` などが使えるようになります。素の `printf()` はかなり重く、浮動小数点のオプションもありますが、それは GBA の環境で使われることはまずありません。そのため、普通は整数専用の親戚 `iprintf()` を使うことになります。また、TTE の実装は libgba のものとは**違う**ので、2 つを混同しないでください。そのため、`iprintf()` という名前は `tte_printf` マクロの後ろに隠しています。
 
-The following is a short example of its use. I'm using `tte_printf()` here, but `printf()` or `iprintf()` would have worked just as well.
+以下は、その使い方の短い例です。ここでは `tte_printf()` を使っていますが、`printf()` や `iprintf()` でも同じように動いたでしょう。
 
 ```c {#cd-hello .proglist}
 #include <stdio.h>
@@ -1922,105 +1922,105 @@ int main()
 }
 ```
 
-:::warning Printf bagage
+:::warning printf のお荷物
 
-As wonderful as `printf()` is, there are some downsides to it too. First, it's a very heavy function that calls quite a large amount of functions which all have to be linked in. Second, it is pretty damn slow. Because it can do so much, it has to check for all these different cases. Also, for the string to decimal conversion it uses divisions, which is really bad for the GBA.
+`printf()` は素晴らしいものですが、欠点もあります。まず、とても重い関数で、かなりの数の関数を呼び出し、それらをすべてリンクしなければなりません。次に、ものすごく遅いです。とても多くのことができるので、そのいろいろな場合をすべて確認しなければならないのです。また、文字列から 10 進数への変換に除算を使いますが、それは GBA にとって本当にまずいことです。
 
-Be aware of how much `printf()` costs. If it turns out to be a bottle-neck, try making your own slimmed down version. A decent `sprintf()` alternative is `posprintf()`, created by [Dan Posluns](https://www.danposluns.com/gbadev/).
+`printf()` がどれだけ高くつくかを意識してください。それがボトルネックになるとわかったら、自分で余計なものを削った版を作ってみてください。まともな `sprintf()` の代わりとしては、[Dan Posluns](https://www.danposluns.com/gbadev/) が作った `posprintf()` があります。
 
 :::
 
-### VT100 escape sequences {#ssec-misc-vt100}
+### VT100 のエスケープシーケンス {#ssec-misc-vt100}
 
-Every book on C will tell you that you can place text on a console screen. What they usually don't tell you is that, in some environments, you can control formatting as well. One such environment is the [VT100](https://en.wikipedia.org/wiki/VT100), which used <dfn>escape sequences</dfn> to indicate formatting. The libraries that devkitPro distributes for various systems use these sequences, so it's a good idea to support them as well.
+C の本はどれも、コンソールの画面に文字を出せると教えてくれます。たいてい教えてくれないのは、環境によっては書式も制御できるということです。そうした環境の 1 つが [VT100](https://en.wikipedia.org/wiki/VT100) で、書式を示すのに<dfn>エスケープシーケンス</dfn>を使っていました。devkitPro がいろいろなシステム向けに配布しているライブラリはこれらのシーケンスを使っているので、これらにも対応しておくのは良い考えです。
 
-The general format for the codes is this:
+コードの一般的な形式は次のとおりです。
 
 ```
 CSI n1;n2 ... letter
 ```
 
-_CSI_ here is the ASCII code for the <dfn>command sequence indicator</dfn>, which in this case is the escape character (27, 0x1B or 033) followed by '\['. The letter at the end denotes the kind of formatting code, and _n1_, _n2_ … are the formatting parameters. Wikipedia has a nice overview of the standard set [here](https://en.wikipedia.org/wiki/ANSI_escape_code) and there's another one here: [VT100 commands and control sequences](https://web.archive.org/web/20080813073220/http://local.wasp.uwa.edu.au/~pbourke/dataformats/vt100/). Note that not all of the codes are supported in the devkitPro libraries. The ones you'll encounter most are the following:
+ここで _CSI_ は<dfn>コマンドシーケンス指示子</dfn>（command sequence indicator）の ASCII コードで、この場合はエスケープ文字（27、0x1B、または 033）のあとに '\[' が続いたものです。最後の文字が書式のコードの種類を表し、_n1_、_n2_ …… が書式のパラメータです。Wikipedia の[ここ](https://en.wikipedia.org/wiki/ANSI_escape_code)に標準のセットの良い概要があり、こちらにももう 1 つあります: [VT100 commands and control sequences](https://web.archive.org/web/20080813073220/http://local.wasp.uwa.edu.au/~pbourke/dataformats/vt100/)。devkitPro のライブラリですべてのコードに対応しているわけではないことに注意してください。一番よく出会うのは次のものです。
 
 <div class="lblock">
   <table id="tbl:vt100" class="table-data">
     <caption align="bottom">
-      <b>{*@tbl:vt100}</b>: Common VT100 sequences
+      <b>{*@tbl:vt100}</b>: よく使われる VT100 のシーケンス
     </caption>
     <tr>
       <td>ESC[<i>dy</i>A</td>
-      <td>Move cursor up <i>dy</i> rows.</td>
+      <td>カーソルを <i>dy</i> 行上に動かす。</td>
     </tr>
     <tr>
       <td>ESC[<i>dy</i>B</td>
-      <td>Move cursor down <i>dy</i> rows.</td>
+      <td>カーソルを <i>dy</i> 行下に動かす。</td>
     </tr>
     <tr>
       <td>ESC[<i>dx</i>C</td>
-      <td>Move cursor right <i>dx</i> columns.</td>
+      <td>カーソルを <i>dx</i> 列右に動かす。</td>
     </tr>
     <tr>
       <td>ESC[<i>dx</i>D</td>
-      <td>Move cursor left <i>dx</i> columns.</td>
+      <td>カーソルを <i>dx</i> 列左に動かす。</td>
     </tr>
     <tr>
       <td>ESC[<i>y</i>;<i>x</i>H</td>
-      <td>Set cursor to column <i>x</i>, row <i>y</i>.</td>
+      <td>カーソルを列 <i>x</i>、行 <i>y</i> に設定する。</td>
     </tr>
     <tr>
       <td>ESC[2J</td>
-      <td>Erase screen.</td>
+      <td>画面を消す。</td>
     </tr>
     <tr>
       <td>ESC[<i>n</i>K</td>
       <td>
         <ol start=0>
-	        <li>Erase to end of line.</li>
-          <li>Erase to start of line.</li>
-	        <li>Erase whole line.</li>
+	        <li>行末まで消す。</li>
+          <li>行頭まで消す。</li>
+	        <li>行全体を消す。</li>
 	      </ol>
       </td>
     </tr>
     <tr>
       <td>ESC[<i>y</i>;<i>x</i>f</td>
-      <td>As ESC[<i>y</i>;<i>x</i>H</td>
+      <td>ESC[<i>y</i>;<i>x</i>H と同じ</td>
     </tr>
     <tr>
       <td>ESC[s</td>
-      <td>Save cursor position.</td>
+      <td>カーソルの位置を保存する。</td>
     </tr>
     <tr>
       <td>ESC[u</td>
-      <td>Restore cursor position.</td>
+      <td>カーソルの位置を復元する。</td>
     </tr>
   </table>
 </div>
 
-If you compare this list to {@tbl:tte-cmd}, you'll see that most of these codes have corresponding TTE commands. You can use either, but if you plan to make something that's supposed to be cross-platform, use the VT100 codes.
+このリストを {@tbl:tte-cmd} と比べると、これらのコードのほとんどに対応する TTE のコマンドがあることがわかるでしょう。どちらを使ってもかまいませんが、クロスプラットフォームにするつもりのものを作るなら、VT100 のコードを使ってください。
 
-:::warning Deviations from the standard
+:::warning 標準からの逸脱
 
-I'm trying to keep my implementation as close to the standard as possible. This is mainly because TTE uses other things just 8x8 characters on a regular background. In particular, scrolling is absent here and there are no color codes. Yet.
+私の実装はできるだけ標準に近づけようとしています。主に、TTE は通常の背景の 8x8 の文字以外のものも使うからです（訳注: 文脈から、標準どおりにいかない部分がある理由の説明と思われます）。特に、ここではスクロールがなく、色のコードもありません。今のところは。
 
 :::
 
 ### UTF-8 {#ssec-misc-utf}
 
-You may have heard of a little thing called [ASCII](https://en.wikipedia.org/wiki/ASCII). This is (or was; I'm not sure) the standard encoding for character strings. Each character is 1 byte long, giving 256 numbers for letters, numbers et cetera. {\*@fig:img-verdana9} and {@fig:img-verdana9-b4} contain character 32 to 255, as they usually appear on Windows. ASCII works fine for Western languages but are completely inadequate for languages like Japanese, which have thousands of characters. To remedy this, they came up with Unicode, which has 16 bits per character.
+[ASCII](https://en.wikipedia.org/wiki/ASCII) というちょっとしたものについて聞いたことがあるかもしれません。これは文字列の標準のエンコーディングです（でした。よくわかりません）。各文字は 1 バイトの長さで、文字や数字などに 256 個の番号があります。{\*@fig:img-verdana9} と {@fig:img-verdana9-b4} には、Windows で普通に表示されるとおりの、文字 32 から 255 が入っています。ASCII は西洋の言語にはうまく使えますが、何千もの文字がある日本語のような言語にはまったく不十分です。これを解決するために Unicode が考え出され、1 文字あたり 16 ビットになりました。
 
-An intermediate between this is [UTF-8](https://en.wikipedia.org/wiki/UTF-8). This still uses 8-bit characters for the lower 128 ASCII codes, but bytes over 0x80 denote the start of a multi-byte code, where it and a few of the following characters form a single, larger character of up to 21 bits.
+その中間にあるのが [UTF-8](https://en.wikipedia.org/wiki/UTF-8) です。下位の 128 個の ASCII コードには相変わらず 8 ビットの文字を使いますが、0x80 以上のバイトは複数バイトのコードの始まりを表し、それとそれに続くいくつかの文字が、最大 21 ビットの 1 つの大きな文字になります。
 
-UTF-8 is a nice way of having your cake and eating it too: you can still use normal characters for Latin characters, meaning it'll still work with ASCII programs, but you also have a method of representing bigger numbers.
+UTF-8 は、いいとこ取りの素敵な方法です。ラテン文字には相変わらず普通の文字を使えるので ASCII のプログラムでもそのまま動き、しかも大きな数を表す方法もあります。
 
 <div class="cblock">
   <table id="tbl:utf8" class="table-data">
     <caption align="bottom">
-      {*@tbl:utf8}. UTF-8 to u32 conversion table.
+      {*@tbl:utf8}。UTF-8 から u32 への変換表。
     </caption>
     <tr> 
-      <th>String (binary)</th>
-      <th>Number (binary)</th>
-      <th>Range (hex)</th>
+      <th>文字列（2 進数）</th>
+      <th>数値（2 進数）</th>
+      <th>範囲（16 進数）</th>
     </tr>
     <tbody style="font:85%, Courier New;">
       <tr>
@@ -2047,9 +2047,9 @@ UTF-8 is a nice way of having your cake and eating it too: you can still use nor
   </table>
 </div>
 
-{\*@tbl:utf8} shows the conversion works. If a byte is lower than 128, it's a simple ASCII character. If it's higher, it can fall into three classes of multi-byte numbers. The range of the byte determines the number of bytes for the whole thing; once you know that, you need to grab the appropriate bit-patterns from these bytes and join them into a single number as the table indicates. For more details, I will refer you to the wikipedia page.
+{\*@tbl:utf8} は変換の仕組みを示しています。バイトが 128 より小さければ、単純な ASCII の文字です。それ以上なら、3 種類の複数バイトの数のどれかに当てはまります。そのバイトの範囲で全体のバイト数が決まります。それがわかれば、表が示すように、それらのバイトから適切なビットのパターンを取り出して 1 つの数につなげる必要があります。詳しくは Wikipedia のページを見てください。
 
-Below you can find a routine that reads and decodes a single utf-8 character from a string. Yes, it's a cluster-f\*\*k of conditions, but that's necessary to check whether all the characters really follow the format; and if it doesn't, it'll interpret the first byte of the range as an extended ASCII character. If you want, you can omit all the \``if((*src>>6)!=2) break;`' statements.
+下に、文字列から UTF-8 の文字を 1 つ読み込んでデコードするルーチンを示します。そう、条件のごちゃごちゃした塊ですが、すべての文字が本当に形式に従っているかを確認するにはそれが必要なのです。形式に従っていなければ、その範囲の最初のバイトを拡張 ASCII の文字として解釈します。望むなら、\``if((*src>>6)!=2) break;`' の文をすべて省いてもかまいません。
 
 ```c {#cd-utf8-decode .proglist}
 //! Retrieve a single multibyte utf8 character.
@@ -2104,32 +2104,32 @@ uint utf8_decode_char(const char *ptr, char **endptr)
 }
 ```
 
-Both `tte_write()` and `tte_write_con()` use `utf_decode_char()` when the string requires it. The larger characters can be used to access larger font sheets. You could use the larger sheets for better language support, or perhaps to extend the standard set of characters with arrows, and other types of symbols.
+`tte_write()` も `tte_write_con()` も、文字列がそれを必要とするときは `utf_decode_char()` を使います。大きな文字を使えば、もっと大きなフォントのシートにアクセスできます。大きなシートを使って言語の対応を良くしたり、あるいは標準の文字のセットを矢印やほかの種類の記号で拡張したりできるでしょう。
 
-There is, however, one catch to using UTF-8 with stdio. Internally, stdio is really picky about what's acceptable. For example, the copywrite symbol, © is extended number 0xA9. In non-UTF-8, you could use just 0xA9 in a string and it'd use the right symbol. However, 0xA9 alone wouldn't fit any of the formats from {\*@tbl:utf8}, so it's an invalid code in UTF-8. While `utf8_decode_char()` is forgiving in this case, stdio isn't, an will interpret it as a terminator. In other words, be careful with extended ASCII character; you _have_ to use the proper UTF-8 formats if you want to use the stdio functions.
+ただし、stdio で UTF-8 を使うには落とし穴が 1 つあります。内部では、stdio は何を受け付けるかについて本当にうるさいのです。たとえば、著作権の記号 © は拡張文字の番号 0xA9 です。UTF-8 でなければ、文字列の中で 0xA9 だけを使えば正しい記号になりました。しかし、0xA9 だけでは {\*@tbl:utf8} のどの形式にも当てはまらないので、UTF-8 では無効なコードです。この場合 `utf8_decode_char()` は大目に見てくれますが、stdio はそうではなく、終端文字として解釈します。言い換えると、拡張 ASCII の文字には気をつけてください。stdio の関数を使いたいなら、正しい UTF-8 の形式を使わ_なければなりません_。
 
-:::warning Printf, UTF-8, and extended ASCII
+:::warning printf、UTF-8、拡張 ASCII
 
-As of devkitArm r22, `printf()` and the other stdio functions use the UTF-8 locale. This effectively means that you cannot use characters like ‘©’ and ‘è’ directly like you used to in older versions. You need to use the full multi-byte UTF-8 notations.
+devkitArm r22 から、`printf()` などの stdio の関数は UTF-8 のロケールを使います。つまり実質的に、古い版のように「©」や「è」のような文字を直接使うことはできません。完全な複数バイトの UTF-8 の表記を使う必要があります。
 
 :::
 
-### Profiling the renderers {#ssec-misc-profile}
+### 描画処理のプロファイリング {#ssec-misc-profile}
 
-It's always a good idea to see how fast the things you make are. This is particularly true when the functions are complex, like most of the bitmap and tile renderers are.
+自分が作ったものがどれくらい速いのかを見ておくのは、いつでも良い考えです。ほとんどのビットマップとタイルの描画処理のように、関数が複雑な場合は特にそうです。
 
-{\*@tbl:tte-profile} lists the cycles per glyph for the majority of the available renderers. These have been measured with the string (and library code) in ROM with the default waitstates, under -O2 optimization. The font used was verdana 9, with has a cell size of 8x16, meaning it can be used for both fixed and variable widths with ease. The test string was a 194 character line from [Portal](<https://en.wikipedia.org/wiki/Portal_(video_game)>):
+{\*@tbl:tte-profile} に、使える描画処理の大部分について、グリフあたりのサイクル数を示します。これらは、文字列（とライブラリのコード）を ROM に置き、デフォルトのウェイトステート、-O2 の最適化で計測しました。使ったフォントは verdana 9 で、セルの大きさは 8x16 なので、固定幅と可変幅の両方に簡単に使えます。テストの文字列は、[Portal](<https://en.wikipedia.org/wiki/Portal_(video_game)>) の 194 文字の台詞です。
 
-> “Please note that we have added a consequence for failure. Any contact with the chamber floor will result in an 'unsatisfactory' mark on your official testing record followed by death. Good luck!”
+> 「失敗に対する罰則を追加したことにご注意ください。部屋の床に触れると、公式のテスト記録に『不十分』の評価が付き、その後死亡します。幸運を祈ります！」
 
 <div class="lblock">
   <table id="tbl:tte-profile" class="table-data">
     <caption align="bottom">
-      <b>{*@tbl:tte-profile}</b>: Renderer times. Conditions: 194 chars, verdana 9, ROM code, default waits, -O2.
+      <b>{*@tbl:tte-profile}</b>: 描画処理の時間。条件: 194 文字、verdana 9、ROM のコード、デフォルトのウェイト、-O2。
     </caption>
     <tr>
-      <th>Renderer</th>
-      <th>Cycles/char</th>
+      <th>描画処理</th>
+      <th>サイクル/文字</th>
     </tr>
     <tr>
       <td>null</td>
@@ -2186,22 +2186,22 @@ It's always a good idea to see how fast the things you make are. This is particu
   </table>
 </div>
 
-First, note the great differences in values: from hundreds for the tilemaps and objects to _thousands_ in the case of bitmaps and tile renderers. And this is per character, so writing large swats of text can lead to significant slowdown.
+まず、値の大きな違いに注目してください。タイルマップやオブジェクトの数百から、ビットマップやタイルの描画処理の場合の_数千_までです。しかもこれは 1 文字あたりなので、大量のテキストを書くとかなりの処理落ちにつながりかねません。
 
-The `null()` renderer is a dummy renderer, used to find the overhead of the TTE system. 200 isn't actually that bad, all things considered (remember: ROM code). That said, now compare this number to the regular tilemap time: the overhead is takes up a significant fraction of the time here. Also note the difference between the standard and 8×16 versions of `se_drawg`: this is purely due the loops
+`null()` 描画処理はダミーの描画処理で、TTE のシステムのオーバーヘッドを調べるのに使います。いろいろ考えれば、200 は実はそれほど悪くありません（ROM のコードだということを思い出してください）。とはいえ、この数値を通常のタイルマップの時間と比べてみてください。ここではオーバーヘッドが時間のかなりの部分を占めています。また、`se_drawg` の標準版と 8×16 版の違いにも注目してください。これは純粋にループのせいです。
 
-Half of the TTE overhead actually comes from the wrapping code; cursor setting and checking can be relatively slow. And I'm not even considering clipping here.
+TTE のオーバーヘッドの半分は、実は折り返しのコードから来ています。カーソルの設定と確認は比較的遅いことがあるのです。しかも、ここではクリッピングさえ考えていません。
 
-For the bitmap and tile renderers, I've timed three versions. A ‘base’ version, using the template from `chr4_drawg_b1cts_base()` in the ["Text rendering on tiles" section](#ssec-chr-drawg).; C-optimized versions, which are the default renderers; and a fast asm version.
+ビットマップとタイルの描画処理については、3 つの版の時間を計りました。[「タイルへのテキストの描画」の節](#ssec-chr-drawg)の `chr4_drawg_b1cts_base()` のひな形を使った「base」版、デフォルトの描画処理である C で最適化した版、そして速いアセンブリ版です。
 
-The `bmp16` variants are faster than the others because you don't have to mask items into the surface. What's interesting, though, is that the difference between `bmp8` and `chr4` is practically zero. This probably has something to do with the layout of the font itself.
+`bmp16` の変種は、描画先にマスクして挿入する必要がないので、ほかのものより速くなっています。ただ面白いのは、`bmp8` と `chr4` の違いが実質的にゼロであることです。これはおそらく、フォントそのものの配置と何か関係があるのでしょう。
 
-Also note how the base, the normal and the fast versions compare. `chr4_drawg_b1cts()` is 33% faster than the base version, and `chr4_drawg_b1cts_fast` is three times faster still. And remember, 200 of that 631 is TTE overhead, so it's actually 4.5 times faster. This is not just from the IWRAM benefit: it also has to do with ARM vs Thumb, and hand-crafted assembly vs compiled code.
+また、base、通常、速い版の比較にも注目してください。`chr4_drawg_b1cts()` は base 版より 33% 速く、`chr4_drawg_b1cts_fast` はさらに 3 倍速いです。そして、631 のうち 200 は TTE のオーバーヘッドだということを思い出してください。つまり実際には 4.5 倍速いのです。これは IWRAM の恩恵だけによるものではありません。ARM か Thumb か、手作りのアセンブリかコンパイルしたコードか、ということも関係しています。
 
-## Conclusions {#sec-conc}
+## まとめ {#sec-conc}
 
-As far as I'm concerned, this chapter is basically [the earlier text chapter](text.html) done right. It's covered all types of graphics:regular/affine tilemaps, 8bpp/16bpp bitmaps, 4bpp tiles and objects. Okay, so I left 8bpp tiles out, but that's an awful mode for tile-rendering anyway. The functions for glyph rendering given here are work for arbitrary sizes, fixed and variable width fonts and should be doing so efficiently as well.
+私に言わせれば、この章は基本的に[前のテキストの章](text.html)を正しくやり直したものです。あらゆる種類のグラフィックを扱いました。通常/アフィンのタイルマップ、8bpp/16bpp のビットマップ、4bpp のタイル、オブジェクトです。まあ、8bpp のタイルは省きましたが、どのみちタイルへの描画にはひどいモードです。ここで示したグリフの描画の関数は、任意の大きさ、固定幅と可変幅のフォントに使え、しかも効率よくそうしているはずです。
 
-Furthermore, it has presented Tonc's Text Engine, a system for handling all these different text families with relative ease. After the initial set-up, the surface-specific aspects are basically dealt with, making its functionality much more re-usable. I've also covered the most basic aspects of processing strings for printing: how to translate from a UTF-8 encoded character to a glyph-index in a font-sheet, and how you can implement formatting tags to change positions, colors and fonts dynamically. Lastly, I illustrated how you can build a callback that the stdio routines can call for output, making `printf()` and its friends available for general use.
+さらに、Tonc のテキストエンジンを紹介しました。これは、これらのいろいろなテキストのファミリーをすべて比較的楽に扱うための仕組みです。最初の準備のあとは、描画先に固有の側面は基本的に片づくので、その機能はずっと再利用しやすくなります。表示のために文字列を処理する最も基本的な側面も扱いました。UTF-8 でエンコードされた文字をフォントのシートのグリフのインデックスに変換する方法と、位置、色、フォントを動的に変えるための書式のタグを実装する方法です。最後に、stdio のルーチンが出力のために呼べるコールバックを作る方法を説明し、`printf()` とその仲間を一般に使えるようにしました。
 
-This whole chapter has been a showcase for TTE and what it can do. Even though it's not in a fully finished state, I think that it can be a valuable asset for dealing with text. If nothing else, the concepts put forth here should help you design your own glyph renderers or text systems.
+この章全体が、TTE とそれでできることのショーケースでした。完全に仕上がった状態ではありませんが、テキストを扱うための貴重な財産になりうると思います。少なくとも、ここで示した考え方は、自分のグリフの描画処理やテキストシステムを設計するのに役立つはずです。
