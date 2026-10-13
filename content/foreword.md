@@ -1,4 +1,4 @@
-# Foreword
+# まえがき
 
 ## この日本語版について
 
@@ -9,38 +9,38 @@
 - ライセンス: 原文と同じく [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.ja) です。ライセンスに定めるとおり、無保証で提供されます。
 - 翻訳の誤りは [sacckey/tonc の Issues](https://github.com/sacckey/tonc/issues) に報告してください。原文の内容については [gbadev-org/tonc](https://github.com/gbadev-org/tonc) へどうぞ。
 
-Welcome to Tonc, a guide to Game Boy Advance programming originally published in 2004.
+Tonc へようこそ。Tonc は、2004年に最初に公開された、ゲームボーイアドバンスのプログラミングの手引きです。
 
-You are reading a new, revamped version of it, powered by mdbook and now maintained by the community.
+今読んでいるのは、それを新しく作り直した版です。mdbook で作られ、現在はコミュニティによって保守されています。
 
-:::warning Work In Progress notice
+:::warning 作業中のお知らせ
 
-We recently finished the porting of this book. Improvements ongoing, if you spot any problems please feel free to ask for help or get involved!
+この本の移植は、最近終わったばかりです。改善は今も続いています。問題を見つけたら、気軽に質問したり、参加したりしてください！
 
 :::
 
-## Contributing
+## 貢献するには
 
-This book is open source, released under the [CC-BY-NC-SA](https://raw.githubusercontent.com/gbadev-org/tonc/master/LICENSE) license. Everyone is welcome to help, provide feedback and propose additions or improvements. The git repository is hosted at [github.com/gbadev-org/tonc](https://github.com/gbadev-org/tonc), where you can learn more about how you can help, find detailed contribution guidelines and procedures, file Issues and send Pull Requests.
+この本はオープンソースで、[CC-BY-NC-SA](https://raw.githubusercontent.com/gbadev-org/tonc/master/LICENSE) ライセンスで公開されています。手伝い、フィードバック、追加や改善の提案は、誰でも歓迎です。git リポジトリは [github.com/gbadev-org/tonc](https://github.com/gbadev-org/tonc) にあります。そこで、手伝い方や、貢献のための詳しいガイドラインと手順を確認したり、Issue を作ったり、Pull Request を送ったりできます。
 
-More resources about GBA development can be found at [gbadev.net](https://gbadev.net). There is also a [Discord chat](https://discord.gg/DDYbusKVyJ) dedicated to the gbadev community.
+GBA 開発に関するほかの資料は、[gbadev.net](https://gbadev.net) にあります。gbadev コミュニティ専用の [Discord のチャット](https://discord.gg/DDYbusKVyJ) もあります。
 
-## Authors
+## 著者
 
-Jasper "cearn" Vijn is the original author, creating and maintaining Tonc till 2013.
+原作者は Jasper "cearn" Vijn で、2013年まで Tonc を作成し、保守していました。
 
-exelotl, avivace, PinoBatch, copyrat90, LunarLambda, gwilymk, mtthgn, and djedditt ported the contents to markdown and migrated the underlying rendering technology to mdbook.
+exelotl、avivace、PinoBatch、copyrat90、LunarLambda、gwilymk、mtthgn、djedditt が、内容を markdown に移植し、表示の仕組みを mdbook に移行しました。
 
-## Using this document
+## このドキュメントの使い方
 
-In the top navigation bar, you will find a series of icons.
+上部のナビゲーションバーには、いくつかのアイコンが並んでいます。
 
-By clicking on the <i class="fa fa-bars"></i> icon you will toggle an interactive table of contents to navigate the document. You can also use <kbd>→</kbd> and <kbd>←</kbd> keys on your keyboard to go to the following and previous page.
+<i class="fa fa-bars"></i> アイコンをクリックすると、ドキュメント内を移動するための目次を、表示したり隠したりできます。キーボードの <kbd>→</kbd> キーと <kbd>←</kbd> キーで、次のページと前のページに移動することもできます。
 
-The <i class="fa fa-paint-brush"></i> lets you choose among 6 different themes and color schemes to please your reading experience, including the classic Tonc theme.
+<i class="fa fa-paint-brush"></i> では、昔ながらの Tonc のテーマを含む6種類のテーマと配色から、読みやすいものを選べます。
 
-You can search anywhere by pressing <kbd>s</kbd> on your keyboard or clicking the <i class="fa fa-search"></i> icon.
+キーボードの <kbd>s</kbd> を押すか、<i class="fa fa-search"></i> アイコンをクリックすると、どこからでも検索できます。
 
-The <i class="fa fa-edit"></i> icon allows you to suggest an edit on the current page by directly opening the source file in the git repository.
+<i class="fa fa-edit"></i> アイコンを押すと、git リポジトリにある元のファイルが直接開き、今のページの編集を提案できます。
 
 <br>

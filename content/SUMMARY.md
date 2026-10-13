@@ -1,7 +1,7 @@
 # Summary
 
-[Foreword](./foreword.md)
-[Introduction](./intro.md)
+[まえがき](./foreword.md)
+[はじめに](./intro.md)
 
 # GBA Basics
 
