@@ -1,16 +1,16 @@
-# 6. The GBA buttons (a.k.a. keys)
+# 6. GBA のボタン（別名キー）
 
 <!-- toc -->
 
-## Introduction {#sec-intro}
+## はじめに {#sec-intro}
 
-As you no doubt already know, the GBA has one 4-way directional pad (D-pad); two control buttons (Select and Start); two regular fire buttons (A and B) and two shoulder buttons (L and R), making a total of 10 <dfn>keys</dfn>. This is all you have in terms of user-GBA interaction, and for most purposes it is plenty. The principles of key-handling are pretty simple: you have one register with the keystates and you see which buttons are pressed based on whether its bits are set or cleared. I will cover this, but I'll also give some more advanced functions that you will probably want to have at some point.
+きっともうご存じのとおり、GBA には十字キー（D パッド）が 1 つ、操作ボタン（セレクトとスタート）が 2 つ、普通のボタン（A と B）が 2 つ、L/R ボタンが 2 つあり、全部で 10 個の<dfn>キー</dfn>があります。ユーザーと GBA のやり取りの手段はこれだけですが、ほとんどの目的にはこれで十分です。キーの扱い方の原理はとても単純です。キーの状態が入ったレジスタが 1 つあり、そのビットが立っているか消えているかで、どのボタンが押されているかが分かります。これを説明しますが、いずれ欲しくなるであろう、もう少し高度な関数も紹介します。
 
-## Keypad registers {#sec-regs}
+## キーパッドのレジスタ {#sec-regs}
 
-### The keypad register, REG_KEYINPUT {#ssec-reg-keys}
+### キーパッドのレジスタ、REG_KEYINPUT {#ssec-reg-keys}
 
-As said, the GBA has ten buttons, often referred to as keys. Their states can be found in the first 10 bits of the `REG_KEYINPUT` register at location `0400:0130h` (a.k.a. `REG_P1`). The exact layout is shown below. I will refrain from giving a bit-by-bit description because it should be quite obvious. The names of the defined constants I use are "`KEY_`*x*", where *x* is the name of the button, in caps.
+前に述べたとおり、GBA には 10 個のボタンがあり、よくキーと呼ばれます。その状態は、`0400:0130h` にある `REG_KEYINPUT` レジスタ（別名 `REG_P1`）の最初の 10 ビットにあります。正確な並びは下のとおりです。かなり見れば分かるので、ビットごとの説明は控えます。私が使う定数の名前は "`KEY_`*x*" で、*x* はボタンの名前を大文字にしたものです。
 
 <div class="reg">
   <table class="table-reg" id="tbl-reg-keys">
@@ -44,23 +44,23 @@ As said, the GBA has ten buttons, often referred to as keys. Their states can be
   </table>
 </div>
 
-Checking whether a key is pressed (down) or not would be obvious, if it weren't for one little detail: the bits are *clear*ed when a key is down. So the default state of `REG_KEYINPUT` is `0x03FF`, and not `0`. As such, checking if `key` is down goes like this:
+キーが押されている（下がっている）かどうかを調べるのは、ある小さな点さえなければ簡単です。キーが押されているとき、ビットは*消える*のです。なので、`REG_KEYINPUT` の初期状態は `0` ではなく `0x03FF` です。そのため、`key` が押されているかどうかは、次のように調べます。
 
 ```c
 #define KEY_DOWN_NOW(key)  (~(REG_KEYINPUT) & key)
 ```
 
-In case your bit-operation knowledge is a bit hazy (get it cleared up. Fast!), this first inverts `REG_KEYINPUT` to a more intuitive (and useful) ‘bit is set when down’ setting and then masks it with the key(s) you want to check. Note that `key` can in fact be a combination of multiple keys and the result will be the combination of keys that are actually down.
+ビット演算の知識が少しあやふやなら（早く、はっきりさせてください！）説明すると、これはまず `REG_KEYINPUT` を反転して、より直感的な（そして便利な）「押されているとビットが立つ」形にし、それを調べたいキーでマスクします。実は `key` は複数のキーの組み合わせでもよく、その場合、結果は実際に押されているキーの組み合わせになります。
 
 <div class="note">
-  <div class="nhcare">Key states are inverted</div>
+  <div class="nhcare">キーの状態は反転しています</div>
 
-  The key bits are low-active, meaning that they are **cleared** when a button is pressed and **set** when they're not. This may be a little counter-intuitive, but that's the way it is.
+  キーのビットはロウアクティブです。つまり、ボタンが押されると**消え**、押されていないと**立ちます**。少し直感に反するかもしれませんが、そういうものなのです。
 </div>
 
-### The key control register, REG_KEYCNT {#ssec-reg-keycnt}
+### キー制御のレジスタ、REG_KEYCNT {#ssec-reg-keycnt}
 
-Just about everything you will ever need in terms of key-handling can be done with `REG_KEYINPUT`. That said, you might like to know there is another key-register for some extra control. The register in question is `REG_KEYCNT`, the key control register. This register is used for keypad [interrupts](interrupts.html), much like `REG_DISPSTAT` was used for video interrupts. The layout is the same as for `REG_KEYINPUT`, except for the top two bits, see the table below. With `REG_KEYCNT`\{14\} you can enable the keypad interrupt. The conditions for raising this interrupt are determined by `REG_KEYCNT`\{0-9\}, which say what keys to watch out for and `REG_KEYCNT`\{15\}, which state the exact conditions. If this bit is clear, then any of the aforementioned keys will raise the interrupt; if set, then they must all be down for the interrupt to be raised. I wouldn't be surprised if this is how you can reset most games by pressing Start+Select+B+A. Of course, to make use of this register you need to know how to work with [interrupts](interrupts.html) first.
+キーの扱いで必要になることは、ほぼすべて `REG_KEYINPUT` でできます。とはいえ、さらに制御するための、もう 1 つのキーのレジスタがあることも知っておきたいでしょう。そのレジスタは、キー制御のレジスタ `REG_KEYCNT` です。`REG_DISPSTAT` が映像の割り込みに使われたのと同じように、このレジスタはキーパッドの[割り込み](interrupts.html)に使われます。並びは `REG_KEYINPUT` と同じですが、一番上の 2 ビットが違います。下の表を見てください。`REG_KEYCNT`\{14\} で、キーパッドの割り込みを有効にできます。この割り込みを発生させる条件は、どのキーを見張るかを決める `REG_KEYCNT`\{0-9\} と、正確な条件を決める `REG_KEYCNT`\{15\} で決まります。このビットが消えていれば、さっきのキーのどれか 1 つで割り込みが発生します。立っていれば、それらのキーが全部押されたときに割り込みが発生します。ほとんどのゲームでスタート+セレクト+B+A を押すとリセットできるのは、これを使っているのではないかと思います。もちろん、このレジスタを使うには、まず[割り込み](interrupts.html)の扱い方を知っている必要があります。
 
 <br>
 <div class="reg">
@@ -103,44 +103,44 @@ Just about everything you will ever need in terms of key-handling can be done wi
     <col class="bf" width="8%">
     <col class="def" width="12%">
     <tr align="left">
-      <th>bits</td>
-      <th>name</td>
+      <th>ビット</td>
+      <th>名前</td>
       <th>define</td>
-      <th>description</td>
+      <th>説明</td>
     </tr>
     <tbody valign="top">
       <tr class="bg0">
         <td>0-9</td>
         <td class="rclr9">keys</td>
         <td>KEY_<i>x</i></td>
-        <td>keys to check for raising a key interrupt.</td>
+        <td>キーの割り込みを発生させるために調べるキー。</td>
       </tr>
       <tr class="bg1">
         <td>E<td class="rclr0">I</td>
         <td>KCNT_IRQ</td>
-        <td>Enables keypad interrupt</td>
+        <td>キーパッドの割り込みを有効にする</td>
       </tr>
       <tr class="bg0">
         <td>F</td>
         <td class="rclr1">Op</td>
         <td>KCNT_OR, KCNT_AND</td>
-        <td>Boolean operator used for determining whether to raise a key- interrupt or not. If clear, it uses an OR (raise if any of the keys of bits 0-9 are down); if set, it uses an AND (raise if all of those keys are down).</td>
+        <td>キーの割り込みを発生させるかどうかを決めるのに使う論理演算子。消えていれば OR を使います（ビット 0〜9 のキーのどれかが押されていれば発生）。立っていれば AND を使います（それらのキーが全部押されていれば発生）。</td>
       </tr>
     </tbody>
   </table>
 </div>
 
-## Beyond basic button states {#sec-adv-keys}
+## ボタンの状態の、その先へ {#sec-adv-keys}
 
-While checking for the keystate with `KEY_DOWN_NOW()` is nice and simple, there are better and/or more preferable methods of key-state handling. I will discuss two (or three) of them here. First, <dfn>synchronous keystates</dfn>. This is just a fancy way of reading the key-state at a given point and using that variable, instead of repeated reads of REG_KEYINPUT when you process input. An outshoot of this is <dfn>transitional states</dfn>, where you track not only the current state, but also the previous one. This lets you test for *changes* in keystates, rather than just the keystates themselves.. Lastly, <dfn>tribools</dfn>: three-state variables (in this cases −1, 0 and +1) that can be used to simplify direction processing.
+`KEY_DOWN_NOW()` でキーの状態を調べるのは手軽で単純ですが、キーの状態を扱うには、もっとよい、あるいはもっと好ましい方法があります。ここでは、そのうちの 2 つ（か 3 つ）を説明します。まず、<dfn>同期的なキーの状態</dfn>です。これは、入力を処理するときに毎回 REG_KEYINPUT を読む代わりに、ある時点でキーの状態を読んで、その変数を使う、ということを気取って言っただけです。その延長線上にあるのが<dfn>遷移の状態</dfn>で、今の状態だけでなく、前の状態も記録しておきます。これを使うと、キーの状態そのものだけでなく、キーの状態の*変化*を調べられます。最後に、<dfn>tribool</dfn>（3 値の真偽値）です。3 つの状態（ここでは −1、0、+1）を持つ変数で、方向の処理を単純にするのに使えます。
 
-### Synchronous and transitional key states {#ssec-adv-sync}
+### 同期的な状態と遷移の状態 {#ssec-adv-sync}
 
-The use of `KEY_DOWN_NOW()` is a form of <dfn>asynchronous</dfn> key handling: you check the state at the time the code needs it. While it works, it's not always the best approach. Firstly, it is less efficient in terms of code because the register is loaded and read every time it is necessary (it's volatile, remember?). A secondary concern is that a simultaneous multi-button tap may not be registered as such because the code reading the button states are a little apart.
+`KEY_DOWN_NOW()` を使うのは、<dfn>非同期</dfn>なキーの扱い方の一種です。コードが必要とする時点で状態を調べます。これでも動きますが、いつも一番いいやり方とは限りません。まず、必要になるたびにレジスタを読み込むので（volatile でしたよね？）、コードの面で効率が悪いです。2 つ目の懸念として、ボタンの状態を読むコード同士が少し離れているので、複数のボタンの同時押しが、同時押しとして認識されないことがあります。
 
-But those are just minor concerns; the main issue is that there's just little you can really do with them. You can get the current state, but that's it. As a simple example of why this is insufficient for games, consider (un)pausing a game. This is usually done by pressing Start, and then Start again for unpausing. That's fine until you consider that the game runs faster than you can react (this is a basic fact of life; the only reason you can win games is because the game lets you. Deal), so the `Start` button will be down for multiple frames. With `KEY_DOWN_NOW()`, the game will pause *and* unpause during this time; the state of the game when you finally release the button is essentially random. Needless to say, this is a Bad Thing™.
+でも、これらは小さな懸念にすぎません。一番の問題は、これでは本当にたいしたことができない、ということです。今の状態は分かりますが、それだけです。これがゲームには不十分な理由の簡単な例として、ゲームの一時停止とその解除を考えてみてください。これは普通、スタートを押して一時停止し、もう一度スタートを押して解除します。それで問題なさそうですが、ゲームはあなたが反応するより速く動いている（これは人生の基本的な事実です。あなたがゲームに勝てるのは、ゲームが勝たせてくれているからにすぎません。受け入れてください）ことを考えると、`Start` ボタンは何フレームにもわたって押されたままになります。`KEY_DOWN_NOW()` だと、そのあいだにゲームは一時停止*と*解除を繰り返し、最終的にボタンを離したときのゲームの状態は、本質的にでたらめになります。言うまでもなく、これはよくないこと™です。
 
-Enter synchronous states. Simply read the state once, at the beginning of the frame for example, and use that as ‘the’ state for the whole frame. That takes care of the excess readings of REG_KEYINPUT, and potentially missed simultaneity. For tracking state changes, we also save the state of the previous frame. So at the very least, we need two variables and a function that updates them, and for good measure, some functions that check the states. Because these will be quite small, it makes sense to inline them as well.
+そこで同期的な状態の出番です。状態を、たとえばフレームの最初に 1 回だけ読み、それをそのフレーム全体での「唯一の」状態として使うのです。これで、REG_KEYINPUT を余分に読むことも、同時押しを見逃すおそれもなくなります。状態の変化を追うために、前のフレームの状態も保存しておきます。なので、少なくとも 2 つの変数と、それを更新する関数が必要で、ついでに状態を調べる関数もいくつか用意します。どれもかなり小さいので、インライン関数にするのが理にかなっています。
 
 ```c
 // === (tonc_core.c) ==================================================
@@ -181,19 +181,19 @@ INLINE u32 key_was_down(u32 key)    {   return  __key_prev & key;   }
 INLINE u32 key_was_up(u32 key)      {   return ~__key_prev & key;   }
 ```
 
-The key states are stored in `__key_curr` and `__key_prev`. The function that updates them is `key_poll()`. Note that this function already inverts REG_KEYINPUT, so that the variables are active high, which makes later operations more intuitive. For example, to test whether A is currently down (pressed), just mask `__key_curr` with `KEY_A`, the bit for A. This is what `key_is_down()` does. While `KEY_DOWN_NOW()` gives (almost) the same answer, I would still recommend using `key_is_down()` instead.
+キーの状態は `__key_curr` と `__key_prev` に保存されます。それを更新する関数が `key_poll()` です。この関数はすでに REG_KEYINPUT を反転しているので、変数はハイアクティブになり、あとの操作がより直感的になることに注目してください。たとえば、A が今押されているかを調べるには、`__key_curr` を A のビットである `KEY_A` でマスクするだけです。これが `key_is_down()` のしていることです。`KEY_DOWN_NOW()` も（ほぼ）同じ答えを返しますが、それでも `key_is_down()` を使うことをおすすめします。
 
-:::tip Invert REG_KEYINPUT reads as soon as possible
+:::tip REG_KEYINPUT を読んだら、できるだけ早く反転する
 
-The things that you might check the keystates for are simply easier in active-high settings. Therefore, it is a good idea to make the keystate variables work that way.
+キーの状態を調べてやりたいことは、ハイアクティブの形のほうが単純に楽です。なので、キーの状態の変数もその形で扱えるようにするのがいい考えです。
 
 :::
 
-### Transitional states {#ssec-adv-trans}
+### 遷移の状態 {#ssec-adv-trans}
 
-Back to the pause/unpause issue. The nasty behaviour `KEY_DOWN_NOW()` causes is known as <dfn>key bounce</dfn>. This is because the macro only checks the current state. What you need for proper (un)pausing is something that checks whether a key is *going* down, rather than just down: you need to check the transition. That's where the previous state comes in. When a key is hit, i.e., the moment of it going down, it will be pressed in the current state, but not the one before. In other words, the keys that are ‘hit’ are down currently, and not before: `__key_curr&~__key_prev`. After that, checking for a particular key can be achieved with a simple mask as usual. This is done by `key_hit()`.
+一時停止と解除の問題に戻りましょう。`KEY_DOWN_NOW()` が引き起こすいやな振る舞いは、<dfn>キーバウンス</dfn>として知られています。これは、マクロが今の状態しか調べないからです。一時停止と解除をちゃんとするには、キーが押されているかどうかではなく、キーが押され*ようとしている*かどうかを調べるものが必要です。つまり、遷移を調べる必要があります。そこで前の状態が役に立ちます。キーが押された瞬間、つまり押され始めた瞬間には、そのキーは今の状態では押されていて、前の状態では押されていません。言い換えると、「押された（hit）」キーとは、今押されていて、前には押されていなかったキーです。`__key_curr&~__key_prev` です。そのあとは、いつものように単純なマスクで特定のキーを調べられます。これをするのが `key_hit()` です。
 
-That's really all there is to it, and you can create similar functions to check for releases (before AND NOT now), if it is held (before AND now), et cetera. Again, it all seems so simple because the states were already inverted; when I first made these functions, I had a terrible time figuring out what the right bit-ops were because the active-low logic was throwing me off. Well okay, not *really* but it would have been easier if I had them inverted from the start.
+本当にこれだけです。同じように、離されたこと（前は押されていて、AND 今は押されていない）や、押し続けていること（前も押されていて、AND 今も押されている）などを調べる関数も作れます。繰り返しますが、これがすべてこんなに単純に見えるのは、状態をすでに反転してあるからです。最初にこれらの関数を作ったときは、ロウアクティブの論理に惑わされて、正しいビット演算を見つけるのにひどく苦労しました。まあ、*本当は*そこまでではないのですが、最初から反転してあれば、もっと楽だったでしょう。
 
 ```c
 // Transitional state checks.
@@ -215,11 +215,11 @@ INLINE u32 key_released(u32 key)
 {   return (~__key_curr &  __key_prev) & key;  }
 ```
 
-### Key tribool states {#ssec-adv-tri}
+### キーの tribool 状態 {#ssec-adv-tri}
 
-This is a little technique taken from the [PA_Lib wiki](https://web.archive.org/web/20110318222049/http://www.palib.info/wiki/doku.php?id=day3). It isn't so much about keys per se, but a shorthand in how you can use the functions, and you will have to make up for yourself whether what's discussed in this subsection is right for you.
+これは、[PA_Lib の wiki](https://web.archive.org/web/20110318222049/http://www.palib.info/wiki/doku.php?id=day3) から拝借したちょっとした技法です。キーそのものの話というより、関数の使い方を短く書く方法の話です。この小節で説明することが自分に合うかどうかは、自分で判断してください。
 
-Imagine you have a game/demo/whatever in which you can move stuff around. To make a character move left and right, for example, you might do use something like this.
+何かを動かせるゲームやデモなどを想像してください。たとえば、キャラクターを左右に動かすには、次のようなものを使うかもしれません。
 
 ```c
 // variable x, speed dx
@@ -229,15 +229,15 @@ else if(key_is_down(KEY_LEFT))
     x -= dx;
 ```
 
-Thing moves right, *x* increases; thing moves left, *x* decreases, simple enough. Works fine too. However, and this may just be my ifphobia acting up, it's not very pretty code. So let's see if we can find something smoother.
+右に動くと *x* が増え、左に動くと *x* が減る。簡単です。ちゃんと動きもします。でも、これは私の if 嫌いが顔を出しているだけかもしれませんが、あまりきれいなコードではありません。なので、もっと滑らかなものが見つからないか探してみましょう。
 
-Take a look at what the code is actually doing. Depending on two choices, the variable is either increased (+), decreased (−), or unchanged (0). That's a pretty good definition of a <dfn>tribool</dfn>, a variable with three possible states, in this case +1, 0 and −1. What I'm after is something that lets you use these states to do the following.
+このコードが実際に何をしているかを見てみてください。2 つの選択によって、変数は増える（+）か、減る（−）か、変わらない（0）かのどれかです。これはまさに <dfn>tribool</dfn>、つまり 3 つの状態（ここでは +1、0、−1）を取りうる変数の定義そのものです。私が欲しいのは、この状態を使って次のように書けるものです。
 
 ```c
 x += DX*key_tri_horz();
 ```
 
-I suppose I could just wrap the `if`s in this function, but I prefer to do it via bit operations. All I need to do for this is shift the bits for specific keys down, mask that with one, and subtract the results.
+この関数の中に `if` を包んでしまうこともできますが、私はビット演算でやるほうが好きです。そのためには、特定のキーのビットを下にシフトして、1 でマスクし、その結果を引き算するだけです。
 
 ```c
 // === (tonc_core.h) ==================================================
@@ -269,26 +269,26 @@ INLINE int key_tri_fire()       // B/A : -/+
 {   return bit_tribool(__key_curr, KI_A, KI_B);         }
 ```
 
-The inline function `bit_tribool()` creates a tribool value from any two bits in a number (register or otherwise). The rest of the functions listed here use the current keystate and the key-bits to create tribools for horizontal, vertical, shoulder and fire buttons; others can be creates with relative ease. These functions make the code look cleaner and are faster to boot. You will be seeing them quite often.
+インライン関数の `bit_tribool()` は、（レジスタでもそれ以外でも）ある数の任意の 2 つのビットから、tribool の値を作ります。ここに挙げたほかの関数は、今のキーの状態とキーのビットを使って、左右、上下、L/R、A/B のボタンの tribool を作ります。ほかのものも、比較的簡単に作れます。これらの関数を使うとコードがすっきりし、しかも速くなります。これらは、これからよく目にすることになります。
 
-While the functions mentioned above only use `__key_curr`, it is easy to write code that uses other key-state types. For example, a right-left `key_hit` variant might look something like this:
+上の関数は `__key_curr` しか使っていませんが、ほかの種類のキーの状態を使うコードも簡単に書けます。たとえば、`key_hit` を使った左右の版は、次のようになるでしょう。
 
 ```c
 // increase/decrease x on a right/left hit
 x += DX*bit_tribool(key_hit(-1), KI_RIGHT, KI_LEFT);
 ```
 
-It's just a call to `bit_tribool()` with using `key_hit()` instead of `__key_curr`. In case you're wondering what the “−1” is doing there, I just need it to get the full hit state. Remember that −1 is `0xFFFFFFFF` in hex, in other words a full mask, which will be optimized out of the final code. You will see this use of tribools a couple of times as well.
+`__key_curr` の代わりに `key_hit()` を使って、`bit_tribool()` を呼んでいるだけです。そこで “−1” が何をしているのか気になるかもしれませんが、押された状態全体を取り出すために必要なだけです。−1 は 16 進数で `0xFFFFFFFF`、つまり全部のビットが立ったマスクなので、最終的なコードでは最適化で消えることを思い出してください。こうした tribool の使い方も、何度か目にすることになります。
 
-## A simple key demo {#sec-demo}
+## 簡単なキーのデモ {#sec-demo}
 
 <div class="cpt_fr" style="width:120px;">
 <img alt="key_demo screenshot" src="./img/demo/gba_sm.png" id="fig:key-demo">
 
-**{*@fig:key-demo}**: key_demo screenshot, with L and B held.
+**{*@fig:key-demo}**: key_demo の画面。L と B を押し続けているところ。
 </div>
 
-The *key_demo* demo illustrates how these key functions can be used. It shows a mode 4 picture of a GBA (a 240x160 8bit bitmap); the colors change according to the button presses. The normal state is grey; when you press the key, it turns red; when you release it, it goes yellow; and as long as it's held it's green. {*@fig:key-demo} shows this for the L and B buttons. Here's the code that does the real work:
+*key_demo* のデモは、これらのキーの関数の使い方を示しています。モード 4 で GBA の絵（240x160 の 8 ビットのビットマップ）を表示し、ボタンの押し方に応じて色が変わります。普段は灰色で、キーを押すと赤くなり、離すと黄色になり、押し続けているあいだは緑になります。{*@fig:key-demo} は、L と B のボタンでそれを示しています。実際の仕事をしているコードは次のとおりです。
 
 <div id="cd-key-demo">
 
@@ -344,4 +344,4 @@ int main()
 ```
 </div>
 
-`BTN_PAL_ID` is the starting index of the palette-part used for the buttons and `CLR_UP` is a shade of grey; the rest of the colors should be obvious. To make sure that you can actually see the changes in button colors I'm only polling the keys once every 8 frames. If I didn't do that, you'll hardly ever see a red or yellow button. (By the way, I don't actually change the buttons' colors, but only the palette color that that button's pixels use; palette animation is a Good Thing™).
+`BTN_PAL_ID` は、ボタンに使うパレットの部分の最初のインデックスで、`CLR_UP` は灰色の一種です。ほかの色は見れば分かるはずです。ボタンの色の変化が実際に目に見えるように、キーの読み取りは 8 フレームに 1 回だけにしています。そうしないと、赤や黄色のボタンはほとんど見られないでしょう。（ちなみに、私は実際にはボタンの色を変えているのではなく、そのボタンのピクセルが使うパレットの色を変えているだけです。パレットアニメーションはよいこと™です。）

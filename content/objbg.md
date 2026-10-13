@@ -1,32 +1,32 @@
-# 7. Sprite and background overview
+# 7. スプライトと背景の概要
 
 <!-- toc -->
 
-## Sprites and backgrounds introduction {#sec-intro}
+## スプライトと背景の紹介 {#sec-intro}
 
-Although you can make games based purely on the bitmap modes, you'll find very few that do. The simple reason for this is that all graphics would be rendered by software. No matter how good your code is, that's always going to be a slow process. Now, I'm not saying it can't be done: there are several FPSs on the GBA (Wolfenstein and Doom for example). I *am* saying that unless you're willing to optimize the crap out of your code, you'll have a hard time doing it.
+ビットマップモードだけでゲームを作ることもできますが、そうしているゲームはほとんど見当たりません。単純な理由は、すべてのグラフィックがソフトウェアで描かれることになるからです。どんなによいコードを書いても、それは常に遅い処理になります。できないと言っているわけではありません。GBA にも FPS がいくつかあります（たとえば Wolfenstein や Doom）。私が言っている*のは*、コードをとことんまで最適化する覚悟がない限り、苦労することになる、ということです。
 
-The vast majority uses the GBA's <dfn>hardware graphics</dfn>, which come in the forms of <dfn>sprites</dfn> and <dfn>tiled backgrounds</dfn> (simply “background” or “bg” for short). As I said in the [video introduction](video.html#sec-vid-types), a tiled background is composed of a matrix of tiles (hence the name) and each tile contains an index to an 8x8 pixel bitmap known as a <dfn>tile</dfn>. So what ends up on screen is a matrix of tiles. There are four of these backgrounds with sizes between 128x128 pixels (32x32 tiles) to 1024x1024 pixels (128x128 tiles). Sprites are smaller objects between 8x8 to 64x64 pixels in size. There are 128 of them and you can move them independently of each other. Like backgrounds, sprites are built out of tiles.
+大多数のゲームは、GBA の<dfn>ハードウェアによるグラフィック</dfn>を使っています。それには、<dfn>スプライト</dfn>と<dfn>タイル背景</dfn>（短く「背景」や「bg」とも呼びます）があります。[グラフィック入門](video.html#sec-vid-types)で言ったとおり、タイル背景はタイルの行列（だからこの名前です）でできていて、各タイルは、<dfn>タイル</dfn>と呼ばれる 8x8 ピクセルのビットマップへのインデックスを持っています。なので、最終的に画面に出るのは、タイルの行列です。この背景は 4 つあり、大きさは 128x128 ピクセル（32x32 タイル）から 1024x1024 ピクセル（128x128 タイル）までです。スプライトは、8x8 から 64x64 ピクセルの大きさの、もっと小さなオブジェクトです。128 個あり、それぞれ別々に動かせます。背景と同じく、スプライトもタイルでできています。
 
-The hardware takes care of several other aspects of rendering besides mere raster blasting. For one thing, it uses <dfn>color keying</dfn> to exclude some pixels from showing up (i.e., these are transparent). Basically, if the tile's pixel has a value of zero it is transparent. Furthermore, the hardware takes care of a number of other effects like flipping, alpha-blending and [affine transformations](affine.html) like rotation and scaling.
+ハードウェアは、単にラスターを描きまくるだけでなく、描画のほかのいくつかの面も引き受けてくれます。1 つには、<dfn>カラーキー</dfn>を使って、一部のピクセルを表示しないようにします（つまり、そのピクセルは透明になります）。基本的には、タイルのピクセルの値がゼロなら透明です。さらに、ハードウェアは、反転、半透明合成、回転や拡大縮小のような[アフィン変換](affine.html)など、ほかのいくつかの効果も引き受けてくれます。
 
-The trick is setting up the process. There are three basic steps to be aware of: <dfn>control</dfn>, <dfn>mapping</dfn> and <dfn>image data</dfn>. The boundaries of these steps are a bit vague, but it helps to see it in this manner since it allows you to see sprites and backgrounds as two sides of the same coin. And unification is a Good Thing®. There are still differences, of course, but only in the details.
+こつは、その処理を準備することです。意識すべき基本的な段階が 3 つあります。<dfn>制御</dfn>、<dfn>マッピング</dfn>、<dfn>画像データ</dfn>です。これらの段階の境目は少しあいまいですが、こう見ると、スプライトと背景を同じコインの裏表として捉えられるので役に立ちます。そして、統一はよいこと®です。もちろん違いはまだありますが、細部だけです。
 <br>  
-This page gives a broad overview of what I will talk about in the next couple of pages. Don't worry if you don't understand right away, that's not really the point right now. Just let it seep into your brain, read the other pages and then you'll see what I'm on about here.
+このページでは、次の何ページかで話すことの大まかな概要を示します。すぐに分からなくても心配しないでください。今はそれが目的ではありません。ただ頭にしみ込ませておいて、ほかのページを読めば、私がここで何を言いたかったのかが分かるはずです。
 
-## Sprite and background control {#sec-ctrl}
+## スプライトと背景の制御 {#sec-ctrl}
 
-The first step of rendering is control. Control covers things that act on the sprites or backgrounds as a whole, like activation of the things themselves, whether to use 16 or 256 color tiles, and effects like alpha-blending and transformations. First up is whether or not you want to use the things in the first place. This is done by setting the right bits in the display control register [`REG_DISPCNT`](video.html#tbl-reg-dispcnt). Once you've done that there are further control registers for backgrounds: the `REG_BGxCNT` registers (`0400:0008h`-`0400:000Fh`). For sprites there's the <dfn>Object Attribute Memory</dfn>, or OAM, which can be found at `0700:0000h`. Each of the 128 sprites has three so-called <dfn>attributes</dfn> (hence OAM) which covers both the control and mapping aspects of the sprites.
+描画の最初の段階は制御です。制御には、スプライトや背景全体に作用するもの、たとえばそれ自体を有効にすること、16 色と 256 色のどちらのタイルを使うか、半透明合成や変形のような効果などが入ります。まずは、そもそもそれらを使うかどうかです。これは、ディスプレイ制御のレジスタ [`REG_DISPCNT`](video.html#tbl-reg-dispcnt) の正しいビットを立てることで行います。それが済んだら、背景にはさらに制御のレジスタがあります。`REG_BGxCNT` レジスタ（`0400:0008h`〜`0400:000Fh`）です。スプライトには <dfn>Object Attribute Memory</dfn>（オブジェクト属性メモリ）、つまり OAM があり、`0700:0000h` にあります。128 個のスプライトはそれぞれ、いわゆる<dfn>属性</dfn>（だから OAM です）を 3 つ持っていて、スプライトの制御とマッピングの両方の面を担っています。
 
-## Sprite and background mapping {#sec-map}
+## スプライトと背景のマッピング {#sec-map}
 
-There's a lot of grey area between control and mapping, but here goes. Mapping concerns everything about which tiles to use and where they go. As said, the screen appearance of both sprites and backgrounds are constructed of tiles, laid out side by side. You have to tell the GBA which tiles to blit to what position. {*@fig:tile-gfx}a-c (below) illustrates this. In {@fig:tile-gfx}b you see the tiles. Note that both sprites and backgrounds have their own set of tiles.
+制御とマッピングのあいだにはグレーゾーンがたくさんありますが、話を進めます。マッピングは、どのタイルを使い、それをどこに置くかに関するすべてのことです。前に言ったとおり、スプライトも背景も、画面上の見た目は、並べて置かれたタイルで組み立てられます。どのタイルをどの位置に描くかを、GBA に伝える必要があります。下の {*@fig:tile-gfx}a〜c がその様子を示しています。{@fig:tile-gfx}b にタイルが見えます。スプライトと背景は、それぞれ自分のタイルの組を持っていることに注目してください。
 
-In {@fig:tile-gfx}c you see how these tiles are used. The background uses a <dfn>tile-map</dfn>, which works just like an ordinary paletted bitmap except that it's a matrix of <dfn>screenblock entries</dfn> (with tile-indices) instead of pixels (containing color-indices). Excuse me, a what?!? Screenblock entry. Yes, I know the name is a bit silly. The thing is that you need keep a clear distinction between the entries in the map (the screenblock entries, <dfn>SE</dfn> for short) and the image-data (the actual tiles). Unfortunately, the term “tile” is often used for both. I'll stick to tiles for the actual graphical information, and since the tile-map is stored in things called screenblocks, screenblock entries or SE for the map data. Anyway, each SE has its own tile-index. It also contains bits for horizontal and vertical flipping and, if it's a 16-color background, an index for the palbank as well. In {@fig:tile-gfx}c, you only see the tile-index, though.
+{@fig:tile-gfx}c では、これらのタイルがどう使われるかが分かります。背景は<dfn>タイルマップ</dfn>を使います。これは、ピクセル（色のインデックスを持つ）の代わりに<dfn>スクリーンブロックエントリ</dfn>（タイルのインデックスを持つ）の行列であることを除けば、普通のパレット付きのビットマップとまったく同じように働きます。え、何ですって？！ スクリーンブロックエントリです。ええ、名前が少しばかげているのは分かっています。問題は、マップのエントリ（スクリーンブロックエントリ、略して <dfn>SE</dfn>）と画像データ（実際のタイル）をはっきり区別しておく必要があることです。残念ながら、「タイル」という言葉は両方によく使われます。私は、実際のグラフィックの情報にはタイルという言葉を使い、タイルマップはスクリーンブロックと呼ばれるものに入っているので、マップのデータにはスクリーンブロックエントリ、または SE という言葉を使うことにします。ともかく、各 SE はそれぞれのタイルのインデックスを持っています。また、水平反転と垂直反転のビットと、16 色の背景ならパレットバンクのインデックスも持っています。ただし、{@fig:tile-gfx}c にはタイルのインデックスしか表示されていません。
 
-For sprites, it's s a bit different, but the basic steps remain. You give *one* tile-index for the whole sprite; the GBA then figures out the other tiles to use by looking at the shape and size of the sprite and the <dfn>sprite mapping-mode</dfn>. I'll explain what this means [later](regobj.html#sec-oam); suffice to say that the mapping mode is either 1D or 2D, depending on `REG_DISPCNT{6}`. In this case, I've used 1D mapping, which states that the tiles that a sprite should use are consecutive. Like backgrounds, there's additional flipping flags and palette-info for 16-color sprites. Unlike backgrounds, these work on the *whole* sprite, not just on one tile. Also, the component tiles of sprites are always adjoining, so you can see a sprite as a miniature tiled-background with some imagination.
+スプライトの場合は少し違いますが、基本的な段階は同じです。スプライト全体に対して*1 つ*のタイルのインデックスを与えます。すると GBA は、スプライトの形と大きさ、そして<dfn>スプライトのマッピングモード</dfn>を見て、ほかに使うタイルを割り出します。これが何を意味するのかは[あとで](regobj.html#sec-oam)説明します。今は、マッピングモードには 1D と 2D があり、`REG_DISPCNT{6}` で決まる、とだけ言っておきます。ここでは 1D マッピングを使っていて、スプライトが使うタイルは連続している、ということになります。背景と同じく、反転のフラグと、16 色のスプライトならパレットの情報もあります。背景と違って、これらはタイル 1 つだけでなく、スプライト*全体*に作用します。また、スプライトを構成するタイルは常に隣り合っているので、少し想像力を働かせれば、スプライトを小さなタイル背景とみなせます。
 
-What belongs to the mapping step as well is the [affine transformation matrix](affine.html), if any. With this 2x2 matrix you can rotate, scale or shear sprites or backgrounds. There seems to be a lot of confusion about how this works so I've written a detailed, mathematical description on how this thing works. Bottom line: the matrix maps from screen space to texture-space, and *not* the other way round. Though all the reference documents do state this in a roundabout way, almost every rotation-scale matrix I've seen so far is incorrect. If your code is based on PERN's, chances are yours is too.
+マッピングの段階には、もしあれば、[アフィン変換の行列](affine.html)も含まれます。この 2x2 の行列で、スプライトや背景を回転、拡大縮小、せん断できます。これがどう働くのかについては混乱が多いようなので、詳しい数学的な説明を書きました。結論を言うと、この行列は画面の空間からテクスチャの空間へ対応づけるもので、その逆では*ありません*。参考資料はどれも遠回しにそう書いているのですが、これまで私が見てきた回転・拡大縮小の行列は、ほぼすべて間違っています。あなたのコードが PERN のものを元にしているなら、あなたのものもたぶん間違っています。
 
 <div class="cblock" id="fig:tile-gfx">
 <table id="img-tile-use">
@@ -37,42 +37,42 @@ What belongs to the mapping step as well is the [affine transformation matrix](a
   <img src="./img/tile_gfx_render.png"
     alt="Example of both sprites and background"
     width=192><br>
-  <b>{*@fig:tile-gfx}a</b>: 2 sprites on a background.
+  <b>{*@fig:tile-gfx}a</b>: 背景の上の 2 つのスプライト。
   </div>
 <td rowspan=2>
   <div class="cpt" style="width:384px">
   <img src="./img/tile_gfx_map.png"
     alt="Tile usage" width=384><br>
-  <b>{*@fig:tile-gfx}c</b>: tile usage by bgs and 
-    sprites. One tile per SE for 
-    bgs, and the top-left tile for sprites. Default tiles (with 
-	index 0 are omitted for clarity's sake.
+  <b>{*@fig:tile-gfx}c</b>: 背景とスプライトによる
+    タイルの使い方。背景は SE 1 つにつきタイル 1 つ、
+    スプライトは左上のタイル。見やすくするため、デフォルトのタイル（
+	インデックス 0）は省略。
   </div>
 <tr>
 <td>
   <div class="cpt" style="width:200px">
   <img src="./img/tile_gfx_tileset.png"
     alt="The bg and sprite tiles"><br>
-  <b>{*@fig:tile-gfx}b</b>: background (above) and
-    sprite (below) tiles. 
+  <b>{*@fig:tile-gfx}b</b>: 背景（上）と
+    スプライト（下）のタイル。
   <!--Note the 'interesting' division of the sprite tiles.-->
   </div>
 </table>
 </div>
 
-## Sprite and background image data {#sec-img}
+## スプライトと背景の画像データ {#sec-img}
 
-Image data is what the GBA actually uses to produce an image. This means two things: tiles and palettes.
+画像データは、GBA が実際に画像を作るのに使うものです。つまり、タイルとパレットの 2 つです。
 
-### Tiles {#ssec-img-tiles}
+### タイル {#ssec-img-tiles}
 
-Sprites and backgrounds are composed of a matrix of smaller bitmaps called <dfn>tile</dfn>s. Your basic tile is an 8x8 bitmap. Tiles come in 4bpp (16 colors / 16 palettes) and 8bpp (256 colors / 1 palette) variants. In analogy to floating point numbers, I refer to these as <dfn>s-tiles</dfn> (single-size tile) and <dfn>d-tiles</dfn> (double-size tiles). An s-tile is 32 (20h) bytes long, a d-tile 64 (40h) bytes. The default type of tile is the 4bpp variant (the s-tile). If I talk about tiles without mentioning which type, it either doesn't matter or it's an s-tile. Just pay attention to the context.
+スプライトと背景は、<dfn>タイル</dfn>と呼ばれる小さなビットマップの行列でできています。基本のタイルは 8x8 のビットマップです。タイルには、4bpp（16 色 / 16 パレット）と 8bpp（256 色 / 1 パレット）の種類があります。浮動小数点数になぞらえて、私はこれらを <dfn>s タイル</dfn>（単精度ならぬ単サイズのタイル）と <dfn>d タイル</dfn>（倍サイズのタイル）と呼んでいます。s タイルは 32（20h）バイト、d タイルは 64（40h）バイトです。タイルのデフォルトの種類は 4bpp（s タイル）です。種類を言わずにタイルの話をしているときは、どちらでも構わないか、s タイルのことです。文脈に注意してください。
 
-There is sometimes a misunderstanding about what working in tiles really means. In tiled modes, VRAM is *not* a big bitmap out of which tiles are selected, but a collection of 8x8 pixel bitmaps (i.e., the tiles). It is important that you understand the differences between these two methods! Consider an 8x8 rectangle in a big bitmap, and an 8x8 tile. In the big bitmap, the data after the first 8 pixels contain the next 8 pixels of the same scanline; the next line of the ‘tile’ can be found further on. In tiled modes, the next scanline of the tile immediately follows the current line.
+タイルで扱うということが本当は何を意味するのか、誤解されていることがあります。タイルモードでは、VRAM はタイルを切り出す元の大きなビットマップでは*なく*、8x8 ピクセルのビットマップ（つまりタイル）の集まりです。この 2 つのやり方の違いを理解することが大事です！ 大きなビットマップの中の 8x8 の四角形と、8x8 のタイルを考えてみてください。大きなビットマップでは、最初の 8 ピクセルのあとのデータは、同じスキャンラインの次の 8 ピクセルです。「タイル」の次の行は、もっと先にあります。タイルモードでは、タイルの次のスキャンラインは、今の行のすぐあとに続きます。
 
-Basically, VRAM works as an 8×*N*·8 bitmap in the tiled modes. Because such a small width is impractical to work with, they're usually presented as a wider bitmap anyway. An example is the VBA tile viewer, which displays char blocks as a 256x256 bitmap; I do something similar in {@fig:tile-as}a. It is important to remember that these do not accurately mimic the contents of VRAM; to reproduce the actual content of VRAM you'd need something like {@fig:tile-as}b, but, of course, no-one is insane enough to edit bitmaps in that manner. In all likelihood, you need a tool that can break up a bitmap into 8x8 chunks. Or restructure it to a bitmap with a width of 8 pixels, which in essence is the same thing.
+基本的に、タイルモードでは VRAM は 8×*N*·8 のビットマップとして働きます。こんなに狭い幅では扱いにくいので、たいていはもっと幅の広いビットマップとして表示されます。たとえば VBA のタイルビューアは、キャラブロックを 256x256 のビットマップとして表示します。私も {@fig:tile-as}a で似たようなことをしています。こうした表示は VRAM の中身を正確には再現していないことを覚えておくのが大事です。VRAM の実際の中身を再現するには {@fig:tile-as}b のようなものが必要ですが、もちろん、そんなふうにビットマップを編集するほど正気を失った人はいません。十中八九、ビットマップを 8x8 の塊に切り分けられるツールが必要になります。または、幅 8 ピクセルのビットマップに組み直すツールです。本質的には同じことです。
 
-As with all bitmaps, it is the programmer's responsibility (that means you!) that the bit-depth of the tiles that sprites and backgrounds correspond to the bit-depth of the data in VRAM. If this is out of sync, something like {@fig:tile-as}a may appear as {@fig:tile-as}c. Something like this is likely to happen sooner or later, because all graphics need to be converted outside of the system before use; one misplaced conversion option is all it takes.
+ほかのビットマップと同じく、スプライトや背景のタイルのビット深度が、VRAM の中のデータのビット深度と一致しているようにするのは、プログラマ（つまりあなた！）の責任です。これが食い違うと、{@fig:tile-as}a のようなものが {@fig:tile-as}c のように見えることがあります。こういうことは遅かれ早かれ起きるものです。すべてのグラフィックは、使う前にシステムの外で変換する必要があり、変換のオプションを 1 つ間違えるだけで起きるからです。
 
 <div class="cblock" id="fig:tile-as">
 <table id="img-bad-bpp">
@@ -81,14 +81,14 @@ As with all bitmaps, it is the programmer's responsibility (that means you!) tha
   <div class="cpt" style="width:192px">
   <img src="./img/tile_8as8.png" width=192 
     alt="8 bpp tiles">
-  <b>{*@fig:tile-as}a</b>: 8bpp tiles.
+  <b>{*@fig:tile-as}a</b>: 8bpp のタイル。
   </div>
 </td>
 <td>
   <div class="cpt" style="width:192px">
   <img src="./img/tile_as_bm.png" width=192 
     alt="8 bpp tiles as bitmap">
-  <b>{*@fig:tile-as}b</b>: 8bpp tiles as bitmap.
+  <b>{*@fig:tile-as}b</b>: ビットマップとして見た 8bpp のタイル。
   </div>
 </td>
 <tr>
@@ -96,48 +96,48 @@ As with all bitmaps, it is the programmer's responsibility (that means you!) tha
   <div class="cpt" style="width:384px">
   <img src="./img/tile_8as4.png" width=384
     alt="as before, but interpreted as 4 bpp">
-  <b>{*@fig:tile-as}c</b>: the data of 
-    {@fig:tile-as}a, interpreted as 4bpp data. 
-    If you see something like this (and you will), you now know why.
+  <b>{*@fig:tile-as}c</b>: {@fig:tile-as}a の
+    データを、4bpp のデータとして解釈したもの。
+    こういうものを見たら（いずれ見ることになります）、もう理由が分かりますね。
   </div>
 </td>
 </table>
 </div>
 
-:::tip Tiled graphics considerations
+:::tip タイルのグラフィックで気をつけること
 
-Remember and understand the following points:
+次の点を覚えて、理解しておいてください。
 
-1.  The data of each tile are stored sequentially, with the next row of 8 pixels immediately following the previous row. VRAM is basically a big bitmap 8 pixels wide. Graphics converters should be able to convert bigger bitmaps into this format.
-2.  As always, watch your bitdepth.
-
-:::
-
-:::tip Tip for graphics converters
-
-If you want to make your own conversion tools, here's a little tip that'll help you with tiles. Work in stages; do *not* go directly from a normal, linear bitmap to writing the data-file. Create a tiling function that takes a bitmap and arranges the tiles into a bitmap 1 tile wide and *H* tiles high. This can then be exported normally. If you allow for a variable tile-width (not hard-coding the 8-pixel width), you can use it for other purposes as well. For example, to create 16x16 sprites, first arrange with width=16, then with width=8.
+1.  各タイルのデータは順番に並んでいて、8 ピクセルの次の行は前の行のすぐあとに続きます。VRAM は、基本的に幅 8 ピクセルの大きなビットマップです。グラフィックの変換ツールは、もっと大きなビットマップをこの形式に変換できるはずです。
+2.  いつものとおり、ビット深度に注意してください。
 
 :::
 
-### Tile blocks (aka charblocks) {#ssec-img-cbb}
+:::tip グラフィックの変換ツールを作る人へのヒント
 
-All the tiles are stored in <dfn>charblocks</dfn>. As much as I'd like them to be called tile-blocks because that's what they're blocks *of*, tradition has it that tiles are characters (not to be confused with the programming type of characters: an 8bit integer) and so the critters are called charblock. Each charblock is 16kb (4000h bytes) long, so there's room for 512 (4000h/20h) s-tiles or 256 (4000h/40h) d-tiles. You can also consider charblocks to be matrices of tiles; 32x16 for s-tiles, 16x16 (or 32x8) for d-tiles. The whole 96kb of VRAM can be seen as 6 charblocks.
-
-As said, there are 6 tile-blocks, that is 4 for backgrounds (0-3) and 2 for sprites (4-5). For tiled backgrounds, tile-counting starts at a given <dfn>character base block</dfn> (block for the character base, CBB for short), which are indicated by `REG_BGxCNT`\{2-3\}. Sprite tile-indexing always starts at the lower sprite block (block 4, starting at `0601:0000h`).
-
-It'd be nice if tile-indexing followed the same scheme for backgrounds and sprites, but it doesn't. For sprites, numbering always follows s-tiles (20h offsets) even for d-tiles, but backgrounds stick to their indicated tile-size: 20h offsets in 4bpp mode, 40h offsets for 8bpp mode.
-
-:::warning Bg vs sprite tile indexing
-
-Sprites always have 32 bytes between tile indices, bg tile-indexing uses 32 or 64 byte offsets, depending on their set bitdepth.
+自分で変換ツールを作りたいなら、タイルを扱うのに役立つちょっとしたヒントがあります。段階を踏んでください。普通の線形のビットマップから、いきなりデータのファイルを書き出しては*いけません*。ビットマップを受け取り、タイルを幅 1 タイル、高さ *H* タイルのビットマップに並べ直すタイル化の関数を作ります。それなら、あとは普通に出力できます。タイルの幅を可変にしておけば（8 ピクセルの幅を決め打ちにしなければ）、ほかの目的にも使えます。たとえば、16x16 のスプライトを作るには、まず幅を 16 にして並べ、次に幅を 8 にして並べます。
 
 :::
 
-Now, both regular backgrounds and sprites have 10 bits for tile indices. That means 1024 allowed indices. Since each charblock contains 512 s-tiles, you can access not only the base block, but also the one after that. And if your background is using d-tiles, you can actually access a total of four blocks! Now, since tiled backgrounds can start counting at any of the four background charblocks, you might be tempted to try to use the sprite charblocks (blocks 4 and 5) as well. On the emulators I've tested, this does indeed work. On a real GBA, however, it does not. This is one of the reasons why you *need* to test on real hardware. For more on this subject see the [background tile subtleties](regbg.html#ssec-map-subtle) and the [`cbb_demo`](regbg.html#sec-demo).
+### タイルのブロック（別名キャラブロック） {#ssec-img-cbb}
 
-Another thing you need to know about available charblocks is that in one of the [bitmap](bitmaps.html) modes, the bitmaps extend into the lower sprite block. For that reason, you can only use the higher sprite block (containing tiles 512 to 1023) in this case.
+タイルはすべて<dfn>キャラブロック</dfn>に入っています。タイル*の*ブロックなのだから、タイルブロックと呼んでほしいところですが、伝統的にタイルはキャラクタ（プログラミングの型のキャラクタ、つまり 8 ビットの整数と混同しないでください）と呼ばれてきたので、このブロックはキャラブロックと呼ばれています。各キャラブロックは 16kb（4000h バイト）なので、s タイルなら 512 個（4000h/20h）、d タイルなら 256 個（4000h/40h）入ります。キャラブロックをタイルの行列とみなすこともできます。s タイルなら 32x16、d タイルなら 16x16（または 32x8）です。96kb の VRAM 全体は、6 つのキャラブロックとみなせます。
 
-Thanks to the wonderful concept of `typedef`s, you can define types for tiles and charblocks so that you can quickly come up with the addresses of tiles by simple array-accesses. An alternative to this is using macros or inline functions to calculate the right addresses. In the end it hardly matters which method you choose, though. Of course, the typedef method allows the use of the `sizeof` operator, which can be quite handy when you need to copy a certain amount of tile. Also, struct-copies are faster than simple loops, and require less C-code too.
+前に言ったとおり、タイルのブロックは 6 つあり、背景用が 4 つ（0〜3）、スプライト用が 2 つ（4〜5）です。タイル背景では、タイルの数え始めは、指定された<dfn>キャラクタベースブロック</dfn>（キャラクタの基点となるブロック、略して CBB）で、これは `REG_BGxCNT`\{2-3\} で指定します。スプライトのタイルのインデックスは、常に下のほうのスプライトのブロック（ブロック 4、`0601:0000h` から）から始まります。
+
+タイルのインデックスの付け方が背景とスプライトで同じなら便利なのですが、そうはなっていません。スプライトでは、d タイルでも、番号は常に s タイル単位（20h ごと）で数えます。背景は、指定されたタイルの大きさに従います。4bpp モードなら 20h ごと、8bpp モードなら 40h ごとです。
+
+:::warning 背景とスプライトのタイルのインデックスの違い
+
+スプライトでは、タイルのインデックス同士の間隔は常に 32 バイトです。背景のタイルのインデックスは、設定したビット深度によって、32 バイトか 64 バイトの間隔になります。
+
+:::
+
+さて、普通の背景もスプライトも、タイルのインデックスに 10 ビットを持っています。つまり、1024 個のインデックスを使えます。各キャラブロックには s タイルが 512 個入るので、基点のブロックだけでなく、その次のブロックにもアクセスできます。そして、背景が d タイルを使っているなら、実際には全部で 4 つのブロックにアクセスできます！ さて、タイル背景は 4 つの背景用のキャラブロックのどこからでも数え始められるので、スプライト用のキャラブロック（ブロック 4 と 5）も使ってみたくなるかもしれません。私が試したエミュレータでは、実際にうまくいきました。でも、本物の GBA ではうまくいきません。これが、実機で試す*必要がある*理由の 1 つです。この話題について詳しくは、[背景のタイルの微妙な点](regbg.html#ssec-map-subtle)と [`cbb_demo`](regbg.html#sec-demo) を見てください。
+
+使えるキャラブロックについて、もう 1 つ知っておくべきことがあります。[ビットマップ](bitmaps.html)モードの 1 つでは、ビットマップが下のほうのスプライトのブロックにまで広がっています。そのため、その場合は上のほうのスプライトのブロック（タイル 512〜1023 が入っています）しか使えません。
+
+`typedef` というすばらしい概念のおかげで、タイルとキャラブロックの型を定義して、単純な配列のアクセスでタイルのアドレスをすぐに求められるようにできます。別の方法として、マクロやインライン関数で正しいアドレスを計算することもできます。結局のところ、どちらの方法を選んでもほとんど違いはありません。もちろん、typedef の方法なら `sizeof` 演算子を使えるので、決まった数のタイルをコピーしたいときにかなり便利です。また、構造体のコピーは単純なループより速く、C のコードも少なくて済みます。
 
 ```c
 // tile 8x8@4bpp: 32bytes; 8 ints
@@ -158,88 +158,88 @@ TILE *ptr= &tile_mem[4][12];   // block 4 (== lower object block), tile 12
 tile_mem[4][12] = *(TILE*)spriteData;
 ```
 
-### Palettes and tile colors {#ssec-img-clr}
+### パレットとタイルの色 {#ssec-img-clr}
 
-Sprites and backgrounds have separate palettes. The background palette goes first at `0500:0000h`, immediately followed by the sprite palette (`0500:0200h`). Both palettes contain 256 entries of 15bit colors.
+スプライトと背景は、別々のパレットを持っています。背景のパレットが先に `0500:0000h` にあり、そのすぐあとにスプライトのパレット（`0500:0200h`）が続きます。どちらのパレットにも、15 ビットの色が 256 個入っています。
 
-In 8-bit color mode, the pixel value in the tiles is palette-index for that pixel. In 4-bit color mode, the pixel value contains the lower nybble of the palette index; the high nybble is the <dfn>palbank</dfn> index, which can be found in either the sprite's attributes, or the upper nybble of the tiles. If the pixel-value is 0, then that pixel won't be rendered (i.e., will be transparent).
+8 ビットカラーのモードでは、タイルのピクセルの値は、そのピクセルのパレットのインデックスです。4 ビットカラーのモードでは、ピクセルの値はパレットのインデックスの下位 4 ビット（ニブル）です。上位のニブルは<dfn>パレットバンク</dfn>のインデックスで、スプライトの属性か、タイル（訳注: 背景ではスクリーンブロックエントリ）の上位のニブルにあります。ピクセルの値が 0 なら、そのピクセルは描かれません（つまり透明になります）。
 
-Because of 16-color mode and the transparency issue, it is *essential* that your bitmap editor leaves the palette intact. I know from personal experience that MS-Paint and the Visual C bitmap editor don't, so you might want to use something else. Favorites among other GBA developers are [Graphics Gale](https://graphicsgale.com/us/) and [GIMP](http://www.gimp.org). Of course, since I have my [my own bitmap editor](http://www.coranac.com/projects/#usenti), I prefer to use that.
+16 色モードと透明の問題があるので、ビットマップエディタがパレットをそのまま残してくれることは*欠かせません*。個人的な経験から、MS ペイントと Visual C のビットマップエディタは残してくれないことを知っているので、別のものを使うほうがいいかもしれません。ほかの GBA 開発者に人気なのは、[Graphics Gale](https://graphicsgale.com/us/) と [GIMP](http://www.gimp.org) です。もちろん、私には[自分のビットマップエディタ](http://www.coranac.com/projects/#usenti)があるので、それを使うほうが好きです。
 
-## Summary {#sec-summary}
+## まとめ {#sec-summary}
 
-This is a short list of various attributes of sprites and backgrounds. It's alright if you don't understand it right away; I'll explain in more detail in the following pages.
+スプライトと背景のさまざまな属性を短くまとめておきます。すぐに分からなくても大丈夫です。次のページから詳しく説明します。
 
 <div class="cblock">
 <table id="tbl:sum" class="table-data" width="70%">
 <col span=3 valign="top">
-<tr><th width="30%">Subject		<th>Backgrounds		<th>Sprites
-<tr><td>Number		<td>4 (2 affine)	<td>128	(32 affine)
+<tr><th width="30%">項目		<th>背景		<th>スプライト
+<tr><td>数		<td>4（うちアフィン 2）	<td>128	（うちアフィン 32）
 <tr>
-  <td>Max size
-  <td><b>reg</b>: 512x512<br><b>aff</b>: 1024x1024		<td>64x64
-<tr><td>Control			<td><code>REG_BGxCNT</code>		<td>OAM
-<tr><td>Base tile block		<td>0-3						<td>4
+  <td>最大の大きさ
+  <td><b>通常</b>: 512x512<br><b>アフィン</b>: 1024x1024		<td>64x64
+<tr><td>制御			<td><code>REG_BGxCNT</code>		<td>OAM
+<tr><td>基点のタイルのブロック		<td>0-3						<td>4
 <tr>
-  <td>Available tiles <i>id</i>s
-  <td><b>reg</b>: 0-1023 <br><b>aff</b>: 0-255
-  <td><b>modes 0-2</b>: 0-1023 <br><b>modes 3-5</b>: 512-1023
+  <td>使えるタイルの <i>id</i>
+  <td><b>通常</b>: 0-1023 <br><b>アフィン</b>: 0-255
+  <td><b>モード 0-2</b>: 0-1023 <br><b>モード 3-5</b>: 512-1023
 <tr>
-  <td>Tile memory offsets
-  <td>Per tile size: <br><b>4bpp</b>: start= base + <i>id</i>*32
+  <td>タイルのメモリのオフセット
+  <td>タイルの大きさごと: <br><b>4bpp</b>: start= base + <i>id</i>*32
   <br><b>8bpp</b>: start= base + <i>id</i>*64
-  <td>Always per 4bpp tile size: <br>start= base + <i>id</i>*32
+  <td>常に 4bpp のタイルの大きさごと: <br>start= base + <i>id</i>*32
 <tr>
-  <td>Mapping
-  <td><b>reg</b>: the full map is divided into map-blocks of 
-    32&times;32 tegels. (banked map)<br>
-    <b>aff</b>: one matrix of tegels, just like a normal bitmap (flat 
-    map)
-  <td>If a sprite is <i>m &times; n</i> tiles in size:<br>
-    <b>1D mapping</b>: the <i>m*n</i> successive tiles are used, 
-    starting at 
-    <i>id</i><br>
-    <b>2D mapping</b>: tile-blocks are 32&times;32 matrices; the 
-    used tiles 
-    are the <i>n</i> columns of the <i>m</i> rows of the matrix, 
-    starting at <i>id</i>.
+  <td>マッピング
+  <td><b>通常</b>: マップ全体が、
+    32&times;32 タイルのマップブロックに分かれている（バンク方式のマップ）<br>
+    <b>アフィン</b>: 普通のビットマップと同じく、タイルの 1 つの行列（フラットな
+    マップ）
+  <td>スプライトの大きさが <i>m &times; n</i> タイルの場合:<br>
+    <b>1D マッピング</b>: <i>id</i> から始まる、連続した <i>m*n</i> 個の
+    タイルを
+    使う<br>
+    <b>2D マッピング</b>: タイルのブロックは 32&times;32 の行列で、
+    使うタイルは
+    <i>id</i> から始まる、行列の <i>m</i> 行の <i>n</i> 列。
+    
 <tr>
-  <td>Flipping
-  <td>Each tile can be flipped individually
-  <td>Flips the whole sprite
-<tr><td>Palette		<td><code>0500:0000h</code>	<td><code>0500:0200h</code>
+  <td>反転
+  <td>タイルごとに反転できる
+  <td>スプライト全体を反転する
+<tr><td>パレット		<td><code>0500:0000h</code>	<td><code>0500:0200h</code>
 </table>
 </div>
 
-## What's in a name? {#sec-name}
+## 名前が何だというのか？ {#sec-name}
 
-Well, since you are a programmer you should know the answer: plenty. If you disagree, visit the [How To Write Unmaintanable Code](https://www.mindprod.com/jgloss/unmain.html) website and look at a number of their entries. My naming scheme is a bit different from that of the GBA community. I don't do this just because I feel like being contrary. I find some of the conventional names are incomplete, misleading and ambiguous. I feel little need, at least at present, to follow tradition simply because everyone else does. But you still need to know the traditional names, simply because everyone else does. So here's a list of differences in names.
+さて、あなたはプログラマなので、答えは知っているはずです。大いに関係あります。そう思わないなら、[How To Write Unmaintanable Code](https://www.mindprod.com/jgloss/unmain.html)（保守できないコードの書き方）のサイトを訪れて、いくつか項目を見てみてください。私の名前の付け方は、GBA のコミュニティのものとは少し違います。単にへそ曲がりでいたいから、そうしているわけではありません。慣習的な名前の中には、不完全だったり、誤解を招いたり、あいまいだったりするものがあると思うのです。少なくとも今のところ、みんながそうしているからというだけで伝統に従う必要はあまり感じません。でも、みんながそうしているからというだけの理由で、伝統的な名前も知っておく必要はあります。なので、名前の違いを一覧にしておきます。
 
 <div class="cblock">
 <table id="tbl:name" class="table-data" width="70%">
 <col span=3 valign="top">
-<tr><th>Subject		<th>Traditional		<th>Tonc
+<tr><th>項目		<th>伝統的な名前		<th>Tonc
 <tr>
-  <td>Sprite and bg image data
+  <td>スプライトと背景の画像データ
   <td>tiles
   <td>tiles
 <tr>
-  <td>Tile-map entries
-  <td>tiles  (can you feel the confusion?)
+  <td>タイルマップのエントリ
+  <td>tiles（混乱が感じられますか？）
   <td>screenblock entries / SE
 <tr>
-  <td>Matrix for transformations
+  <td>変換のための行列
   <td>Rot/Scale matrix
   <td>affine matrix / <b>P</b>
-<tr><td>Sprite types		<td>?? vs Rot/Scale	<td> regular vs affine
-<tr><td>Background types	<td>text vs rot	<td> regular vs affine
+<tr><td>スプライトの種類		<td>?? vs Rot/Scale	<td> regular vs affine
+<tr><td>背景の種類	<td>text vs rot	<td> regular vs affine
 <tr>
-  <td>Depository for sprite tiles (<code>0601:0000</code>)
-  <td><code>OAMData</code> (i.e., not the <i>real</i> OAM, which is
-    at <code>0700:0000</code>)
+  <td>スプライトのタイルの置き場所（<code>0601:0000</code>）
+  <td><code>OAMData</code>（つまり、<code>0700:0000</code> にある
+    <i>本物の</i> OAM ではない）
   <td><code>tile_mem_obj</code>
-<tr><td>OAM (<code>0700:0000</code>)
-  <td><code>OAMData</code> or <code>OAMMem</code>
+<tr><td>OAM（<code>0700:0000</code>）
+  <td><code>OAMData</code> または <code>OAMMem</code>
   <td><code>oam_mem</code>
 </table>
 </div>

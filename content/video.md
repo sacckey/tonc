@@ -1,18 +1,18 @@
-# 4. Introduction to GBA Graphics
+# 4. GBA のグラフィック入門
 
 <!-- toc -->
 
-## General introduction {#sec-intro}
+## 全体の紹介 {#sec-intro}
 
-The GBA has an LCD screen that is 240 pixels wide, 160 pixels high and is capable of displaying 32768 (15 bit) colors. The refresh rate is just shy of 60 frames per second (59.73 Hz). The GBA has 5 independent layers that can contain graphics: 4 <dfn>backgrounds</dfn> and one <dfn>sprite</dfn> layer and is capable of some special effects that include blending two layers and mosaic and, of course, rotation and scaling.
+GBA の液晶画面は、幅 240 ピクセル、高さ 160 ピクセルで、32768（15 ビット）色を表示できます。リフレッシュレートは、1 秒あたり 60 フレームにわずかに足りない値（59.73 Hz）です。GBA には、グラフィックを入れられる独立したレイヤーが 5 つあります。4 つの<dfn>背景</dfn>と、1 つの<dfn>スプライト</dfn>のレイヤーです。また、2 つのレイヤーの半透明合成やモザイク、そしてもちろん回転と拡大縮小といった、いくつかの特殊効果も使えます。
 
-Whereas sound and joypad functionality have to make do with only a few measly registers, the video system has a great deal of memory at its disposal (relatively speaking). Apart from a multitude of registers in I/O memory, there's the 96kb of video memory (starting at `0600:0000h`), palette memory (`0500:0000h`) and OAM memory (`0700:0000h`).
+音やジョイパッドの機能は、ほんのわずかなレジスタでやりくりするしかありませんが、映像のシステムは、（比較的）多くのメモリを自由に使えます。I/O メモリにある多数のレジスタのほかに、96kb のビデオメモリ（`0600:0000h` から）、パレットメモリ（`0500:0000h`）、OAM メモリ（`0700:0000h`）があります。
 
-## Draw and blank periods {#sec-blanks}
+## 描画期間とブランク期間 {#sec-blanks}
 
-As said, the entire GBA screen is refreshed every 60th of a second, but there's more to it than that. After a scanline has been drawn (the HDraw period, 240 pixels), there is a pause (HBlank, 68 pixels) before it starts drawing the next scanline. Likewise, after the 160 scanlines (VDraw) is a 68 scanline blank (VBlank) before it starts over again. To avoid tearing, positional data is usually updated at the VBlank. This is why most games run at 60 or 30 fps. (FYI, syncing at the VBlank is also why we in PAL countries often had slower games: PAL TVs run (ran) at 50Hz, hence only 50 fps instead of 60, hence a 17% slower game if nobody bothered to account for it. Few companies ever did <kbd>:(</kbd> ).
+前に述べたとおり、GBA の画面全体は 60 分の 1 秒ごとに書き換えられますが、話はそれだけではありません。1 本のスキャンラインを描き終えると（HDraw の期間、240 ピクセル）、次のスキャンラインを描き始めるまでに休み（HBlank、68 ピクセル）があります。同じように、160 本のスキャンライン（VDraw）のあとには、最初からやり直す前に、68 スキャンライン分のブランク（VBlank）があります。画面のちらつき（ティアリング）を避けるために、位置のデータはたいてい VBlank のあいだに更新します。ほとんどのゲームが 60 fps か 30 fps で動くのは、このためです。（ちなみに、VBlank に同期していることは、PAL の国々でゲームが遅くなりがちだった理由でもあります。PAL のテレビは 50Hz で動いている（いた）ので、60 fps ではなく 50 fps しか出ず、誰もそれを考慮しなければ、ゲームが 17% 遅くなってしまうのです。考慮した会社はほとんどありませんでした <kbd>:(</kbd> 。）
 
-Both the [CowBite Spec](http://www.cs.rit.edu/~tjh8300/CowBite/CowBiteSpec.htm#Graphics%20Hardware%20Overview) and [GBATEK](https://problemkaputt.de/gbatek.htm#lcddimensionsandtimings) give you some interesting details about the timings of the display. A full screen refresh takes exactly 280896 cycles, divided by the clock speed gives a framerate of 59.73. From the Draw/Blank periods given above you can see that there are 4 cycles per pixel, and 1232 cycles per scanline. You can find a summary of timing details in table 4.1.
+[CowBite Spec](http://www.cs.rit.edu/~tjh8300/CowBite/CowBiteSpec.htm#Graphics%20Hardware%20Overview) と [GBATEK](https://problemkaputt.de/gbatek.htm#lcddimensionsandtimings) のどちらにも、表示のタイミングについての興味深い詳細が載っています。画面全体を 1 回書き換えるのにちょうど 280896 サイクルかかり、これをクロックの速さで割ると、フレームレートは 59.73 になります。上で示した描画期間とブランク期間から、1 ピクセルあたり 4 サイクル、1 スキャンラインあたり 1232 サイクルだと分かります。タイミングの詳細のまとめは、表 4.1 にあります。
 
 <br>  
 
@@ -21,71 +21,71 @@ Both the [CowBite Spec](http://www.cs.rit.edu/~tjh8300/CowBite/CowBiteSpec.htm#G
   <td>
   <div class="cpt" style="width:192px;">
   <img src="./img/gba_draw.png" id="fig:gba-draw" alt=""><br>
-  <b>{*@fig:gba-draw}</b>: vdraw, vblank and hblank periods.
+  <b>{*@fig:gba-draw}</b>: VDraw、VBlank、HBlank の期間。
   </div>
 
   <td>
 	<table id="tbl:disp-timing" class="table-data">
 	<caption align="bottom">
-	  <b>{*@tbl:disp-timing}</b>: Display timing details
+	  <b>{*@tbl:disp-timing}</b>: 表示のタイミングの詳細
 	</caption>
 	<col>
 	<col span=2 align="right">
 	<tr align="center">
-	  <th>subject	<th>length		<th>cycles
+	  <th>対象	<th>長さ		<th>サイクル
 	<tr>
-	  <td>pixel		<td>     1		<td>     4
+	  <td>ピクセル		<td>     1		<td>     4
 	<tr>
 	  <td>HDraw		<td>   240px	<td>   960
 	<tr>
 	  <td>HBlank	<td>    68px	<td>   272
 	<tr>
-	  <td>scanline	<td>Hdraw+Hbl	<td>  1232
+	  <td>スキャンライン	<td>Hdraw+Hbl	<td>  1232
 	<tr>
 	  <td>VDraw 	<td>160*scanline<td>197120
 	<tr>
 	  <td>VBlank	<td>68*scanline	<td> 83776
 	<tr>
-	  <td>refresh	<td>VDraw+Vbl	<td>280896
+	  <td>リフレッシュ	<td>VDraw+Vbl	<td>280896
 	</table>
 </table>
 
-## Colors and palettes {#sec-colors}
+## 色とパレット {#sec-colors}
 
-The GBA is capable of displaying 16bit colors in a 5.5.5 format. That means 5 bits for red, 5 for green and 5 for blue; the leftover bit is unused. Basically, the bit-pattern looks like this: “<code>x<font color=blue>bbbbb</font><font color= green>ggggg</font><font color= red>rrrrr</font></code>”. There are a number of defines and macros in `color.h` that will make dealing with color easier.
+GBA は、5.5.5 形式の 16 ビットの色を表示できます。つまり、赤に 5 ビット、緑に 5 ビット、青に 5 ビットで、残りの 1 ビットは使われません。基本的には、ビットの並びは “<code>x<font color=blue>bbbbb</font><font color= green>ggggg</font><font color= red>rrrrr</font></code>” のようになります。`color.h` には、色を扱いやすくする define とマクロがいくつかあります。
 <br>  
-Now, as for palettes...  
+さて、パレットについてですが……
 
 `<rant>`  
-_Guys, the word here is **“palette”**! One ‘l’, two ‘t’s and an ‘e’ at the end. It is not a **“pallet”**, which is “a low, portable platform, usually double-faced, on which materials are stacked for storage or transportation, as in a warehouse”, nor is it a **“pallette”**, meaning “a plate protecting the armpit, in a suit of armor”. The word **“pallete”**, its most common variant, isn't even in the dictionary, thus not even worth considering. It's “palette”, people, “palette”._  
+_みなさん、ここでの言葉は **“palette”** です！ ‘l’ が 1 つ、‘t’ が 2 つ、最後に ‘e’ です。**“pallet”** ではありません。これは「倉庫などで、保管や運搬のために材料を積み重ねる、低くて持ち運べる台（多くは両面使える）」のことです。**“pallette”** でもありません。これは「鎧で、脇の下を守る板」のことです。一番よく見かける誤記の **“pallete”** に至っては、辞書にすら載っていないので、検討する価値すらありません。“palette” ですよ、みなさん、“palette” です。_  
 `</rant>`
 
-Anyhoo, the GBA has two palettes, one for sprites (objects) and one for backgrounds. Both palettes contain 256 entries of 16bit colors (512 bytes, each). The background palette starts at `0500:0000h`, immediately followed by the sprite palette at `0500:0200h`. Sprites and backgrounds can use these palettes in two ways: as a single palette with 256 colors (8 bits per pixel); or as 16 sub-palettes or <dfn>palette banks</dfn> of 16 colors (4 bits per pixel).
+それはともかく、GBA には 2 つのパレットがあります。1 つはスプライト（オブジェクト）用、もう 1 つは背景用です。どちらのパレットにも、16 ビットの色が 256 個入っています（それぞれ 512 バイト）。背景のパレットは `0500:0000h` から始まり、その直後の `0500:0200h` からスプライトのパレットが続きます。スプライトと背景は、これらのパレットを 2 通りに使えます。256 色の 1 つのパレットとして（1 ピクセルあたり 8 ビット）か、16 色の 16 個のサブパレット、つまり<dfn>パレットバンク</dfn>として（1 ピクセルあたり 4 ビット）です。
 
-One final thing about palettes: index 0 is the <dfn>transparency index</dfn>. In paletted modes, pixels with a value of 0 will be transparent.
+パレットについて最後に 1 つ。インデックス 0 は<dfn>透明色のインデックス</dfn>です。パレットを使うモードでは、値が 0 のピクセルは透明になります。
 
-## Bitmaps, backgrounds and sprites {#sec-vid-types}
+## ビットマップ、背景、スプライト {#sec-vid-types}
 
-All things considered, the GBA knows 3 types of graphics representations: <dfn>bitmaps</dfn>, <dfn>tiled backgrounds</dfn> and <dfn>sprites</dfn>. The bitmap and tiled background (also simply known as background) types affect how the whole screen is built up and as such cannot both be activated at the same time.  
-In bitmap mode, video memory works just like a *w*×*h* bitmap. To plot a pixel at location (*x,y*), go to location *y\*w+x* and fill in the color. Note that you cannot build up a screen-full of individual pixels each frame on the GBA, there are simply too many of them.
+まとめると、GBA が知っているグラフィックの表し方は 3 種類です。<dfn>ビットマップ</dfn>、<dfn>タイル背景</dfn>、<dfn>スプライト</dfn>です。ビットマップとタイル背景（単に背景とも呼ばれます）は、画面全体の組み立て方を決めるものなので、両方を同時に有効にすることはできません。  
+ビットマップモードでは、ビデオメモリはちょうど *w*×*h* のビットマップのように働きます。位置 (*x,y*) にピクセルを描くには、位置 *y\*w+x* に行って色を入れます。なお、GBA では、画面いっぱいの個々のピクセルを毎フレーム組み立てることはできません。単純に、ピクセルの数が多すぎるのです。
 
-Tiled backgrounds work completely different. First, you store 8x8 pixel <dfn>tile</dfn>s in one part of video memory. Then, in another part, you build up a tile-map, which contains indices that tells the GBA which tiles go into the image you see on the screen. To build a screen you'd only need a 30x20 map of numbers and the hardware takes care of drawing the tiles that these numbers point to. This way, you *can* update an entire screen each frame. There are very few games that do not rely on this graphics type.
+タイル背景は、まったく違うやり方で動きます。まず、ビデオメモリのある部分に、8x8 ピクセルの<dfn>タイル</dfn>を入れておきます。次に、別の部分にタイルマップを組み立てます。タイルマップにはインデックスが入っていて、画面に見える画像にどのタイルを使うかを GBA に伝えます。画面を組み立てるには、30x20 の数値のマップがあれば十分で、その数値が指すタイルの描画はハードウェアがやってくれます。このやり方なら、画面全体を毎フレーム更新*できます*。このグラフィックの方式に頼っていないゲームは、ほとんどありません。
 
-Finally, we have sprites. Sprites are small (8x8 to 64x64 pixels) graphical objects that can be transformed independently from each other and can be used in conjunction with either bitmap or tilemap background types.
+最後に、スプライトがあります。スプライトは、小さな（8x8 から 64x64 ピクセルの）グラフィックのオブジェクトで、それぞれ別々に変形できます。ビットマップとタイルマップのどちらの背景とも一緒に使えます。
 
-:::tip Prefer tile modes over bitmap modes
+:::tip ビットマップモードより、タイルモードを使いましょう
 
-In almost all types of games, the tile modes will be more suitable. Most other tutorials focus on bitmap modes, but that's only because they are easier on beginners, not because of their practical value for games. The vast majority of commercial games use tile modes; that should tell you something.
+ほとんどの種類のゲームでは、タイルモードのほうが向いています。ほかのチュートリアルの多くはビットマップモードを中心に扱っていますが、それは初心者に分かりやすいからにすぎず、ゲームでの実用性が理由ではありません。市販のゲームの大多数はタイルモードを使っています。それが何かを物語っているはずです。
 
 :::
 
-Those are the three basic graphical types, though other classifications also spring to mind. For example, the bitmap and tiled backgrounds types, since they're mutually exclusive and use the entire screen, constitute the <dfn>background</dfn>-types. Also, it so happens that the tiles of tiled backgrounds and the sprites have the same memory layout (namely, in groups of 8x8 pixel tiles). This makes tiled backgrounds and sprites the tiled-types.
+これが、グラフィックの 3 つの基本的な種類です。ただし、ほかの分け方も思いつきます。たとえば、ビットマップとタイル背景は、同時には使えず、画面全体を使うので、<dfn>背景</dfn>の種類にまとめられます。また、たまたま、タイル背景のタイルとスプライトは、メモリの並び方が同じです（つまり、8x8 ピクセルのタイルの集まりです）。なので、タイル背景とスプライトは、タイルの種類にまとめられます。
 
-## Display registers: REG_DISPCNT, REG_DISPSTAT and REG_VCOUNT {#sec-vid-regs}
+## 表示のレジスタ: REG_DISPCNT、REG_DISPSTAT、REG_VCOUNT {#sec-vid-regs}
 
-There are three I/O registers that you will encounter when doing anything graphical: the display control `REG_DISPCNT (0400:0000h)`, the display status `REG_DISPSTAT (0400:0004h)` and the scanline counter `REG_VCOUNT (0400:0006h)`. Those names are simply defines to the memory locations and can, in principle, be chosen at will. However, we will use the names as they appear in the [Pern Project](http://www.drunkencoders.com), which are the most common.
+グラフィックに関わることをするときに出会う I/O レジスタが 3 つあります。ディスプレイ制御の `REG_DISPCNT (0400:0000h)`、ディスプレイのステータスの `REG_DISPSTAT (0400:0004h)`、そしてスキャンラインのカウンタの `REG_VCOUNT (0400:0006h)` です。これらの名前はメモリの位置を表す define にすぎず、原則としては好きに決められます。ただ、ここでは一番よく使われている、[Pern Project](http://www.drunkencoders.com) で使われている名前を使います。
 
-The REG_DISPCNT register is the primary control of the screen. The bit-layout of this register and their meanings can be found in the following table. This is the general format I will use for registers or register-like sections. The details of the format have already been explained in the [preface](intro.html#ssec-note-reg).
+REG_DISPCNT レジスタは、画面の一番中心となる制御です。このレジスタのビットの並びと、その意味は、次の表のとおりです。これが、レジスタやレジスタのような領域に私が使う、一般的な形式です。形式の詳細は、[はじめに](intro.html#ssec-note-reg)ですでに説明しました。
 
 <div class="reg">
 <table class="table-reg" id="tbl:reg-dispcnt">
@@ -116,59 +116,58 @@ The REG_DISPCNT register is the primary control of the screen. The bit-layout of
   <col class="bits" width=40>
   <col class="bf" width="8%">
   <col class="def" width="12%">
-<tr align="left"><th>bits<th>name<th>define<th>description
+<tr align="left"><th>ビット<th>名前<th>define<th>説明
 <tbody valign="top">
 <tr class="bg0">
   <td>0-2 <td class="rclr0">Mode
   <td>DCNT_MODEx. <i>DCNT_MODE#</i>
-  <td>Sets video mode. 0, 1, 2 are tiled modes; 3, 4, 5 are bitmap modes.
+  <td>ビデオモードを設定します。0、1、2 はタイルモード、3、4、5 はビットマップモードです。
 <tr class="bg1">
   <td class="rof">3   <td class="rclr7">GB
   <td>DCNT_GB
-  <td>Is set if cartridge is a GBC game. Read-only.
+  <td>カートリッジがゲームボーイカラーのゲームのときにセットされます。読み取り専用。
 <tr class="bg0">
   <td>4   <td class="rclr3">PS
   <td>DCNT_PAGE
-  <td>Page select. Modes 4 and 5 can use page flipping for smoother 
-    animation. This bit selects the displayed page (and allowing the 
-    other one to be drawn on without artifacts).
+  <td>ページの選択。モード 4 と 5 では、ページフリップを使って、より滑らかな
+    アニメーションにできます。このビットは、表示するページを選びます（そうすることで、
+    もう一方のページには、表示を乱さずに描画できます）。
 <tr class="bg1">
   <td>5   <td class="rclr5">HB
   <td>DCNT_OAM_HBL
-  <td>Allows access to OAM in an HBlank. OAM is normally locked in VDraw.
-    Will reduce the amount of sprite pixels rendered per line.
+  <td>HBlank のあいだに OAM へアクセスできるようにします。普通、OAM は VDraw のあいだはロックされています。
+    1 ラインあたりに描かれるスプライトのピクセルの数が減ります。
 <tr class="bg0">
   <td>6   <td class="rclr2">OM
   <td>DCNT_OBJ_1D
-  <td>Object mapping mode. Tile memory can be seen as a 32x32 
-    matrix of tiles. When sprites are composed of multiple tiles 
-    high, this bit tells whether the next row of tiles lies 
-    beneath the previous, in correspondence with the matrix 
-    structure (2D mapping, <code>OM</code>=0), or right next to 
-    it, so that memory is arranged as an array of sprites (1D 
-    mapping <code>OM</code>=1). More on this in the 
-    <a href="regobj.html">sprite</a> chapter.
+  <td>オブジェクトのマッピングモード。タイルのメモリは、タイルの 32x32 の
+    行列とみなせます。縦に複数のタイルからなるスプライトの場合、
+    このビットは、次の行のタイルが、行列の構造に合わせて前の行の
+    真下にある（2D マッピング、<code>OM</code>=0）か、
+    すぐ隣にあって、メモリがスプライトの配列として並んでいる（1D
+    マッピング、<code>OM</code>=1）かを決めます。詳しくは
+    <a href="regobj.html">スプライト</a>の章で説明します。
 <tr class="bg1">
   <td>7   <td class="rclr6">FB
   <td>DCNT_BLANK
-  <td>Force a screen blank.
+  <td>画面を強制的にブランクにします。
 <tr class="bg0">
   <td>8-C  <td class="rclr1">BG0-BG3, Obj
   <td>DCNT_BGx, DCNT_OBJ. <i>DCNT_LAYER#</i>
-  <td>Enables rendering of the corresponding background and sprites.
+  <td>対応する背景とスプライトの描画を有効にします。
 <tr class="bg1">
   <td>D-F <td class="rclr4">W0-OW
   <td>DCNT_WINx, DCNT_WINOBJ
-  <td>Enables the use of windows 0, 1 and Object window, respectively.
-    Windows can be used to mask out certain areas (like the 
-    lamp did in Zelda:LTTP).
+  <td>それぞれ、ウィンドウ 0、1、オブジェクトウィンドウを使えるようにします。
+    ウィンドウを使うと、特定の領域を隠せます（ゼルダの伝説 神々のトライフォースで、
+    ランプがそうしていたように）。
 </tbody>
 </table>
 </div>
 
-Setting the display control is probably the first thing you'll be doing. For simple demos, you can just set it once and leave it at that, though switching between the video-modes can have some interesting results.
+ディスプレイ制御の設定は、たぶん最初にやることになるでしょう。簡単なデモなら、一度設定したらそのままで構いません。ただ、ビデオモードを切り替えると、面白い結果になることもあります。
 <br>  
-Now the other two registers I mentioned, `REG_DISPSTAT` and `REG_VCOUNT`. The latter tells you the scanline that is currently being worked on. Note that this counter keeps going into the VBlank as well, so it counts to 227 before starting at 0 again. The former gives you information about the Draw/Blank status and is used to set display [interrupts](interrupts.html). You can also do some really cool stuff with the interrupts that you can enable here. For one thing, the HBlank interrupt is used in creating [Mode 7](mode7.html) graphics, and you want to know how that works, don't you?
+さて、前に挙げたほかの 2 つのレジスタ、`REG_DISPSTAT` と `REG_VCOUNT` です。後者は、今処理しているスキャンラインを教えてくれます。このカウンタは VBlank のあいだも進み続けるので、227 まで数えてから 0 に戻る点に注意してください。前者は描画とブランクの状態を教えてくれるもので、表示の[割り込み](interrupts.html)を設定するのにも使います。ここで有効にできる割り込みを使うと、本当にすごいこともできます。たとえば、HBlank の割り込みは [Mode 7](mode7.html) のグラフィックを作るのに使われます。それがどういう仕組みか、知りたいですよね？
 
 <div class="reg">
 <table class="table-reg" id="tbl:reg-dispstat">
@@ -193,41 +192,41 @@ Now the other two registers I mentioned, `REG_DISPSTAT` and `REG_VCOUNT`. The la
   <col class="bits" width=40>
   <col class="bf" width="8%">
   <col class="def" width="15%">
-<tr align="left"><th>bits<th>name<th>define<th>description
+<tr align="left"><th>ビット<th>名前<th>define<th>説明
 <tbody valign="top">
 <tr class="bg0">
   <td>0<td class="rclr0">VbS
   <td>DSTAT_IN_VBL
-  <td>VBlank status, read only. Will be set inside VBlank, clear in VDraw.
+  <td>VBlank のステータス。読み取り専用。VBlank の間はセットされ、VDraw の間はクリアされる。
 <tr class="bg1">
   <td>1 <td class="rclr1">HbS
   <td>DSTAT_IN_HBL
-  <td>HBlank status, read only. Will be set inside HBlank.
+  <td>HBlank のステータス。読み取り専用。HBlank の間はセットされる。
 <tr class="bg0">
   <td>2 <td class="rclr2">VcS
   <td>DSTAT_IN_VCT
-  <td>VCount trigger status. Set if the current scanline matches the 
-    scanline trigger ( <code>REG_VCOUNT</code> == 
-    <code>REG_DISPSTAT</code>{8-F} )
+  <td>VCount のトリガーのステータス。現在のスキャンラインが、トリガーの
+    スキャンラインと一致するとセットされる（ <code>REG_VCOUNT</code> == 
+    <code>REG_DISPSTAT</code>{8-F} ）。
 <tr class="bg1">
   <td>3 <td class="rclr0">VbI
   <td>DSTAT_VBL_IRQ
-  <td>VBlank interrupt request. If set, an interrupt will be fired at 
-    VBlank.
+  <td>VBlank の割り込み要求。セットすると、VBlank で割り込みが
+    発生する。
 <tr class="bg0">
   <td>4 <td class="rclr1">HbI
   <td>DSTAT_HBL_IRQ
-  <td>HBlank interrupt request. 
+  <td>HBlank の割り込み要求。
 <tr class="bg1">
   <td>5 <td class="rclr2">VcI
   <td>DSTAT_VCT_IRQ
-  <td>VCount interrupt request. Fires interrupt if current scanline 
-    matches trigger value.
+  <td>VCount の割り込み要求。現在のスキャンラインがトリガーの値と
+    一致すると、割り込みが発生する。
 <tr class="bg0">
   <td>8-F <td class="rclr3">VcT
   <td><i>DSTAT_VCT#</i>
-  <td>VCount trigger value. If the current scanline is at this value, 
-    bit 2 is set and an interrupt is fired if requested.
+  <td>VCount のトリガー値。現在のスキャンラインがこの値になると、
+    ビット 2 がセットされ、要求されていれば割り込みが発生する。
 </tbody>
 </table>
 </div><br>
@@ -235,7 +234,7 @@ Now the other two registers I mentioned, `REG_DISPSTAT` and `REG_VCOUNT`. The la
 <div class="reg">
 <table class="table-reg" id="tbl:reg-vcount" width="320">
 <caption class="reg">
-  REG_VCOUNT @ 0400:0006h (read-only)
+  REG_VCOUNT @ 0400:0006h（読み取り専用）
 </caption>
 <tr class="bits">
 	<td>F E D C B A 9 8
@@ -248,18 +247,18 @@ Now the other two registers I mentioned, `REG_DISPSTAT` and `REG_VCOUNT`. The la
 <table class="table-reg-vert">
   <col class="bits" width=40>
   <col class="bf" width="8%">
-<tr align="left"><th>bits<th>name<th>description
+<tr align="left"><th>ビット<th>名前<th>説明
 <tbody valign="top">
 <tr class="bg0">
   <td>0-7 <td class="rclr0">Vc
-  <td>Vertical count. Range is [0,227]
+  <td>垂直方向のカウント。範囲は [0,227]
 </tbody>
 </table>
 </div>
 
-## Vsyncing part I, the busy-wait loop {#sec-vsync1}
+## 垂直同期 その 1: ビジーウェイトのループ {#sec-vsync1}
 
-As said, use the VBlank as a timing mechanism and to update the game data. This is called <dfn>vsync</dfn> (**v**ertical **sync**hronisation). There are a number of ways to vsync. The two most common methods use a while loop and check `REG_VCOUNT` or `REG_DISPSTAT`. For example, since the VBlank starts at scanline 160, you could see when `REG_VCOUNT` goes beyond this value.
+前に述べたとおり、VBlank は、タイミングをとる仕組みとして、またゲームのデータを更新するために使います。これを <dfn>vsync</dfn>（**v**ertical **sync**hronisation、垂直同期）といいます。垂直同期のやり方はいくつかあります。一番よく使われる 2 つの方法は、while ループを使って、`REG_VCOUNT` か `REG_DISPSTAT` を調べるものです。たとえば、VBlank はスキャンライン 160 から始まるので、`REG_VCOUNT` がこの値を超えるのを待てばいいわけです。
 
 ```c
 #define REG_VCOUNT *(u16*)0x04000006
@@ -268,11 +267,11 @@ void vid_vsync()
 {    while(REG_VCOUNT < 160);   }
 ```
 
-Unfortunately, there are a few problems with this code. 
+残念ながら、このコードにはいくつか問題があります。
 
-First of all, if you're simply doing an empty `while` loop to wait for 160, the compiler may try to get smart, notice that the loop doesn't change `REG_VCOUNT` and put its value in a register for easy reference. Since there is a good chance that that value will be below 160 at some point, you have a nice little infinite loop on your hand. To prevent this, use the keyword _`volatile`_ (see `tonc_memmap.h` and `tonc_types.h`).
+まず、160 になるのを待つために中身が空の `while` ループを回しているだけだと、コンパイラが賢く振る舞おうとするかもしれません。ループの中で `REG_VCOUNT` が変わらないことに気づき、すぐ参照できるように、その値をレジスタに入れてしまうのです。その値がいずれかの時点で 160 より小さい可能性は十分にあるので、見事な無限ループのできあがりです。これを防ぐには、_`volatile`_ というキーワードを使います（`tonc_memmap.h` と `tonc_types.h` を見てください）。
 
-Second, in small demos simply waiting for the VBlank isn't enough; you may still be in that VBlank when you call `vid_sync()` again, which will be blazed through immediately. That does not sync to 60 fps. To do this, you first have to wait until the *next* VDraw. This makes our `vid_sync` look a little like this:
+2 つ目に、小さなデモでは、単に VBlank を待つだけでは足りません。もう一度 `vid_sync()` を呼んだときにまだ同じ VBlank の中にいるかもしれず、その場合はすぐに通り抜けてしまいます。それでは 60 fps に同期できません。そうするには、まず*次の* VDraw まで待つ必要があります。すると、`vid_sync` は次のようになります。
 
 ```c
 #define REG_VCOUNT *(vu16*)0x04000006
@@ -284,6 +283,6 @@ void vid_vsync()
 }
 ```
 
-This will always wait until the start of the next VBlank occurs. And `REG_VCOUNT` is now _`volatile`_ (the “`vu16`” is `typedef`ed as a <u>v</u>olatile <u>u</u>nsigned (<u>16</u>bit) short. I'll be using a lot of this kind of shorthand, so get used to it). That's one way to do it. Another is checking the last bit in the display status register, `REG_DISPSTAT`\{0\}.
+これなら、常に次の VBlank が始まるまで待ちます。それに、`REG_VCOUNT` は今度は _`volatile`_ になっています（“`vu16`” は、<u>v</u>olatile な <u>u</u>nsigned（<u>16</u>bit）short として `typedef` されています。この種の短い呼び名をたくさん使うので、慣れてください）。これが 1 つのやり方です。もう 1 つは、ディスプレイのステータスのレジスタの最後のビット、`REG_DISPSTAT`\{0\} を調べる方法です。
 <br>  
-So we're done here, right? Errm ... no, not exactly. While it's true that you now have an easy way to vsync, it's also a very poor one. While you're in the while loop, you're still burning CPU cycles. Which, of course, costs battery power. And since you're doing absolutely nothing inside that while-loop, you're not just using it, you're actually wasting battery power. Moreover, since you will probably make only small games at first, you'll be wasting a *LOT* of battery power. The recommended way to vsync is putting the CPU in low-power mode when you're done and then use interrupts to bring it back to life again. You can read about the procedure [here](swi.html#sec-vsync2), but since you have to know how to use [interrupts](interrupts.html) and [BIOS calls](swi.html), you might want to wait a while.
+これで終わりでしょうか？ ええと……いいえ、そうとも言えません。確かに、これで簡単に垂直同期できるようになりましたが、とてもお粗末なやり方でもあります。while ループの中にいるあいだも、CPU のサイクルを燃やし続けています。もちろん、それは電池を消費します。しかも、その while ループの中ではまったく何もしていないので、電池を使っているどころか、実際には無駄にしています。さらに、最初はたぶん小さなゲームしか作らないでしょうから、*とても*多くの電池を無駄にすることになります。おすすめの垂直同期のやり方は、やることが終わったら CPU を省電力モードにして、割り込みを使って再び目覚めさせることです。その手順は[こちら](swi.html#sec-vsync2)で読めますが、[割り込み](interrupts.html)と [BIOS コール](swi.html)の使い方を知っている必要があるので、しばらく待ったほうがいいかもしれません。

@@ -1,26 +1,26 @@
-# 5. The Bitmap modes (mode 3, 4, 5)
+# 5. ビットマップモード（モード 3、4、5）
 
 <!-- toc -->
 
-## Introduction {#sec-intro}
+## はじめに {#sec-intro}
 
-In this chapter, we'll look at the bitmap modes. Bitmap modes are a good place to start because there is a one to one relation between the contents of memory and the pixels on the screen. The essentials of all the bitmap modes will be discussed briefly, with a closer look at what you can do in mode 3 as an example. We'll also see a bit of page flipping (mode 4), which allows for smoother animation.
+この章では、ビットマップモードを見ていきます。ビットマップモードは、メモリの中身と画面のピクセルが 1 対 1 で対応しているので、最初に学ぶのにちょうどいい題材です。すべてのビットマップモードの要点を簡単に説明し、例として、モード 3 でできることを詳しく見ていきます。また、より滑らかなアニメーションを可能にする、ページフリップ（モード 4）も少し紹介します。
 
-The chapter will close with a section on how to deal with data and computer memory in general. Because GBA programming is very close to the hardware, you *need* to know these things. If you've been programming (in C or assembly) for a long time and have already gained a good understanding on data, datatypes and memory you can probably skip it; for the rest of you, I would strongly urge to read it, because it is very important for all the chapters to come.
+章の最後には、データとコンピュータのメモリ全般の扱い方についての節があります。GBA プログラミングはハードウェアにとても近いので、こうしたことを知っておく*必要があります*。（C かアセンブリで）長くプログラミングをしていて、データ、データ型、メモリについてすでによく理解しているなら、たぶん飛ばしても大丈夫です。それ以外のみなさんには、ぜひ読んでほしいと強くお願いします。この先のすべての章にとって、とても大事なことだからです。
 
-### Bitmap 101 {#ssec-intro-101}
+### ビットマップの基礎 {#ssec-intro-101}
 
 <div class="cpt_fr" style="width:96px">
   <img src="./img/bitmaps/link_lttp_sm.png" width=72 id="fig:link-sm" 
     alt="a 24x24 bitmap of Link."><br>
-  <b>{*@fig:link-sm}</b>: Link (24x24 bitmap).
+  <b>{*@fig:link-sm}</b>: リンク（24x24 のビットマップ）。
 </div>
 
-In {@fig:link-sm} you can find a bitmap of one of the game characters that made Nintendo great. This is probably how most people think of bitmaps: a grid of colored pixels. In order to use bitmaps in a program we need to know how they're arranged in memory. For that we use fig 5.2 (below); this is a zoomed out version of {@fig:link-sm}, with a pixel grid imposed over it and some numbers.
+{@fig:link-sm} は、任天堂を偉大にしたゲームキャラクターの 1 人のビットマップです。たぶん、ほとんどの人はビットマップをこう考えるでしょう。色の付いたピクセルの格子です。プログラムでビットマップを使うには、それがメモリにどう並んでいるかを知る必要があります。そのために、下の図 5.2 を使います。これは {@fig:link-sm} を拡大して、ピクセルの格子と数字を重ねたものです。
 
-A bitmap is little more than a *w*×*h* matrix of colors (or color-indices), where *w* is the number of columns (the width) and *h* the number of rows (the height). A particular pixel can be referred to with a coordinate pair: (*x*, *y*). By the way, the y-axis of the GBA points *down*, not up. So pixel (0, 0) is in the top-left corner. In memory, the lines of the bitmap are laid out sequentially, so that the following rule holds: in a *w×h* bitmap, the pixel (*x, y*) is the (*w×y + x*)-th pixel. This is true for all C matrices, by the way.
+ビットマップは、色（または色のインデックス）の *w*×*h* の行列にすぎません。*w* は列の数（幅）、*h* は行の数（高さ）です。特定のピクセルは、座標の組 (*x*, *y*) で指定できます。ちなみに、GBA の y 軸は上ではなく*下*を向いています。なので、ピクセル (0, 0) は左上の隅にあります。メモリの中では、ビットマップの行が順番に並んでいるので、次の規則が成り立ちます。*w×h* のビットマップでは、ピクセル (*x, y*) は (*w×y + x*) 番目のピクセルです。ちなみに、これは C の行列すべてに当てはまります。
 
-{*@fig:link-big} shows how this works. This is a *w*=24 by *h*=24 bitmap, at 8bpp (8 <u>B</u>its <u>P</u>er <u>P</u>ixel (=1 byte)). The numbers in yellow indicate the memory locations; you can count them for yourself if you don't believe me. The first pixel, (0, 0), can be found at location 0. The *last* pixel of the *first* row (23, 0) is at *w*−1 (=23 in this case). The first pixel of the second row (0, 1) is at *w* (=24) etc, etc, till the last pixel at *w×h*−1.
+{*@fig:link-big} は、これがどういうことかを示しています。これは *w*=24、*h*=24 で、8bpp（8 <u>B</u>its <u>P</u>er <u>P</u>ixel、1 ピクセルあたり 8 ビット（=1 バイト））のビットマップです。黄色の数字はメモリの位置を表しています。信じられなければ、自分で数えてみてください。最初のピクセル (0, 0) は、位置 0 にあります。*最初*の行の*最後*のピクセル (23, 0) は、*w*−1（この場合は 23）にあります。2 行目の最初のピクセル (0, 1) は *w*（=24）にあり、という具合に続いて、最後のピクセルは *w×h*−1 にあります。
 
 <div class="cblock">
 <table id="fig:link-big">
@@ -28,63 +28,63 @@ A bitmap is little more than a *w*×*h* matrix of colors (or color-indices), whe
   <div class="cpt" style="width:310px">
   <img src="./img/bitmaps/link_lttp.png"
     alt="zoom out of {@fig:link-sm}">
-    <b>{*@fig:link-big}a</b>: zoom out of 
-    {@fig:link-sm}, with pixel offsets.
+    <b>{*@fig:link-big}a</b>: {@fig:link-sm} を拡大し、
+    ピクセルのオフセットを付けたもの。
   </div>
   </td>
   <td>
   <div class="cpt" style="width:348px">
   <img src="./img/bitmaps/link_lttp_mem.png"
     alt="zoom out of {@fig:link-sm}, with pixel values.">
-    <b>{*@fig:link-big}b</b>: zoom out of 
-    {@fig:link-sm}, with pixel values. 
-	Zero omitted for clarity. Palette on the lefthand side.
+    <b>{*@fig:link-big}b</b>: {@fig:link-sm} を拡大し、
+    ピクセルの値を付けたもの。
+	見やすくするため 0 は省略。左側はパレット。
   </div>
   </td>
 </tr>
 </table>
 </div>
 
-Note, however, that when you use another bitdepth, the addresses change too. For example, at 16bpp (2 bytes per pixel), you'd need to multiply the pixel-number by 2. Or use another datatype for your array. The general formula is left as an exercise for the reader.
+ただし、ビット深度が違うと、アドレスも変わることに注意してください。たとえば、16bpp（1 ピクセルあたり 2 バイト）なら、ピクセルの番号に 2 を掛ける必要があります。または、配列に別のデータ型を使います。一般的な式は、読者への練習問題とします。
 
-Usually it's not actually the width (i.e., the number of pixels in a row) that's important, but the <dfn>pitch</dfn>. The pitch is defined as the number of bytes in a scanline. For 8bpp images the pitch and width will usually be the same, but for, say, 16bpp images (2 bytes per pixel) the pitch is the width times two. There's another catch: memory alignment. Alignment will be covered in a [later section](#ssec-data-align), but the upshot is that systems generally have a ‘preferred’ type size and can better deal with data if the addresses are a multiple of that type size. This is why scanlines in some bitmap file formats are always aligned to 32-bit boundaries.
+実際に大事なのは、たいてい幅（つまり 1 行のピクセルの数）ではなく、<dfn>ピッチ</dfn>です。ピッチは、1 本のスキャンラインのバイト数として定義されます。8bpp の画像では、ピッチと幅はたいてい同じですが、たとえば 16bpp の画像（1 ピクセルあたり 2 バイト）では、ピッチは幅の 2 倍です。もう 1 つ落とし穴があります。メモリのアラインメントです。アラインメントについては[あとの節](#ssec-data-align)で扱いますが、要するに、システムには一般に「好み」の型の大きさがあって、アドレスがその型の大きさの倍数になっていると、データをうまく扱えるのです。ビットマップのファイル形式の中に、スキャンラインを常に 32 ビットの境界に揃えるものがあるのは、このためです。
 
-## The GBA bitmap modes {#sec-modes}
+## GBA のビットマップモード {#sec-modes}
 
-Video modes 3, 4 and 5 are the bitmap modes. To use them, put 3, 4 or 5 in the lowest bits of [REG_DISPCNT](video.html#tbl-reg-dispcnt) and enable `BG2`. You may wonder why we start with mode 3, rather than mode 0. The reason for this is that bitmaps are a lot easier to come to terms with than tilemaps. And this is the *only* reason. The truth of the matter is that the bitmap modes are just too slow to be used for most conventional GBA games. I can't give an exact figure, but if someone told me 90% or more of GBA games used tile modes and not bitmap modes, I wouldn't be surprised. The only time when bitmap modes would be beneficial would be either for very static screens (introductory demos) or very dynamic screens (3D games like *Star Fox* or *Doom*).
+ビデオモード 3、4、5 がビットマップモードです。使うには、[REG_DISPCNT](video.html#tbl-reg-dispcnt) の一番下のビットに 3、4、5 のどれかを入れて、`BG2` を有効にします。なぜモード 0 ではなくモード 3 から始めるのか、不思議に思うかもしれません。その理由は、ビットマップのほうが、タイルマップよりずっと理解しやすいからです。そして、理由はそれ*だけ*です。実を言うと、ビットマップモードは、普通の GBA のゲームのほとんどに使うには遅すぎます。正確な数字は言えませんが、GBA のゲームの 90% 以上がビットマップモードではなくタイルモードを使っていると誰かに言われても、私は驚きません。ビットマップモードが役に立つのは、とても静的な画面（導入のデモ）か、とても動的な画面（*スターフォックス*や *Doom* のような 3D のゲーム）くらいです。
 
-The bitmap modes have the following characteristics:
+ビットマップモードには、次のような特徴があります。
 
 <div class="lblock">
 <table id="tbl-bm-types" class="table-data">
 <caption align="bottom">
-  <b>Table 5.1</b>: Bitmap mode 
-  characteristics
+  <b>表 5.1</b>: ビットマップモードの
+  特徴
 </caption>
 <tr>
-  <th>mode<th>width<th>height<th>bpp<th>size     <th>page-flip
+  <th>モード<th>幅<th>高さ<th>bpp<th>大きさ     <th>ページフリップ
 <tr>
-  <td>3   <td>240  <td>160   <td>16 <td>1× 12C00h <td>No
+  <td>3   <td>240  <td>160   <td>16 <td>1× 12C00h <td>なし
 <tr>
-  <td>4   <td>240  <td>160   <td>8  <td>2× 9600h <td>Yes
+  <td>4   <td>240  <td>160   <td>8  <td>2× 9600h <td>あり
 <tr>
-  <td>5   <td>160  <td>128   <td>16 <td>2× A000h <td>Yes
+  <td>5   <td>160  <td>128   <td>16 <td>2× A000h <td>あり
 </table>
 </div>
 
-What width, height and bpp mean should be clear by now; the size that the bitmap requires is simply *width × height × bpp/8*. Page flipping may need some more explanation, but first we'll look at some examples of mode 3 graphics.
+幅、高さ、bpp の意味は、もう分かっているはずです。ビットマップに必要な大きさは、単純に *幅 × 高さ × bpp/8* です。ページフリップにはもう少し説明が必要かもしれませんが、まずはモード 3 のグラフィックの例をいくつか見てみましょう。
 
-### Drawing primitives in mode 3 {#ssec-modes-m3}
+### モード 3 で基本図形を描く {#ssec-modes-m3}
 
-We've already seen how to plot pixels, now it's time for some lines and rectangles. Horizontal lines are nearly trivial: because the pixels are in adjacent memory, all you need is a simple loop from the starting *x* to the final *x*. Vertical lines are nearly as easy: while the pixels aren't right next to each other, they do have a fixed offset between them, namely the pitch. So again a simple loop is all you need. Rectangles are essentially multiple horizontal lines, so those are easy as well.
+ピクセルの描き方はもう見たので、今度は線と四角形です。水平線は、ほとんど簡単です。ピクセルはメモリ上で隣り合っているので、始まりの *x* から終わりの *x* まで、単純なループを回すだけで済みます。垂直線もほとんど同じくらい簡単です。ピクセル同士は隣り合っていませんが、そのあいだには一定のオフセット、つまりピッチがあります。なので、これも単純なループで済みます。四角形は本質的には水平線の集まりなので、これも簡単です。
 
-Diagonal lines are a little trickier, for a number of reasons. Diagonal lines have a slope that indicates how many horizontal steps you need to take before moving to the next scanline. That would only work if the absolute value were lower than one, otherwise you'd get gaps between pixels. For higher slopes, you need to increment vertically, and plot horizontally.
+斜めの線は、いくつかの理由で少し手が込んでいます。斜めの線には傾きがあり、次のスキャンラインに移るまでに、横に何歩進むかを表しています。このやり方がうまくいくのは、傾きの絶対値が 1 より小さいときだけです。そうでないと、ピクセルのあいだにすき間ができてしまいます。傾きが大きいときは、縦に 1 つずつ進めて、横に描いていく必要があります。
 
-Another point is how to make the routine fast enough to be of real use. Fortunately, these things have all been figured out in the past already, so we'll just use the results here. In this case, we'll use a [Bresenham Midpoint](https://en.wikipedia.org/wiki/Bresenham's_line_algorithm) algorithm for the line drawing, modified to deal with horizontal and vertical lines separately. While I could explain what the routine does exactly, it is out of the scope of the chapter, really.
+もう 1 つの課題は、実用になるほどルーチンを速くする方法です。幸い、こうしたことはすべて昔にもう解決されているので、ここではその成果を使うだけにします。今回は、線を描くのに [Bresenham の中点](https://en.wikipedia.org/wiki/Bresenham's_line_algorithm)アルゴリズムを使い、水平線と垂直線は別に扱うように手を加えます。このルーチンが正確に何をしているかを説明することもできますが、本当にこの章の範囲外です。
 
-Two points I have ignored here are normalization and clipping. <dfn>Normalization</dfn> means making sure the routine runs in the right direction. For example, when implementing a line drawing routine that runs from `x1` to `x2` via an incrementing `for` loop, you'd best be sure that `x2` is actually higher than `x1` in the first place. <dfn>Clipping</dfn> means cutting the primitive down to fit inside the viewport. While this is a good thing to do, we will omit it because it can get really hairy to do it well.
+ここで無視した点が 2 つあります。正規化とクリッピングです。<dfn>正規化</dfn>とは、ルーチンが正しい向きに進むようにすることです。たとえば、増えていく `for` ループで `x1` から `x2` まで進む線の描画ルーチンを実装するなら、そもそも `x2` が本当に `x1` より大きいことを確かめておくのが一番です。<dfn>クリッピング</dfn>とは、基本図形を表示領域に収まるように切り詰めることです。やったほうがいいことですが、うまくやろうとすると本当に面倒になるので、ここでは省きます。
 
-The code below is an excerpt from *toolbox.c* from the *m3_demo* and contains functions for drawing lines, rectangles and frames on a 16bpp canvas, like in mode 3 and mode 5. `dstBase` is the base-pointer to the canvas and `dstPitch` is the pitch. The rest of the parameters should be obvious.
+下のコードは、*m3_demo* の *toolbox.c* からの抜粋で、モード 3 やモード 5 のような 16bpp のキャンバスに、線、四角形、枠を描く関数が入っています。`dstBase` はキャンバスの先頭を指すポインタで、`dstPitch` はピッチです。ほかの引数の意味は、見れば分かるはずです。
 
 ```c
 #include "toolbox.h"
@@ -183,7 +183,7 @@ void bmp16_frame(int left, int top, int right, int bottom, u32 clr,
 }
 ```
 
-These functions are very general: they will work for anything that has 16-bit colors. That said, it may be annoying to have to add the canvas pointer and pitch all the time, so you could create an <dfn>interface layer</dfn> specifically for mode 3 and mode 5. The ones for mode 3 would look something like this:
+これらの関数はとても汎用的で、16 ビットの色を使うものなら何にでも使えます。とはいえ、毎回キャンバスのポインタとピッチを渡すのは面倒かもしれません。そこで、モード 3 とモード 5 専用の<dfn>インターフェース層</dfn>を作るとよいでしょう。モード 3 用のものは、たとえば次のようになります。
 
 ```c
 typedef u16 COLOR;
@@ -228,7 +228,7 @@ INLINE void m3_frame(int left, int top, int right, int bottom, COLOR clr)
 }
 ```
 
-Finally, there is a `m3_fill()` function, that fills the entire mode 3 canvas with a single color.
+最後に、モード 3 のキャンバス全体を 1 つの色で塗りつぶす `m3_fill()` 関数があります。
 
 ```c
 //! Fill the mode 3 background with color \a clr.
@@ -245,14 +245,14 @@ void m3_fill(COLOR clr)
 
 <div class="cpt_fr" style="width:240px">
   <img src="./img/demo/m3_demo.png" id="fig:m3-demo" alt="mode3 screen">
-  <b>{*@fig:m3-demo}</b>: drawing in mode 3.
+  <b>{*@fig:m3-demo}</b>: モード 3 で描画したところ。
 </div>
 
-Now, note what I'm doing here: instead of treating VRAM as an array of 16-bit values which are appropriate for 16bpp colors, I'm using a 32-bit pointer and filling VRAM with a 32-bit variable containing two colors. When filling large chunks of memory, it makes no difference if I fill it in *N* 16-bit chunks, or ½*N* 32-bit chunks. However, because you only use half the number of iterations in the latter case, it's roughly twice as fast. In C, it's perfectly legal to do something like this (provided that strict aliasing is satisfied) and often actually useful. This is why it's important to know the principles of [data and memory](#sec-data). Also note that I'm using pointer arithmetic here instead of array indices. While the compiler generally make the conversion itself, doing it manually is still often a little faster. (When in doubt, read the assembly language that GCC generates.)
+さて、ここで私がしていることに注目してください。VRAM を 16bpp の色に合った 16 ビットの値の配列として扱う代わりに、32 ビットのポインタを使い、2 つの色を入れた 32 ビットの変数で VRAM を埋めています。大きなメモリの塊を埋めるとき、16 ビットの塊 *N* 個で埋めても、32 ビットの塊 ½*N* 個で埋めても、結果は同じです。でも、後者なら繰り返しの回数が半分で済むので、およそ 2 倍速くなります。C では、こういうことをしても（strict aliasing の規則を満たしていれば）まったく合法で、実際に役立つことも多いです。だからこそ、[データとメモリ](#sec-data)の原則を知っておくことが大事なのです。また、ここでは配列の添字ではなく、ポインタの計算を使っていることにも注目してください。コンパイラはたいてい自分でこの変換をしてくれますが、手でやったほうが少し速いことも、まだよくあります。（迷ったら、GCC が生成するアセンブリ言語を読んでみてください。）
 
-While this method is already twice as fast as the ‘normal’ method, there are actually much faster methods as well. We will meet these later, when we stop using separate toolkit files and start using libtonc, the code library for tonc. Tonclib contains the functions described above (only faster), as well as 8bpp variations of the `bmp16_` routines and interfaces for mode 4 and mode 5.
+この方法は「普通」の方法より 2 倍速いですが、実はもっとずっと速い方法もあります。それには、別々の道具箱のファイルを使うのをやめて、tonc のコードライブラリである libtonc を使い始めるときに出会います。tonclib には、上で説明した関数（をもっと速くしたもの）のほか、`bmp16_` のルーチンの 8bpp 版と、モード 4 とモード 5 用のインターフェースが入っています。
 
-Below you can find the main code for *m3_demo*, which uses the `m3_` functions to draw some items on the screen. Technically, it's bad form to use this many magic numbers, but for demonstration purposes it should be okay. The result can be seen in {@fig:m3-demo}.
+下は *m3_demo* のメインのコードで、`m3_` の関数を使って、画面にいくつかのものを描いています。厳密に言えば、こんなにたくさんのマジックナンバーを使うのは行儀が悪いのですが、説明のためなので大目に見てください。結果は {@fig:m3-demo} で見られます。
 
 ```c
 #include "toolbox.h"
@@ -297,15 +297,15 @@ int main()
 }
 ```
 
-### A dash of mode 4 {#ssec-modes-m4}
+### モード 4 をちょっとだけ {#ssec-modes-m4}
 
-Mode 4 is another bitmap mode. It also has a 240×160 frame-buffer, but instead of 16bpp pixels it uses 8bpp pixels. These 8 bits are a <dfn>palette index</dfn> to the background palette located at `0500:0000`. The color you'll see on screen is the color found in the palette at that location.
+モード 4 も、ビットマップモードの 1 つです。これも 240×160 のフレームバッファを持っていますが、16bpp のピクセルではなく、8bpp のピクセルを使います。この 8 ビットは、`0500:0000` にある背景のパレットへの<dfn>パレットインデックス</dfn>です。画面に表示される色は、パレットのその位置にある色です。
 
-Pixels of a bitdepth of 8 mean you can only have 256 colors at a time (instead of 32768 in the case of 15bpp), but there are benefits as well. For one, you can manipulate the colors of many pixels by simply changing the color in the palette. An 8bpp frame-buffer also takes up half as much memory as a 16bpp buffer. Not only is it faster to fill (well, in principle anyway), but there is now also room for a second buffer to allow [page flipping](#sec-page). Why that's useful will be covered in a minute.
+ビット深度が 8 のピクセルだと、一度に使える色は（15bpp の 32768 色ではなく）256 色だけですが、利点もあります。まず、パレットの色を変えるだけで、たくさんのピクセルの色を一度に変えられます。また、8bpp のフレームバッファは、16bpp のバッファの半分のメモリしか使いません。埋めるのが速いだけでなく（まあ、理屈の上ではですが）、[ページフリップ](#sec-page)のための 2 つ目のバッファを置く余裕もできます。それがなぜ便利なのかは、すぐあとで説明します。
 
-There is, however, one major downsize to using mode 4, which stems from a hardware limitation. With 8-bit pixels, it'd make sense to map VRAM as an array of bytes. This would be fine if it weren't for the rather annoying fact that VRAM does not allow byte-writes! Now, because this is a very important point, let me repeat that: **<span class="rem">You cannot write to VRAM in byte-sized chunks!!!</span>**. Byte reads are ok, but writes have to be done in 16-bit or 32-bit chunks. If you *do* write in bytes to VRAM, the halfword you're accessing will end up with that byte duplicated into both the lower and upper bytes: you're setting two pixels at once. Note that this no-byte-write rule also extends to palette memory and OAM, but there it doesn't cause trouble because you won't be using that as bytes anyway.
+ただし、モード 4 を使うことには、ハードウェアの制約から来る大きな欠点が 1 つあります。8 ビットのピクセルなら、VRAM をバイトの配列として扱うのが自然でしょう。VRAM がバイト単位の書き込みを受け付けない、というかなり厄介な事実さえなければ、それで問題なかったのですが！ これはとても大事な点なので、もう一度言わせてください。**<span class="rem">VRAM にはバイト単位で書き込めません！！！</span>** バイト単位の読み込みは大丈夫ですが、書き込みは 16 ビットか 32 ビットの単位で行う必要があります。もし VRAM にバイト単位で書き込む*と*、アクセスしたハーフワードの下位と上位の両方のバイトに、そのバイトが複製されてしまいます。つまり、一度に 2 つのピクセルを書き換えることになります。なお、このバイト書き込み禁止の規則は、パレットメモリと OAM にも当てはまります。ただ、そちらはどのみちバイト単位で使うことはないので、問題になりません。
 
-So how to plot single-pixels then? Well, you have to read the whole halfword you're trying to access, mask off the bits you don't want to overwrite, insert your pixels and then write it back. In code:
+では、1 つのピクセルだけを描くにはどうすればいいのでしょうか？ アクセスしたいハーフワード全体を読み込み、上書きしたくないビットをマスクで残し、自分のピクセルを入れてから、書き戻す必要があります。コードにすると次のとおりです。
 
 ```c
 #define M4_WIDTH    240     // Width in mode 4
@@ -321,7 +321,7 @@ INLINE void m4_plot(int x, int y, u8 clrid)
 }
 ```
 
-As you can see, it's a little more complicated than `m3_plot()`. It takes a lot longer to run as well. Still, once you have a pixel plotter, you can create other rendering routines with ease. The basic code for drawing lines, rectangles, circles and the like are pretty much independent of how pixels are formatted. For example, drawing a rectangle is basically plotting pixels in a double loop.
+見てのとおり、`m3_plot()` より少し複雑です。実行にもずっと時間がかかります。それでも、ピクセルを描く関数さえあれば、ほかの描画ルーチンは簡単に作れます。線、四角形、円などを描く基本のコードは、ピクセルの形式とはほぼ関係ないからです。たとえば、四角形を描くのは、基本的には二重ループでピクセルを描くことです。
 
 ```c
 void generic_rect(int left, int top, int right, int bottom, COLOR clr)
@@ -333,72 +333,72 @@ void generic_rect(int left, int top, int right, int bottom, COLOR clr)
 }
 ```
 
-This is the generic template for a rectangle drawing routine. As long as you have a functional pixel plotter, you're in business. However, business will be *very* slow in mode 4, because of the complicated form of the plotter. In all likelihood, it'll be so slow to make it useless for games. There is a way out, though. The reason `m4_plot()` is slow is because you have to take care not to overwrite the other pixel. However, when you're drawing a horizontal line (basically the `ix` loop here), chances are that you'll have to give that other pixel the same color anyway, so you needn't bother with read-mask-write stuff except at the edges. The implementation of this faster (*much* faster) line algorithm and subsequently rectangle drawer is left as an exercise for the reader. Or you can seek out *tonc_bmp8.c* in libtonc.
+これが、四角形を描くルーチンの汎用的なひな形です。ちゃんと動くピクセルの描画関数があれば、それで用は足ります。ただし、モード 4 では、描画関数の形が複雑なので、*とても*遅くなります。十中八九、ゲームには使えないほど遅いでしょう。でも、抜け道はあります。`m4_plot()` が遅いのは、もう一方のピクセルを上書きしないように気をつけなければならないからです。でも、水平線を描くとき（基本的には、ここでの `ix` のループです）は、どのみちもう一方のピクセルにも同じ色を付けることになる可能性が高いので、端以外では、読み込み・マスク・書き込みの手間をかける必要はありません。この速い（*ずっと*速い）線のアルゴリズムと、それを使った四角形の描画ルーチンの実装は、読者への練習問題とします。または、libtonc の *tonc_bmp8.c* を探してみてください。
 
-:::warning VRAM vs. byte writes
+:::warning VRAM とバイトの書き込み
 
-You cannot write individual bytes into VRAM (or the palette or OAM for that matter). Halfwords or words only, please. If you want to write single bytes, you have to read the full (half)word, insert the byte, and put it back.
+VRAM（それに、パレットや OAM も）には、1 バイトずつ書き込むことはできません。ハーフワードかワードの単位だけにしてください。1 バイトだけ書き込みたいなら、（ハーフ）ワード全体を読み込み、そのバイトを入れてから、書き戻す必要があります。
 
-Please don't skip this note, and make yourself aware of the full ramifications of this. Errors due to pointer-type mismatches are very easy to make, and [you may be writing to VRAM as bytes more often than you think](#ssec-data-memcpy).
-
-:::
-
-
-:::warning Generic vs. specific rendering routines
-
-Every kind of graphics surface needs its own pixel plotter. In principle, more complicated (multi-pixel) shapes are surface independent. For example, a line routine follows the same algorithm, but simply uses a different plotter for drawing pixels. These generic forms are great in terms of re-usability and maintainability, but can be *disastrous* when it comes to speed. Creating surface-specific renderers may be extra work, but can on occasion save you up to a factor of 100 in speed.
-
-:::
-
-### Complications of bitmap modes {#ssec-modes-details}
-
-While I could go on to discuss more complicated matters, such as drawing rectangles and blits and text, there's very little reason to do so at this junction. As I said before, the bitmap modes are useful to learn some basic functionality, but for most practical purposes, you're better off with tiled modes.
-
-The primary issue is speed. Even simple primitives such as the ones shown here can take a lot of time, especially if you're not careful in your implementation. For example, a full mode 3 screen-wipe would take about 60% of a VBlank **at best**! In bad implementations of a screen-wipe, like doing it with a rectangle drawer that calls a non-inline pixel-plotting function, could take as much as 10 frames. And *then* you still have to draw all your backgrounds and sprites and do the game logic. The phrase ‘crawling horror’ somehow springs to mind at the thought of this.
-
-Aside from that, bitmap modes can use only one background and have no hardware scrolling to speak of. Also, though this is jumping the gun a bit, it overlaps the memory that contains the sprite [tiles](objbg.html#sec-img), which starts at `0601:0000h`. For that reason, you will only be able to use sprite-tiles 512 to 1023 when in modes 3-5.
-
-Page flipping can alleviate some of these items, but that's not available in mode 3. It is in mode 5, but that uses only a small portion of the screen, so gaming with only that looks awkward. As for mode 4, well, that's one of those places where you will *really* see what programming close to the hardware means: it doesn't allow you to write to VRAM in byte-sized chunks! The only way to have a single-pixel resolution is to combine 2 adjacent pixels and write those, which costs a lot of extra time.
-
-So basically, use the bitmap modes for testing and/or static images, but not much else unless you know the tilemodes can't do what you want.
-
-:::danger Bitmap modes are not for gaming
-
-Do not get too comfortable with bitmap modes. Though they're nice for gbadev introductory sections because they are easier to work with than tile modes, and they have advantages for 3D games, they are *not* suitable for most types of games because the GBA simply can't push pixels fast enough. Tinker with them to get a feel for IO registers and the like, then move on.
+この注意は飛ばさないでください。そして、これがどういう影響を及ぼすのかを、しっかり意識してください。ポインタの型の食い違いによる誤りはとても起こしやすく、[思っているより頻繁に、VRAM にバイト単位で書き込んでいるかもしれません](#ssec-data-memcpy)。
 
 :::
 
 
-## Page flipping {#sec-page}
+:::warning 汎用的な描画ルーチンと専用の描画ルーチン
+
+グラフィックの描画先の種類ごとに、専用のピクセルの描画関数が必要です。原則として、もっと複雑な（複数のピクセルからなる）図形は、描画先の種類に依存しません。たとえば、線のルーチンは同じアルゴリズムに従い、ピクセルを描くのに別の描画関数を使うだけです。こうした汎用的な形は、再利用のしやすさと保守のしやすさの点ではすばらしいのですが、速さの点では*悲惨*なことがあります。描画先ごとの専用の描画ルーチンを作るのは余分な手間かもしれませんが、ときには速さを最大で 100 倍も稼げます。
+
+:::
+
+### ビットマップモードの難点 {#ssec-modes-details}
+
+四角形の描画やブリット、文字の表示など、もっと複雑な話に進むこともできますが、今この時点でそうする理由はほとんどありません。前に言ったとおり、ビットマップモードは基本的な機能を学ぶには役に立ちますが、実用上はほとんどの場合、タイルモードを使うほうがいいです。
+
+一番の問題は速さです。ここで見せたような単純な基本図形でさえ、特に実装に気をつけないと、たくさんの時間がかかります。たとえば、モード 3 の画面全体を消去するだけで、**よくても** VBlank の約 60% の時間がかかります！ インライン化されていないピクセルの描画関数を呼ぶ四角形の描画ルーチンで消去する、といったまずい実装では、10 フレームもかかることがあります。*そのうえで*、背景とスプライトを全部描き、ゲームの処理もしなければならないのです。考えただけで、「這い寄る恐怖」という言葉がなぜか頭に浮かびます。
+
+それに加えて、ビットマップモードでは背景を 1 つしか使えず、ハードウェアによるスクロールもないも同然です。また、少し先走った話になりますが、ビットマップモードは、スプライトの[タイル](objbg.html#sec-img)が入っているメモリ（`0601:0000h` から始まります）と重なっています。そのため、モード 3〜5 では、スプライトのタイルは 512 番から 1023 番しか使えません。
+
+ページフリップを使えば、これらの問題のいくつかを和らげられますが、モード 3 ではページフリップを使えません。モード 5 では使えますが、モード 5 は画面の一部しか使わないので、それだけでゲームを作ると見た目がぎこちなくなります。モード 4 はというと、ハードウェアに近いプログラミングとはどういうことかを*本当に*思い知らされる場所の 1 つです。VRAM にバイト単位で書き込めないのです！ 1 ピクセル単位で描くには、隣り合う 2 つのピクセルを組み合わせて書き込むしかなく、それには余分な時間がたくさんかかります。
+
+なので、基本的には、ビットマップモードはテストや静止画に使い、タイルモードではやりたいことができないと分かっている場合を除いて、それ以外にはあまり使わないでください。
+
+:::danger ビットマップモードはゲーム向きではありません
+
+ビットマップモードに慣れすぎないでください。タイルモードより扱いやすいので GBA 開発の入門には向いていますし、3D のゲームには利点もありますが、ほとんどの種類のゲームには*向いていません*。GBA は、単純にピクセルを十分な速さで描けないからです。IO レジスタなどの感覚をつかむためにいじってみたら、先に進みましょう。
+
+:::
+
+
+## ページフリップ {#sec-page}
 
 <div class="cpt_fr" style="width:216px;">
   <img src="./img/bitmaps/pageflip.png" id="fig:flip" 
     alt="Page flipping procedure"><br>
-  <b>{*@fig:flip}</b>: Page flipping procedure. 
-  No data is copied, only the &lsquo;display&rsquo; and 
-  &lsquo;write&rsquo; pointers are swapped.
+  <b>{*@fig:flip}</b>: ページフリップの手順。
+  データは一切コピーせず、&lsquo;表示&rsquo;用と
+  &lsquo;書き込み&rsquo;用のポインタを入れ替えるだけ。
 </div>
 
-Page flipping is a technique that eliminates nasty artifacts like tearing in animation. There are two things going on at the same time in an animation: placing the pixels on bitmap (writing), and drawing the bitmap on screen (displaying). Software takes care of writing, updating the positions of characters etc; hardware does the displaying: it simply takes the bitmap and copies it to the screen. The problem is that both these processes take time. What's worse, they happen at the same time. And when the game state changes in mid draw, the bottom section will be of the current state, while the top section will represent the previous state. Needless to say, this is bad.
+ページフリップは、アニメーションのティアリングのような、いやなちらつきをなくす技術です。アニメーションでは、2 つのことが同時に起きています。ビットマップにピクセルを置くこと（書き込み）と、ビットマップを画面に描くこと（表示）です。書き込みはソフトウェアが担当し、キャラクターの位置の更新などをします。表示はハードウェアが担当し、ビットマップを画面にコピーするだけです。問題は、どちらの処理にも時間がかかることです。さらに悪いことに、両方が同時に起きます。そして、描画の途中でゲームの状態が変わると、画面の下の部分は今の状態、上の部分は前の状態を表すことになります。言うまでもなく、これはよくありません。
 
-Enter page flipping. Instead of using one single bitmap to write and display, you use two. While one bitmap is displayed, you write all you need onto a second bitmap (the back-buffer). Then, when you're finished, you tell the hardware to display that second bitmap and you can prepare the next frame on the first. No artifacts whatsoever.
+そこでページフリップの出番です。書き込みと表示に 1 つのビットマップを使う代わりに、2 つ使います。一方のビットマップを表示しているあいだに、必要なものを全部、もう一方のビットマップ（バックバッファ）に書き込みます。そして、書き終わったら、ハードウェアにその 2 つ目のビットマップを表示するよう指示し、1 つ目のほうで次のフレームを用意します。ちらつきは一切ありません。
 
-While the procedure works great, there are some snares. For the first, consider this. Given are the pointers to the two pages `page1` and `page2`. Right now, `page1` is displayed and `page2` is being prepared; so far so good. But when you switch to the second page, this only makes `page2` the display-page; you have to make `page1` the write-page yourself! The solution to this problem is simple: use a write-buffer pointer, but it can catch you off-guard if you're new to this stuff.
+この手順はとてもうまく働きますが、落とし穴もあります。まず、次のことを考えてみてください。2 つのページへのポインタ `page1` と `page2` があるとします。今は `page1` を表示していて、`page2` を用意しています。ここまでは順調です。でも、2 つ目のページに切り替えても、`page2` が表示用のページになるだけです。`page1` を書き込み用のページにするのは、自分でやらなければなりません！ この問題の解決策は簡単で、書き込み用のバッファを指すポインタを使えばいいのですが、こういうことに慣れていないと、不意を突かれることがあります。
 
-The second problem concerns a little nasty in the age-old method of animation. The canonical animation does this. Frame1: draw object. Frame2: erase old object, draw object in new state. This doesn't work for page flipping since Frame2 is written on an entirely different bitmap than Frame1, so trying to erase Frame1's old object doesn't. What you need to erase is the object from 2 frames ago. Again, easy solution, but you have be aware of the problem. (Of course, erasing the entire frame each time would work too, but who's got the time?)
+2 つ目の問題は、昔からあるアニメーションのやり方に潜む、ちょっといやな点です。定番のアニメーションは、こうします。フレーム 1: オブジェクトを描く。フレーム 2: 古いオブジェクトを消し、新しい状態のオブジェクトを描く。これはページフリップではうまくいきません。フレーム 2 はフレーム 1 とはまったく別のビットマップに書き込まれるので、フレーム 1 の古いオブジェクトを消そうとしても消えないのです。消す必要があるのは、2 フレーム前のオブジェクトです。これも解決策は簡単ですが、問題に気づいている必要があります。（もちろん、毎回フレーム全体を消してもうまくいきますが、そんな時間が誰にあるでしょう？）
 
-:::tip Pageflipping, not double buffering
+:::tip ダブルバッファリングではなく、ページフリップ
 
-Another method of smoother animation is double buffering: draw on a secondary buffer (the backbuffer) and copy it to the screen when finished. This is a fundamentally different technique than page flipping! Even though both use two buffers, in page flipping you don't copy the backbuffer to the display buffer, you *make* backbuffer the display buffer.
+滑らかなアニメーションのための別の方法に、ダブルバッファリングがあります。2 つ目のバッファ（バックバッファ）に描き、描き終わったらそれを画面にコピーする方法です。これは、ページフリップとは根本的に違う技術です！ どちらも 2 つのバッファを使いますが、ページフリップではバックバッファを表示用のバッファにコピーするのではなく、バックバッファを表示用のバッファに*します*。
 
-What the GBA does is page flipping, so refer to it as such.
+GBA がしているのはページフリップなので、そう呼んでください。
 
 :::
 
 
-### GBA page flipping {#ssec-page-gba}
+### GBA のページフリップ {#ssec-page-gba}
 
-The second page of the GBA is located at location `0600:A000h`. If you look at the size required for mode 3, you'll see why it doesn't have page-flipping capabilities: there's no room for a second page. To set the GBA to display the second page, set [`REG_DISPCNT`](video.html#tbl-reg-dispcnt)\{4\}. My page flipping function looks a little like this:
+GBA の 2 つ目のページは、`0600:A000h` にあります。モード 3 に必要な大きさを見れば、モード 3 にページフリップの機能がない理由が分かります。2 つ目のページを置く場所がないのです。GBA に 2 つ目のページを表示させるには、[`REG_DISPCNT`](video.html#tbl-reg-dispcnt)\{4\} をセットします。私のページフリップの関数は、次のようなものです。
 
 <div id="cd-vid-flip">
 
@@ -413,19 +413,19 @@ u16 *vid_flip()
 ```
 </div>
 
-The code is relatively straightforward. `vid_page` is the pointer that always points to the write-page. I had to pull a little casting trickery to get the `XOR` to work (C doesn't like it when you try it on pointers). On the GBA, the steps for page flipping are perfectly xorrable operations. Sure, you *could* just put the equivalent in an `if-else` block, but where's the fun in that :P?
+コードはわりと素直です。`vid_page` は、常に書き込み用のページを指すポインタです。`XOR` をうまく働かせるために、キャストのちょっとした小細工が必要でした（C はポインタにこれをされるのを嫌がるのです）。GBA では、ページフリップの手順はどれも、XOR でうまく切り替えられる操作です。もちろん、同じことを `if-else` のブロックで書くことも*できます*が、それじゃ面白くないでしょう :P？
 
-### Page flipping demo {#ssec-page-demo}
+### ページフリップのデモ {#ssec-page-demo}
 
-What follows is the code (sans data) for the *pageflip* demo. The actual part concerned with page flipping is very small. In fact, the actual flip is merely a call to `vid_flip()` once every 60 frames = 1 second (point 3). We'll also have to set the video mode to something that actually has pages to flip, which in this case is mode 4.
+次に示すのは、*pageflip* のデモのコード（データは除く）です。実際にページフリップに関係する部分は、とても小さいです。実のところ、実際のフリップは、60 フレーム（= 1 秒）に 1 回 `vid_flip()` を呼ぶだけです（ポイント 3）。また、ビデオモードを、実際に切り替えるページがあるモード、ここではモード 4 にする必要があります。
 
-What we'll have to do as well is load the data that will be displayed on these two pages. I'm using the standard C routine `memcpy()` for the copy, because that's the standard way of copying things in C. While it's faster than manual loops, it does come with a [few snares](#ssec-data-memcpy) that you need to be aware of before using it everywhere. Tonclib comes with faster and safer routines, but we'll get to those when it's time.
+もう 1 つやる必要があるのが、この 2 つのページに表示するデータを読み込むことです。コピーには、C の標準ルーチンの `memcpy()` を使っています。C で何かをコピーするときの標準的なやり方だからです。手で書いたループよりは速いのですが、あちこちで使う前に知っておくべき[いくつかの落とし穴](#ssec-data-memcpy)があります。tonclib にはもっと速くて安全なルーチンがありますが、それはその時が来たら扱います。
 
-Loading a bitmap is very simple in theory, but the bitmap(s) I'm using are only 144×16 in size, while the VRAM page's pitch is 240 pixels wide. This means that we'll have to copy each scanline separately, which is done at point (1). Note that I'm copying `frontBitmap` to `vid_mem_front` and `backBitmap` to `vid_mem_back`, because those are the starting locations of the two pages.
+ビットマップを読み込むのは理屈の上ではとても簡単ですが、ここで使っているビットマップの大きさは 144×16 しかなく、VRAM のページのピッチは 240 ピクセル分の幅です。つまり、スキャンラインを 1 本ずつコピーする必要があり、それをポイント (1) でしています。`frontBitmap` を `vid_mem_front` に、`backBitmap` を `vid_mem_back` にコピーしていることに注目してください。これらが 2 つのページの先頭の位置だからです。
 
-Since these are mode 4 bitmaps, they'll also need a palette. Both palettes use `frontPal`, but instead of using `memcpy()` to copy it to the background palette memory, I'm using a `u32` array because … well, just because I guess.
+これらはモード 4 のビットマップなので、パレットも必要です。どちらのページも `frontPal` を使いますが、背景のパレットのメモリにコピーするのに `memcpy()` を使う代わりに、`u32` の配列を使っています。理由は……まあ、なんとなくです。
 
-Lastly, you can pause and unpause the demo by holding the Start Button.
+最後に、スタートボタンを押しているあいだ、デモを一時停止できます。
 
 <div id="cd-pageflip">
 
@@ -487,39 +487,39 @@ int main()
 &nbsp;&nbsp;
 <img src="./img/demo/flip_back.png" alt="Flip B"><br>
 </center>
-<b>{*@fig:flipdemo}</b>: the page flipping demo switches 
-between these two blocks.
+<b>{*@fig:flipdemo}</b>: ページフリップのデモは、この 2 つの
+ブロックを切り替えます。
 </div></div>
 
-## On data and how to use it {#sec-data}
+## データとその使い方について {#sec-data}
 
-This section is a little boring (ok, very boring) but it needs to be said. While books and tutorials on C may use data for whatever purpose, they often gloss over what data actually *is* at the lowest level, and how to deal with it correctly. As you'll be dealing directly with hardware and memory here, it is important that you are aware of these items, preferably even understand them, so that they don't bite you in the ass at some later point.
+この節は少し退屈ですが（いや、とても退屈です）、言っておかなければならないことです。C の本やチュートリアルは、データをどんな目的にでも使いますが、データが一番低いレベルで実際に*何なのか*、どう正しく扱うのかについては、さらっと流してしまうことがよくあります。ここではハードウェアとメモリを直接扱うことになるので、こうしたことを意識しておくこと、できれば理解しておくことが大事です。そうすれば、あとで痛い目にあわずに済みます。
 
-The first two subsections are about how to get graphics into your game, something that you'll really need to know. After that I'll discuss a few nasty and highly technical things that may or may not cause problems later on. These are optional and you can skip to the [data-loading/interpreting demo](#ssec-data-demo) at any time. That said, I urge you to read them anyway because they may save you a lot of debugging time.
+最初の 2 つの小節は、ゲームにグラフィックを取り込む方法についてで、本当に知っておくべきことです。そのあとで、あとで問題を起こすかもしれないし、起こさないかもしれない、いやらしくてとても技術的な話をいくつかします。これらは読まなくても構わないので、いつでも[データの読み込みと解釈のデモ](#ssec-data-demo)に飛んでください。とはいえ、デバッグの時間を大きく節約できるかもしれないので、やはり読むことを強くおすすめします。
 
-:::tip  Relax, it's only 1s and 0s
+:::tip  気楽に、ただの 1 と 0 です
 
-When you get right down to it, everything on computers is merely a big mess of bits without any purpose by itself. It is the interaction between hardware and software that makes sequences of bits appear as valid executable code, a bitmap, music or whatever.
-
-:::
-
-### Yes, we have no files {#ssec-data-files}
-
-This may be a good point to say a few words on data. Strictly speaking, *everything* is data, but in this case I'm referring to data that on PC games would be separate from the executable: graphics, music, maybe scripts and text-files and what not. This all works fine on a PC, but not so fine on the GBA because there *is no file system*. This means that you cannot use the standard file I/O routines (`fscanf()`, `fread()`, etc) to read the data, because there are no files to read them from.
-
-All the game's data has to be added directly to the binary. There are a number of ways to do this. The most common way is to convert the raw binary files to C-arrays, then compile those and link them to the project. Well, the most common among homebrewers is probably converting to C arrays and using `#include` on them, but that's something that you should *never* do. Also popular are assembly arrays. These are a useful alternative to C arrays because a) they *can't* be `#include`d and b) because they bypass the compilation step and compilation of arrays is very intensive. Of course, you would have to know how to work with the assembler. Another nice thing about the assembler is that you can include binary files directly into them, eliminating the need for a converter. Lastly, while the GBA doesn't have a native file system, you can always write your own. A common one is [GBFS](https://pineight.com/gba/#gbfs) by the gbadev forum FAQ maintainer, tepples. Using a file system is actually the recommended method, but for now, I'll stick to C arrays because they are the easiest to use.
-
-:::tip Ahem. Actually, we do have files
-
-There *were* no files in the past, but in July of 2006, [Chishm](https://web.archive.org/web/20120201074338/http://chishm.drunkencoders.com/) gave us libfat, which is a FAT-like file system for GBA and Nintendo DS. It is distributed via devkitPro Updater as well, so chances are you have it already.
+突き詰めれば、コンピュータの中のものはすべて、それ自体には何の目的もないビットの大きな寄せ集めにすぎません。ビットの並びを、ちゃんと実行できるコード、ビットマップ、音楽などに見せているのは、ハードウェアとソフトウェアのやり取りなのです。
 
 :::
 
-#### Where do my arrays go?
+### そう、ファイルはないんです {#ssec-data-files}
 
-By default, arrays go into IWRAM. You know, the one that's only 32 KiB long. Now, a mode 3 bitmap is 240×160×2 = 77 kB. Obviously, trying to put a 77 kB object into a 32 KiB section would fit nicely into the bad things category. To avoid this, put it in the read-only section (ROM), which is much larger. All you have to do for this is add the `const` keyword to the definition if you're using C, or the `.rodata` directive in assembly. Note that for multiboot programs, ROM actually means EWRAM, which is only 256 KiB long. The latter would fit three mode 3 bitmaps; more would again be bad unless you use compression.
+ここで、データについて少し話しておくのがいいでしょう。厳密に言えば、*すべて*がデータですが、ここで言っているのは、PC のゲームなら実行ファイルとは別になっているデータです。グラフィック、音楽、それにスクリプトやテキストファイルなどです。PC ではこれで何の問題もありませんが、GBA ではそうはいきません。*ファイルシステムがない*からです。つまり、データを読むのに、標準のファイル入出力のルーチン（`fscanf()`、`fread()` など）は使えません。読み込むファイルがないのですから。
 
-Note that what I said about arrays is true for *all* arrays, not just data arrays: if you want any kind of large array (like a backbuffer for mode 3), it would also default to and *overfill* IWRAM. But you can't make it `const` because then you'd not be able to write on it. GCC has attributes that lets you choose where things are put – in EWRAM for instance. Here are the commonly seen `#define` macros for the attributes that can be used for specific section placement.
+ゲームのデータは、すべてバイナリに直接入れる必要があります。そのやり方はいくつかあります。一番よくあるのは、生のバイナリファイルを C の配列に変換して、それをコンパイルし、プロジェクトにリンクする方法です。まあ、自作ソフトを作る人のあいだで一番多いのは、たぶん C の配列に変換して `#include` することですが、それは*決して*やってはいけません。アセンブリの配列もよく使われます。これは C の配列の便利な代わりになります。a) `#include` *できない*し、b) コンパイルの段階を飛ばせるからです。配列のコンパイルはとても重い処理なのです。もちろん、アセンブラの扱い方を知っている必要はあります。アセンブラのもう 1 つの利点は、バイナリファイルを直接取り込めるので、変換ツールが要らないことです。最後に、GBA には標準のファイルシステムはありませんが、自分で作ることはいつでもできます。よく使われているのが、gbadev のフォーラムの FAQ を管理している tepples さんの [GBFS](https://pineight.com/gba/#gbfs) です。実はファイルシステムを使うのがおすすめのやり方なのですが、今のところは、一番簡単に使える C の配列にしておきます。
+
+:::tip えへん。実は、ファイルはあります
+
+昔はファイルが*ありません*でしたが、2006年7月に [Chishm](https://web.archive.org/web/20120201074338/http://chishm.drunkencoders.com/) さんが、GBA とニンテンドー DS のための FAT のようなファイルシステム、libfat をくれました。これも devkitPro Updater で配布されているので、たぶんもう入っています。
+
+:::
+
+#### 配列はどこに置かれるの？
+
+デフォルトでは、配列は IWRAM に置かれます。そう、32 KiB しかない、あれです。さて、モード 3 のビットマップは 240×160×2 = 77 kB です。言うまでもなく、77 kB のものを 32 KiB の領域に入れようとするのは、悪いことの分類にぴったり当てはまります。これを避けるには、ずっと大きい読み取り専用の領域（ROM）に置きます。そのためには、C なら定義に `const` キーワードを付け、アセンブリなら `.rodata` ディレクティブを使うだけです。なお、マルチブートのプログラムでは、ROM は実際には EWRAM を意味し、こちらは 256 KiB しかありません。モード 3 のビットマップなら 3 枚入りますが、それ以上は、圧縮しない限りやはりまずいことになります。
+
+配列について言ったことは、データの配列だけでなく、*すべて*の配列に当てはまることに注意してください。どんな種類のものでも大きな配列（モード 3 のバックバッファなど）は、やはりデフォルトで IWRAM に置かれ、IWRAM を*あふれさせて*しまいます。でも、`const` にはできません。そうすると書き込めなくなるからです。GCC には、ものを置く場所（たとえば EWRAM）を選べる属性があります。特定の領域に置くために使える属性の、よく見かける `#define` のマクロを示します。
 
 ```c
 #define EWRAM_DATA __attribute__((section(".ewram")))
@@ -530,15 +530,15 @@ Note that what I said about arrays is true for *all* arrays, not just data array
 #define IWRAM_CODE __attribute__((section(".iwram"), long_call))
 ```
 
-:::tip Const is good
+:::tip const はよいもの
 
-Data that you don't expect to change in your game should be defined as constant data using the `const` keyword, lest it trashes your IWRAM.
+ゲームの中で変わらないはずのデータは、`const` キーワードを使って定数のデータとして定義してください。さもないと、IWRAM がめちゃくちゃになります。
 
 :::
 
-#### Converted and const arrays in C++
+#### C++ での変換済みの配列と const の配列
 
-There are two little snags that you can trip on if you're using (converted) data arrays in C++. The first is that tools that generate the arrays will output C files, not C++ files. This is not a problem in itself because those files will be compiled just the same. What *is* a problem is that C++ uses something known as [Name mangling](https://en.wikipedia.org/wiki/Name_mangling) to allow overloading and stuff like that. C doesn't and as a result, the name that the C++ file looks for isn't the same one as in the C file and you get undefined references. To fix this, use `extern "C"` in front or around the declarations of the stuff in the C files.
+C++ で（変換済みの）データの配列を使う場合に、つまずきやすい小さな落とし穴が 2 つあります。1 つ目は、配列を生成するツールは、C++ のファイルではなく C のファイルを出力することです。それ自体は問題ではありません。そうしたファイルも同じようにコンパイルされるからです。問題*なのは*、C++ がオーバーロードなどを可能にするために、[名前修飾（Name mangling）](https://en.wikipedia.org/wiki/Name_mangling)と呼ばれるものを使うことです。C はこれを使わないので、結果として、C++ のファイルが探す名前と C のファイルにある名前が一致せず、未定義の参照になってしまいます。これを直すには、C のファイルにあるものの宣言の前に `extern "C"` を付けるか、宣言をそれで囲みます。
 
 ```c
 // This:
@@ -553,7 +553,7 @@ const unsigned char C_array2[];
 }
 ```
 
-Another problem with C++ is that const-arrays are considered static (local to the file that contains it) unless you add an external declaration to it. So if you just have `const u8 foo[]= { etc }` in a file, the array will be invisible to other files.The solution here would be to add the declaration inside the file itself as well.
+C++ のもう 1 つの問題は、const の配列は、外部の宣言を足さない限り、static（その配列を含むファイルの中だけで有効）とみなされることです。なので、あるファイルに `const u8 foo[]= { etc }` と書いただけでは、その配列はほかのファイルから見えません。ここでの解決策は、そのファイル自体の中にも宣言を足すことです。
 
 ```c
 // foo.cpp. Always have an external declaration 
@@ -567,21 +567,21 @@ const unsigned char foo[]=
 };
 ```
 
-### Data conversion {#ssec-data-format}
+### データの変換 {#ssec-data-format}
 
-It's rather easy to write a tool that converts a binary file to a C or asm array. In fact, devkitARM comes with two that do just that: raw2c.exe and bin2s.exe. It also comes with the basic tools for gbfs by the way. But being able to attach binary files to your game is only part of the story. Consider a bitmap, for example. In principle, a bitmap is a binary file just like any other. There's nothing inherently graphical about it, and it doesn't magically appear as a bitmap whenever you use it by itself. Yes, when you double-click on it, an image viewer may pop up and display it, but that's only because there's some serious work by the OS going on underneath. Which we don't have here.
+バイナリファイルを C やアセンブリの配列に変換するツールを書くのは、わりと簡単です。実際、devkitARM には、まさにそれをするツールが 2 つ付いています。raw2c.exe と bin2s.exe です。ちなみに、gbfs の基本的なツールも付いています。でも、バイナリファイルをゲームに付けられるのは、話の一部にすぎません。たとえば、ビットマップを考えてみてください。原則として、ビットマップもほかと同じただのバイナリファイルです。それ自体には本来グラフィックらしいところは何もなく、単独で使ったときに魔法のようにビットマップとして現れるわけではありません。確かに、ダブルクリックすれば画像ビューアが開いて表示してくれるかもしれませんが、それは OS が裏で大変な仕事をしてくれているからにすぎません。ここには、それがありません。
 
-Most files will follow a certain format to tell it what it is, and how to use it. For bitmaps, that usually means width, height, bitdepths and a few other fields as well. The point is that they're not directly usable. You can't just attach, say, a BMP file to your project and copy it to VRAM and think that everything will work out. No, you have to *convert* it to a GBA-usable format. Now, you can do this internally (on the GBA itself), or externally (on the PC and attach the converted data to the project). Because the latter is a much more efficient use of GBA resources, that is the usual procedure.
+ほとんどのファイルは、それが何で、どう使うのかを伝えるために、ある形式に従っています。ビットマップなら、たいていは幅、高さ、ビット深度と、ほかにいくつかの項目です。要するに、そのままでは直接使えないということです。たとえば BMP ファイルをプロジェクトに付けて VRAM にコピーすれば、全部うまくいくと思ってはいけません。そう、GBA で使える形式に*変換*する必要があるのです。変換は、内部で（GBA 自体の上で）行うこともできますし、外部で（PC で変換して、変換したデータをプロジェクトに付ける）行うこともできます。後者のほうが GBA の資源をずっと効率よく使えるので、普通はそうします。
 
-There are many conversion tools, one might almost say too many. Some are one-trick ponies: a single file-type to a single graphics mode for example. Some are very powerful and can handle multiple file-types, multiple files, different conversion modes with lots of options on the side, and compression. It should be obvious which are of the most value.
+変換ツールはたくさんあり、多すぎると言ってもいいくらいです。1 つの芸しかないものもあります。たとえば、1 種類のファイルを 1 つのグラフィックモード向けに変換するだけのものです。一方、とても強力なものもあり、複数の種類のファイル、複数のファイル、たくさんのオプション付きのさまざまな変換モード、圧縮まで扱えます。どちらがより価値があるかは、明らかでしょう。
 
-A good one is [gfx2gba](https://www.coranac.com/files/gba/gfx2gba.zip). This is a command-line tool so that it can be used in a makefile, but there is a GUI front-end for it as well. This tool has the Good Things I mentioned earlier, plus some map-exporting options and palette merging, but the input file must be 8-bit and I hear that while it does compress data, the array-size is still given as its uncompressed size for some unfortunate reason. This tool comes with the HAM installation, and is quite common, so definitely recommended. Unfortunately, there seems to be another tool with the same name. You'll want the v0.13 version by Markus, not the other one.
+よいツールの 1 つが [gfx2gba](https://www.coranac.com/files/gba/gfx2gba.zip) です。makefile の中で使えるようにコマンドラインのツールになっていますが、GUI のフロントエンドもあります。このツールは、さっき挙げたよい点に加えて、マップを出力するオプションやパレットを統合する機能も持っています。ただ、入力ファイルは 8 ビットでなければならず、データを圧縮はするものの、なぜか残念なことに、配列の大きさは圧縮前の大きさのままになると聞いています。このツールは HAM のインストールに含まれていて、とても普及しているので、間違いなくおすすめです。残念ながら、同じ名前の別のツールもあるようです。欲しいのは Markus さんの v0.13 版で、もう一方ではありません。
 
-Personally, I use [Usenti](https://www.coranac.com/projects/#usenti), which is my own tool. This is a bitmap editor (paint program) with exporting options thrown in. It allows different file-types, different bitdepths, different output files, all modes, some map-exporting stuff, meta-tiling, compression and a few others. It may not be as powerful as big photo-editing tools as Photoshop, GIMP, Aseprite, and the like, but it gets the job done. If you're still drawing your graphics with Microsoft Paint, please stop that and use this one instead. The exporter is also available separately in the form of the open source project called [(win)grit](https://www.coranac.com/projects/#grit), which comes in a command-line interface (grit) and a GUI (wingrit). As of January 2007, it is also part of the devkitPro distribution.
+私個人は、自分で作ったツールの [Usenti](https://www.coranac.com/projects/#usenti) を使っています。これは、出力のオプションも備えたビットマップエディタ（お絵かきソフト）です。さまざまな種類のファイル、さまざまなビット深度、さまざまな出力ファイル、すべてのモード、マップの出力に関する機能、メタタイル、圧縮などに対応しています。Photoshop、GIMP、Aseprite などの大きな画像編集ツールほど強力ではないかもしれませんが、仕事はちゃんとこなせます。いまだに Microsoft ペイントでグラフィックを描いているなら、どうかやめて、代わりにこれを使ってください。出力の機能は、[(win)grit](https://www.coranac.com/projects/#grit) というオープンソースのプロジェクトとして、単独でも使えます。コマンドラインのインターフェース（grit）と GUI（wingrit）があります。2007年1月からは、devkitPro の配布物にも含まれています。
 
-:::tip Bitmap conversion via CLI
+:::tip コマンドラインでのビットマップの変換
 
-There are many command-line interfaces available for graphics conversion, but to make them function you need the correct flags. Here are examples for gfx2gba and grit, converting a bitmap *foo.bmp* to a C array for modes 3, 4 and 5. This is just an example, because this is not the place for a full discussion on them. Look in their respective readme's for more details.
+グラフィックの変換に使えるコマンドラインのツールはたくさんありますが、うまく動かすには正しいフラグが必要です。ビットマップ *foo.bmp* を、モード 3、4、5 用の C の配列に変換する、gfx2gba と grit の例を示します。ここは詳しく説明する場所ではないので、あくまで例です。詳しくは、それぞれの readme を見てください。
 
 ```sh
 # gfx2gba
@@ -604,8 +604,8 @@ There are many command-line interfaces available for graphics conversion, but to
 <div class="cpt_fr">
 <table id="tbl-endian" class="table-data">
 <caption align="bottom">
-  <b>Table 5.2</b>: Big endian vs little 
-  endian interpretation of byte-sequence 01h, 02h, 03h, 04h
+  <b>表 5.2</b>: バイト列 01h、02h、03h、04h の、
+  ビッグエンディアンとリトルエンディアンでの解釈
 </caption>
 <tbody align="center">
 <tr>
@@ -622,11 +622,11 @@ There are many command-line interfaces available for graphics conversion, but to
 </table>
 </div>
 
-Below, you can see a partial listing of modes.c, which contains the bitmap and the palette used in the *bm_modes* demo discussed at the end of this section, as exported by Usenti. It is only a very small part of the file because at over 2700 lines it is way too long to display here, which wouldn't serve much of a purpose anyway. Note that both are `u32` arrays, rather than the `u8` or `u16` arrays you might encounter elsewhere. What you need to remember is that **it doesn't matter** in what kind of an array you put the data: in memory it'll come out the same anyway.
+下は、Usenti で出力した modes.c の一部です。この節の最後で説明する *bm_modes* のデモで使うビットマップとパレットが入っています。ファイルは 2700 行以上もあり、ここに載せるには長すぎますし、載せてもあまり意味がないので、ほんの一部だけです。どちらも、ほかで見かけるかもしれない `u8` や `u16` の配列ではなく、`u32` の配列になっていることに注目してください。覚えておくべきなのは、データをどんな種類の配列に入れても**関係ない**ということです。メモリの中では、どのみち同じになります。
 
-Well, that's not *quite* true. Only with `u32` arrays is proper [data alignment](#ssec-data-align) guaranteed, which is a good thing. More importantly, you have to be careful with the byte-order of multi-byte types. This is called the [endianness](numbers.html#ssec-bits-endian) of types. In a <dfn>little endian</dfn> scheme, least significant bytes will go first and in a <dfn>big endian</dfn>, most significant bytes will go first. See table 2 for an example using `0x01`, `0x02`, `0x03` and `0x04`. The GBA is a little endian machine, so the first word of the `modesBitmap` array, `0x7FE003E0` is the halfwords `0x03E0` (green) followed by `0x7FE0` (cyan). If you want more examples of this, open up VBA's memory viewer and play around with the 8-bit, 16-bit and 32-bit settings.
+まあ、*完全に*そうとは言えません。適切な[データのアラインメント](#ssec-data-align)が保証されるのは `u32` の配列だけで、これはよいことです。もっと大事なのは、複数バイトからなる型のバイト順に気をつけなければならないことです。これを型の[エンディアン](numbers.html#ssec-bits-endian)といいます。<dfn>リトルエンディアン</dfn>の方式では最下位のバイトが先に来て、<dfn>ビッグエンディアン</dfn>では最上位のバイトが先に来ます。`0x01`、`0x02`、`0x03`、`0x04` を使った例は、表 2 を見てください。GBA はリトルエンディアンのマシンなので、`modesBitmap` 配列の最初のワード `0x7FE003E0` は、ハーフワードの `0x03E0`（緑）と、それに続く `0x7FE0`（シアン）です。もっと例を見たければ、VBA のメモリビューアを開いて、8 ビット、16 ビット、32 ビットの設定を切り替えて遊んでみてください。
 
-The key point here: the data itself doesn't change when you use different data-types for the arrays, only the way you *represent* it does. That was also the point of the *bm_modes* demo: it's the same data in VRAM all the time; it's just used in a different way.
+ここでの要点は、配列に違うデータ型を使っても、データそのものは変わらず、それを*どう表すか*が変わるだけだ、ということです。それが *bm_modes* のデモの要点でもありました。VRAM の中のデータはずっと同じで、使い方が違うだけなのです。
 
 ```c
 //======================================================================
@@ -662,51 +662,51 @@ const unsigned int modesPal[8]=
 };
 ```
 
-Those 2700 lines represent a 77 kB bitmap. One *single* bitmap. In all likelihood, you'll need at least a couple of them to make anything worthwhile. Most games have lots of data in them, not only graphics but maps and sound and music as well. All this adds up to a huge amount of data, certainly too much for just EWRAM and maybe even for a full cart. That is why <dfn>compression</dfn> is also important. The [GBA BIOS](swi.html) has decompression routines for bit-packing, run-length encoding, LZ77 and Huffman. Converters sometimes have the appropriate compressors for these routines, which can drastically shrink the amount of memory used. Usenti and (win)grit support these compressors. So does gfx2gba, which even has some more. A tool that just does compression on binary files (but does it very well) is [GBACrusher](https://www.coranac.com/files/gba/GBACrusher.zip). I won't go into compression that much (or at all), but you can read up on the subject [here](https://web.archive.org/web/20180820012154/http://members.iinet.net.au/~freeaxs/gbacomp/).
+この 2700 行が、77 kB のビットマップを表しています。たった*1 枚*のビットマップです。何か意味のあるものを作るには、十中八九、少なくとも何枚かは必要でしょう。ほとんどのゲームには、グラフィックだけでなく、マップ、効果音、音楽など、たくさんのデータが入っています。全部合わせると膨大な量になり、EWRAM だけでは確実に足りず、カートリッジ全体でも足りないかもしれません。だからこそ、<dfn>圧縮</dfn>も大事なのです。[GBA の BIOS](swi.html) には、ビットパッキング、ランレングス符号化、LZ77、ハフマン符号の展開ルーチンがあります。変換ツールの中には、これらのルーチンに合った圧縮機能を持っているものもあり、使うメモリの量を劇的に減らせます。Usenti と (win)grit は、これらの圧縮に対応しています。gfx2gba も対応していて、ほかにもいくつか持っています。バイナリファイルの圧縮だけをする（ただし、とても上手にする）ツールに、[GBACrusher](https://www.coranac.com/files/gba/GBACrusher.zip) があります。圧縮についてはあまり（というか、まったく）立ち入りませんが、この話題については[こちら](https://web.archive.org/web/20180820012154/http://members.iinet.net.au/~freeaxs/gbacomp/)で読めます。
 
-:::tip Understanding data
+:::tip データを理解する
 
-It is vital that you understand what data is, how the different datatypes work. Preferably endianness and alignment too. Emulators and hex editors can help you with this. Once you have compilation working, just make a few random arrays and see what they look like in the VBA memory viewer for a while.
+データとは何か、さまざまなデータ型がどう働くのかを理解することは、欠かせません。できれば、エンディアンとアラインメントもです。エミュレータと 16 進エディタが、その助けになります。コンパイルができるようになったら、適当な配列をいくつか作って、VBA のメモリビューアでしばらく眺めてみてください。
 
 :::
 
-### `#include` code or data considered harmful {#ssec-data-hdr}
+### コードやデータを `#include` するのは有害です {#ssec-data-hdr}
 
 <div class="cpt_fr" style="width:240px;">
   <img src="./img/bitmaps/bart_data.png" id="fig:bart-data" 
     alt="Lines"><br>
-  <b>{*@fig:bart-data}</b>: even Bart knows &hellip;
+  <b>{*@fig:bart-data}</b>: バートでさえ知っている&hellip;
 </div>
 
-Most non-trivial projects will have multiple files with code and data. The standard way of dealing with these is to compile these separately and then link the results to the final binary. This is the recommended strategy. However, most other tutorials and many of the example code you can find on the web do something else: a [unity build](https://en.wikipedia.org/wiki/Unity_build). They `#include` everything into the main source file and compile that. This is *not* a recommended practice and should be avoided.
+簡単ではないプロジェクトのほとんどは、コードとデータのファイルを複数持っています。これらの標準的な扱い方は、別々にコンパイルして、その結果を最終的なバイナリにリンクすることです。これがおすすめのやり方です。でも、ほかのほとんどのチュートリアルや、Web で見つかるサンプルコードの多くは、別のことをしています。[ユニティビルド](https://en.wikipedia.org/wiki/Unity_build)です。すべてをメインのソースファイルに `#include` して、それをコンパイルするのです。これはおすすめできる習慣では*なく*、避けるべきです。
 
-”But why not? It seems to work fine, and it's so easy!”
+「でも、なぜだめなの？ ちゃんと動いているみたいだし、こんなに簡単なのに！」
 
-Yes, it is easy; and it does seem to work. The main problem is that a unity build isn't [scalable](https://en.wikipedia.org/wiki/Scalability). For small projects (a handful of files) you probably won't notice, but as projects grow to hundreds and perhaps thousands of files, you will run into some very annoying problems. The main issue is what #include actually does. It copies the whole included file into the includer to form a single larger file. This leads to the following issues.
+そう、簡単です。そして、動いているようにも見えます。一番の問題は、ユニティビルドが[スケーラブル](https://en.wikipedia.org/wiki/Scalability)でないことです。小さなプロジェクト（ファイルが数個）なら、たぶん気づかないでしょう。でも、プロジェクトが何百、何千ものファイルに育つと、とても厄介な問題にぶつかります。主な問題は、#include が実際に何をするかです。#include は、取り込むファイル全体を取り込む側にコピーして、1 つの大きなファイルにします。これが、次のような問題につながります。
 
--   **Massive files to compile**. So, `#include` creates one big file. If you have a lot of stuff, you'll have one *very* big file. This will cost large amounts of memory and slows down compilation. As the project grows, what starts as a compile time of a second can grow to several, then minutes and perhaps even hours.
+-   **コンパイルするファイルが巨大になる**。`#include` は 1 つの大きなファイルを作ります。たくさんのものがあれば、*とても*大きなファイルが 1 つできます。これはたくさんのメモリを使い、コンパイルを遅くします。プロジェクトが育つにつれて、最初は 1 秒だったコンパイル時間が、数秒、数分、ことによると数時間にもなります。
 
-    At some point, there was also the problem that the compiler couldn't handle files exceeding 4 MB, putting a limit on how much you could `#include` in a C file. I'm not sure if this is still an issue.
+    以前は、コンパイラが 4 MB を超えるファイルを扱えないという問題もあり、C のファイルに `#include` できる量に上限がありました。今もこれが問題なのかは、よく分かりません。
 
--   **Recompiling the world**. The main problem is that when you `#include` everything, you need to recompile everything as well. If you make one change *anywhere*, no matter how small, causes *everything* to be compiled. For small projects (say, a handful of files), a full rebuild would take a few seconds so it's not a problem. But larger projects can have hundreds or thousands of files, and the time is not measured in seconds, but in minutes or perhaps hours. Sure it's a good excuse to go [sword fighting](https://xkcd.com/303/), but terribly annoying if you want to do something productive.
+-   **世界中を再コンパイルする**。一番の問題は、すべてを `#include` していると、すべてを再コンパイルする必要もあることです。*どこか*を 1 か所変えると、それがどんなに小さな変更でも、*すべて*がコンパイルされます。小さなプロジェクト（たとえばファイルが数個）なら、全部をビルドし直しても数秒なので問題になりません。でも、大きなプロジェクトには何百、何千ものファイルがあることもあり、時間は秒ではなく、分か、ことによると時間の単位で測ることになります。確かに[チャンバラごっこ](https://xkcd.com/303/)をするいい口実にはなりますが、何か生産的なことをしたいときには、ひどくいらいらします。
 
--   **Bloat**. Even if your own code and data are relatively small in number, you're probably using some code library for API functions. Normally, these are pre-compiled and only the functions used are linked into your binary. But if those worked by #include as well (in other words, if their creators had followed the practice I'm warning against), every function in that library would be included as well, including the ones you're not using. This increases the filesize, *and* increases the problems mentioned above.
+-   **肥大化**。自分のコードとデータの数が比較的少なくても、たぶん API の関数のために何かのコードライブラリを使っているでしょう。普通、ライブラリはコンパイル済みで、使った関数だけがバイナリにリンクされます。でも、ライブラリも #include で動くようになっていたら（言い換えると、作者が私が警告しているやり方に従っていたら）、使っていないものも含めて、ライブラリのすべての関数が取り込まれてしまいます。これはファイルの大きさを増やし、*しかも*上で挙げた問題も増やします。
 
--   **Undeclared identifiers, multiple definitions and circular dependencies**. In a nutshell, C requires that you declare an identifier before it's referenced, and it can only be defined once. The first point means that the order of inclusions starts to matter: if, say, *fileB.c* needs something from *fileA.c*, the latter needs to be included before the former to get a compile. The second means that you could only `#include` a file once in the whole project: if *fileB.c* and *fileC.c* both need stuff from *fileA.c*, you can't `#include` it in them both because when they're `#include`d in *main.c*, *fileA.c* is effectively `#include`d twice and the compiler will balk.
+-   **未宣言の識別子、多重定義、循環依存**。要するに、C では、識別子は参照する前に宣言する必要があり、定義は 1 回しかできません。1 つ目の点は、取り込む順番が大事になってくるということです。たとえば *fileB.c* が *fileA.c* の何かを必要とするなら、コンパイルを通すには、後者を前者より先に取り込む必要があります。2 つ目の点は、プロジェクト全体で、あるファイルを 1 回しか `#include` できないということです。*fileB.c* と *fileC.c* の両方が *fileA.c* のものを必要とする場合、両方で `#include` することはできません。それらが *main.c* に `#include` されると、*fileA.c* は実質的に 2 回 `#include` されることになり、コンパイラが拒否するからです。
 
-    These points can technically be overcome by being careful, such as using an [include guard](https://en.wikipedia.org/wiki/Include_guard). But, again, when projects grow, things can get increasingly more difficult to keep track of which comes before what and why. There is, however, one point at which it *will* go wrong, namely when there are circular dependencies: *fileB.c* needs *fileA.c* and vice versa. Each file would require the other to go first, which simply isn't possible because it'd cause multiple definitions.
+    これらの点は、[インクルードガード](https://en.wikipedia.org/wiki/Include_guard)を使うなど、気をつければ技術的には乗り越えられます。でも、繰り返しますが、プロジェクトが育つと、何が何より先に来るのか、そしてなぜなのかを把握するのがどんどん難しくなります。それに、*必ず*うまくいかなくなる場面が 1 つあります。循環依存があるとき、つまり *fileB.c* が *fileA.c* を必要とし、その逆も同じときです。それぞれのファイルが相手に先に来てもらう必要がありますが、そうすると多重定義になってしまうので、単純に不可能です。
 
--   **Data alignment**. I'll get to what this means in a minute, but right now know that copy routines work better if the data is aligned to 32-bit boundaries (even for byte and halfword arrays). Some of them won't even work properly if this isn't the case. This is usually guaranteed if you compile separately, but if the arrays are #included and no steps have been taken to force alignment, you simply never know.
+-   **データのアラインメント**。これが何を意味するのかはすぐあとで説明しますが、今は、コピーのルーチンは、データが 32 ビットの境界に揃っている（バイトやハーフワードの配列でも）とうまく働く、ということだけ知っておいてください。揃っていないと、正しく動かないルーチンさえあります。別々にコンパイルすれば、普通はこれが保証されます。でも、配列を #include していて、アラインメントを強制する手を打っていなければ、どうなるかはまったく分かりません。
 
-    It's not much of a problem nowadays because most graphics converters force data alignment, but you still need to know about it. Because data alignment is a fairly esotheric concept, it's next to impossible to track down unless you're aware of the problems it can bring.
+    今はほとんどのグラフィックの変換ツールがデータのアラインメントを強制するので、たいした問題にはなりませんが、それでも知っておく必要はあります。データのアラインメントはかなり難解な概念なので、それがもたらす問題を知らない限り、原因を突き止めるのはほぼ不可能です。
 
-So please, do yourself a favor and do not `#include` every file you have into *main.c* or its counterpart in your project. Put function and variable definitions in separate source files to be compiled separately and linked later. The `#include` directive is only to be used for files with preprocessor directives, declarations, type definitions, and `inline` functions.
+なので、どうか自分のためにも、手元のファイルを全部 *main.c*（やプロジェクトでそれに当たるもの）に `#include` するのはやめてください。関数と変数の定義は別々のソースファイルに置き、別々にコンパイルして、あとでリンクしてください。`#include` ディレクティブは、プリプロセッサのディレクティブ、宣言、型の定義、`inline` 関数が入ったファイルにだけ使うものです。
 
-### Proper build procedure {#ssec-data-proc}
+### 正しいビルドの手順 {#ssec-data-proc}
 
-#### Separate compilation
+#### 分割コンパイル
 
-So what do you do instead? Well, for starters keep all the code and data in separate source files. Compile these separately by invoking gcc on each file. This gives you a list of object files. These you then link together. In batch files, you'd need to add extra commands for each file, but a properly setup makefile uses a list of object files, and the makefile's rules will then take care of the rest automatically. Using the makefile of the [second demo](first.html#ssec-2nd-make) as a reference, you'll get something like this:
+では、代わりにどうすればいいのでしょうか？ まず、コードとデータは全部別々のソースファイルにしておきます。各ファイルに対して gcc を呼んで、それぞれ別々にコンパイルします。これでオブジェクトファイルの一覧ができます。それらをまとめてリンクします。バッチファイルではファイルごとにコマンドを足す必要がありますが、ちゃんと用意した makefile はオブジェクトファイルの一覧を使い、残りは makefile のルールが自動でやってくれます。[2 つ目のデモ](first.html#ssec-2nd-make)の makefile を参考にすると、次のようになります。
 
 ```c
 # partial makefile for using multiple source files
@@ -724,31 +724,31 @@ $(OBJS) : %.o : %.c
     $(CC) -c $< $(CFLAGS) -o $@
 ```
 
-The `OBJS` variable contains the names of three object files, which would be the targets of compiling *foo.c*, *bar.c* and *boo.c*. Remember, makefiles list rules by target, not by prerequisite. The compilation step uses a static pattern rule, which for each object file (`.o`) in `OBJS` compiles the source file (`.c`) file with the same title. This is what runs the compiler for our three source files. In the linking step, the automatic variable `$^` expands to the prerequisites of the rule, which is the list of all object files, and this is how the files are all linked together. If you need more files, add them to the `OBJS` list.
+`OBJS` 変数には 3 つのオブジェクトファイルの名前が入っていて、これらが *foo.c*、*bar.c*、*boo.c* をコンパイルしたときのターゲットになります。makefile は、前提条件ではなくターゲットごとにルールを並べることを思い出してください。コンパイルの段階では静的パターンルールを使っていて、`OBJS` の中の各オブジェクトファイル（`.o`）について、同じ名前のソースファイル（`.c`）をコンパイルします。これが、3 つのソースファイルに対してコンパイラを実行する部分です。リンクの段階では、自動変数 `$^` がルールの前提条件、つまり全オブジェクトファイルの一覧に展開され、こうしてファイルが全部まとめてリンクされます。ファイルが増えたら、`OBJS` の一覧に足してください。
 
-Note that the devkitARM and tonc template files take care of these things automatically. Just put the source files into the right directory and you're good to go.
+なお、devkitARM と tonc のテンプレートのファイルは、こうしたことを自動でやってくれます。ソースファイルを正しいディレクトリに置けば、それで準備完了です。
 
-#### Symbols, declarations and definitions
+#### シンボル、宣言、定義
 
-If you have been doing everything via `#include`, you should consider refactoring all of your stuff to separate source files. No, let me rephrase that, you *need* to do this because you'll benefit from it in the end. If you're already well in your project, this is going to suck because it's boring and time consuming and most likely it's not even going to *work* properly when you try the first build afterwards. I expect you'll get a whole slew of errors, particularly these three:
+ここまで全部 `#include` でやってきたなら、全部を別々のソースファイルに作り直すことを考えるべきです。いや、言い直しましょう。最終的には得をするので、そうする*必要があります*。プロジェクトがもうだいぶ進んでいるなら、これは最悪な作業になります。退屈で時間がかかるうえに、終わったあと最初にビルドしたとき、たぶんちゃんと*動き*すらしないからです。きっとエラーが山ほど出るでしょう。特に、次の 3 つです。
 
 -   \`foo' undeclared
 -   redefinition of \`foo'
 -   multiple definition of \`foo'
 
-To understand what these mean, you need to know a little bit more about how C (and indeed programs) actually works.
+これらの意味を理解するには、C が（そして実はプログラムが）実際にどう動くのかを、もう少し知っておく必要があります。
 
-As I said before, there aren't really things like programs, bitmaps, sound on computers; it's all just bits. Bits, bits and more bits. What makes a sequence of bits work as a program is the way it is fed to the CPU, VRAM, and other sections. Somewhere in the build process, there has to be a translation of all the C code to data and machine instructions. This, of course, is the compiler's job.
+前に言ったとおり、コンピュータの中には、本当はプログラムやビットマップや音といったものはありません。全部ビットにすぎないのです。ビット、ビット、そしてまたビット。ビットの並びをプログラムとして働かせているのは、それを CPU、VRAM、そのほかの領域にどう与えるかです。ビルドの過程のどこかで、C のコードを全部、データと機械語の命令に翻訳する必要があります。もちろん、これはコンパイラの仕事です。
 
-But wait, there's more. C allows you to compile each file separately, and then link them later into the actual program. This is a good idea, because it allows you to save time by only compiling the files that you have recently modified, as well as the use of code <dfn>libraries</dfn>, which are little more than a bunch of precompiled source files. If you're not convinced that this is a good idea, consider what it would take without it. You'd have to have *all* the source code that you wanted to use (including for things like `printf()` and all the API code), and compile all those megabytes of source files each time. Sounds like fun? No, I didn't think so either.
+でも、それだけではありません。C では、ファイルを 1 つずつ別々にコンパイルして、あとでリンクして実際のプログラムにできます。これはよい考えです。最近変更したファイルだけをコンパイルすれば済むので時間を節約できますし、コードの<dfn>ライブラリ</dfn>も使えるからです。ライブラリは、コンパイル済みのソースファイルの寄せ集めにすぎません。これがよい考えだと納得できないなら、これがなかったらどうなるかを考えてみてください。使いたいソースコード（`printf()` や API のコードのようなものも含めて）を*全部*手元に置き、そのメガバイト単位のソースファイルを毎回全部コンパイルしなければなりません。楽しそうですか？ いいえ、私もそうは思いません。
 
-However, you need a little more bookkeeping to make this all work. Because everything is just bits, you'd need a way to find out where the function or data you want to use actually is. The contents of the compiled files (the object files) isn't just raw binary, it contains <dfn>symbols</dfn>. This is just a word for the group of things that have actual binary information attached to them. Among other things, the object file keeps track of the symbol's name, section, size, and where its content is in the object file. A function is a symbol, because it contains instructions. A variable is also a symbol, as is data for bitmaps, sound, maps et cetera. Preprocessor `#define`s, `typedef`s and `struct`/`class` declarations are *not* symbols, because they only don't have actual content in them, but allow you to structure your code better.
+ただし、これを全部うまく働かせるには、もう少し帳簿付けが必要です。すべてはただのビットなので、使いたい関数やデータが実際にどこにあるのかを見つける方法が必要です。コンパイルされたファイル（オブジェクトファイル）の中身は、ただの生のバイナリではなく、<dfn>シンボル</dfn>を含んでいます。シンボルとは、実際のバイナリの情報が結び付いているものの集まりを指す言葉です。特に、オブジェクトファイルは、シンボルの名前、領域、大きさ、そしてその中身がオブジェクトファイルのどこにあるかを記録しています。関数は命令を含むのでシンボルです。変数もシンボルですし、ビットマップ、音、マップなどのデータもシンボルです。プリプロセッサの `#define`、`typedef`、`struct`/`class` の宣言は、シンボルでは*ありません*。実際の中身を持たず、コードをうまく構造化するためのものにすぎないからです。
 
-The other bookkeeping note is that each source/object file is a separate entity. In principle, it knows nothing about the outside world. This makes sense because it limits the dependency on other files, but it does create a little problem when you want to make files work together. This is where <dfn>declarations</dfn> come in.
+もう 1 つの帳簿付けの注意は、ソースファイルやオブジェクトファイルは、それぞれが独立した存在だということです。原則として、外の世界のことは何も知りません。ほかのファイルへの依存が限られるのでこれは理にかなっていますが、ファイル同士を連携させたいときには、ちょっとした問題になります。そこで<dfn>宣言</dfn>の出番です。
 
-You may have noticed that C is pretty strict when it comes to names of stuff. Before you can use anything, it requires you to mention what it is beforehand. For example, if you use a function `foo()` in your code and you never defined its code, or even if you put it after the call to `foo()`, the compiler will complain that it doesn't know what you're talking about. That is, it will say that ‘\`foo' is undeclared’. You have to admit it has a right to stop there: how would it know how to use the thing if you never told it what it was?
+C は、ものの名前についてかなり厳しいことに気づいたかもしれません。何かを使う前に、それが何なのかを前もって述べておく必要があります。たとえば、コードで関数 `foo()` を使うのに、そのコードを一度も定義していなかったり、`foo()` の呼び出しよりあとに定義していたりすると、コンパイラは、何の話か分からないと文句を言います。つまり、‘\`foo' is undeclared’ と言うのです。そこで止まるのももっともだと認めざるをえないでしょう。それが何なのかを一度も教えていないのに、どうやって使い方が分かるでしょうか？
 
-The code snippet below gives an example of when a reference is and is not declared, and why it's important to have a declaration. Function `a()` calls `foo()`, which is not known at the time, so an error is produced. Function `b()` also calls `foo()`, which *is* known at that time, but still gives an error because `foo()` just happens to require an integer as an argument. If the declaration wasn't mandatory and the call in `a()` was allowed, `foo()` would have been processing the wrong kind of information at runtime. There are ways around such problems, of course, languages like PHP, VB and others work fine without mandatory declarations, but the cost for that is speed and possibly a lot more runtime errors.
+下のコード片は、参照が宣言されている場合とされていない場合の例と、宣言があることがなぜ大事なのかを示しています。関数 `a()` は `foo()` を呼びますが、その時点ではまだ知られていないので、エラーになります。関数 `b()` も `foo()` を呼び、その時点では知られて*います*が、それでもエラーになります。`foo()` はたまたま引数に整数を必要とするからです。もし宣言が必須でなく、`a()` での呼び出しが許されていたら、`foo()` は実行時に間違った種類の情報を処理していたことになります。もちろん、こうした問題の回避策はあります。PHP や VB などの言語は、宣言が必須でなくてもちゃんと動きます。でも、その代償は速さと、おそらく実行時のエラーがずっと増えることです。
 
 ```c
 //# C requires identifiers to be declared or defined before first use.
@@ -778,9 +778,9 @@ void c()
 }
 ```
 
-Now back to our separate files, and the difference between declarations and definitions of symbols. A <dfn>definition</dfn> is something of actual content: it is what actually forms the symbol. Examples are the value(s) in variables, and the code in functions. A <dfn>declaration</dfn> is just an empty reference. It just says that there is *something* in the project with a particular name, and indicates how that something is supposed to be used: whether it's a function or variable, what datatype, which arguments, that sort of things. This is how you can use symbols from other object files.
+では、別々のファイルの話と、シンボルの宣言と定義の違いに戻りましょう。<dfn>定義</dfn>は実際の中身を持つもので、実際にシンボルを形作るものです。例としては、変数の値や、関数のコードがあります。<dfn>宣言</dfn>は、中身のない参照にすぎません。プロジェクトのどこかに、ある名前の*何か*があると述べ、その何かをどう使うべきか、つまり関数なのか変数なのか、データ型は何か、引数は何か、といったことを示すだけです。こうして、ほかのオブジェクトファイルのシンボルを使えるのです。
 
-You should be familiar with what a definition looks like. A declaration looks very similar. The basic variable declaration is the variable name and attributes (type, const, section) preceded by `extern`. For functions, replace the code block by a semi-colon. You can also add `extern` there, but it's not required.
+定義がどういう見た目かは、もうおなじみのはずです。宣言もよく似ています。基本的な変数の宣言は、変数の名前と属性（型、const、領域）の前に `extern` を付けたものです。関数の場合は、コードのブロックをセミコロンに置き換えます。そこにも `extern` を付けられますが、必須ではありません。
 
 ```c
 // --------------------------------------------------------------------
@@ -810,34 +810,34 @@ void foo(int x)
 }
 ```
 
-Now, a definition is also a declaration, but this does *not* work the other way. How can it, the declaration is supposed to be empty. The distinction is subtle, but it's the reason you might get multiple definition errors when linking the files together. Think of what would happen if you have the definition of function `foo()` in multiple files. Each file itself would know what `foo()` is because definitions are also declarations, so it would pass the compilation stage. So now you have multiple object files, each containing a symbol called `foo`. But then you try to link them into one file. The linker sees different versions of `foo`, and stops because it doesn't know which one you are actually trying to use. The moral here is that you can have as many declarations as you want, but there can be [only *one* definition](https://en.wikipedia.org/wiki/One_Definition_Rule).
+さて、定義は宣言でもありますが、その逆は成り立ち*ません*。成り立つはずがありません。宣言は空であるはずのものですから。この区別は微妙ですが、ファイルをリンクするときに多重定義のエラーが出ることがあるのは、これが理由です。関数 `foo()` の定義が複数のファイルにあったらどうなるか、考えてみてください。定義は宣言でもあるので、各ファイルは `foo()` が何かを知っており、コンパイルの段階は通ります。すると、それぞれ `foo` というシンボルを含むオブジェクトファイルが複数できます。でも、それらを 1 つのファイルにリンクしようとすると、リンカは別々の `foo` を見つけ、実際にどれを使おうとしているのか分からないので止まってしまいます。ここでの教訓は、宣言はいくつあってもいいが、[定義は*1 つ*だけ](https://en.wikipedia.org/wiki/One_Definition_Rule)、ということです。
 
-Another point I should raise is that the declaration defines how a symbol is to be dealt with, as it is the only point of reference if the definition is in another file. This means that, in theory, you could have a variable `var` defined as an `int`, but declared as a `short`, or even a function! While not exactly recommended, but it is an interesting item.
+もう 1 つ挙げておくべき点は、定義が別のファイルにある場合、宣言だけが唯一の参照先なので、シンボルをどう扱うかは宣言で決まる、ということです。つまり、理屈の上では、`int` として定義した変数 `var` を、`short` として、さらには関数として宣言することさえできるのです！ 決しておすすめはしませんが、興味深い点です。
 
-Lastly: the distinction of what should go in source files, and what in headers. Source files can actually contain anything, so that's an easy one. Remember that they will contain everything after the preprocessor step anyway, because that's what `#include` really does. So what matters is what you put in headers. The purpose of header files is to have a place for all the **non-symbol** stuff that you want to use in different source files. That means declarations, `#define`s, macros, `typedef`s, `struct`/`class` descriptions. It also means `static inline` functions, because these don't form symbols either, but are integrated in the functions that call them.
+最後に、ソースファイルに何を入れ、ヘッダーに何を入れるべきかの区別です。ソースファイルには実際何でも入れられるので、こちらは簡単です。どのみち、プリプロセッサの段階のあとには全部入ることになるのを思い出してください。`#include` が実際にするのはそういうことですから。なので、大事なのはヘッダーに何を入れるかです。ヘッダーファイルの目的は、複数のソースファイルで使いたい、**シンボルではない**ものすべての置き場所になることです。つまり、宣言、`#define`、マクロ、`typedef`、`struct`/`class` の記述です。`static inline` 関数もそうです。これもシンボルを作らず、呼び出し元の関数に組み込まれるからです。
 
-#### Summary
+#### まとめ
 
-All this stuff about separate compilation, declarations, and definitions is rather important for C programming, but the preceding text may be a little much to take in at once. So here is a summary of the most important points.
+分割コンパイル、宣言、定義についてのこうした話は、C のプログラミングにとってかなり大事ですが、ここまでの文章は一度に飲み込むには少し多すぎるかもしれません。なので、一番大事な点をまとめておきます。
 
--   **Symbols**. Symbols are those parts of the code that form actual binary content in the final program. This includes functions, variables, data, but not preprocessor or type description stuff.
--   **Declarations/definitions**. A definition of a symbol is where the actual content is. A declaration just says that something of a certain name exists, but will be added to the project later. Multiple (identical) declarations may exist, but there can be only one definition in the project. Definitions are also declarations.
--   **Source/object files are selfcontained entities**. They contain the definitions of the symbols that are in the code, and a list of references to outside symbols, as indicated by the declarations.
--   **Header files contain meta-data, not symbols**. Header files cannot be compiled, but are intended contain the ‘glue’ that allow difference sources to work together (i.e., declarations) and stuff that makes writing the sources easier (like `#define`s and macros). They are meant to be included in multiple files, so they cannot create symbols because that would lead to multiple definitions.
+-   **シンボル**。シンボルとは、最終的なプログラムで実際のバイナリの中身になる、コードの部分です。関数、変数、データが含まれますが、プリプロセッサや型の記述のようなものは含まれません。
+-   **宣言と定義**。シンボルの定義は、実際の中身がある場所です。宣言は、ある名前の何かが存在し、あとでプロジェクトに加えられることを述べるだけです。（同じ）宣言はいくつあってもいいですが、定義はプロジェクトに 1 つしかあってはいけません。定義は宣言でもあります。
+-   **ソースファイルとオブジェクトファイルは、それぞれ独立した存在**。コードにあるシンボルの定義と、宣言で示された外部のシンボルへの参照の一覧を含んでいます。
+-   **ヘッダーファイルは、シンボルではなくメタデータを含む**。ヘッダーファイルはコンパイルできませんが、別々のソースを連携させるための「のり」（つまり宣言）と、ソースを書きやすくするもの（`#define` やマクロなど）を入れるためのものです。複数のファイルから取り込まれることが前提なので、シンボルを作ってはいけません。作ると多重定義になってしまうからです。
 
-Potential problems during compilation or linking:
+コンパイルやリンクのときに起こりうる問題:
 
--   **\`foo' undeclared**. Compiler error. The identifier `foo` is not known at this point. Check the spelling, or add the appropriate declaration or header file containing the declaration.
--   **redefinition of \`foo'**. Compiler error. The identifier as a previous declaration or definition conflicting with the current one in the same file or included headers. Usually accompanied by a message of the previous definition.
--   **multiple definition of 'foo'**. Linker error. The symbol name `foo` is shared by multiple object files. Replace all but one definitions of `foo` in the source files with the appropriate declarations. Usually accompanied with a message indicating the object file with the other definition(s).
+-   **\`foo' undeclared**。コンパイラのエラー。識別子 `foo` が、この時点では知られていません。つづりを確かめるか、適切な宣言か、宣言を含むヘッダーファイルを足してください。
+-   **redefinition of \`foo'**。コンパイラのエラー。その識別子に、同じファイルか取り込んだヘッダーの中に、今のものと矛盾する以前の宣言か定義があります。たいていは、以前の定義についてのメッセージも一緒に出ます。
+-   **multiple definition of 'foo'**。リンカのエラー。シンボル名 `foo` が、複数のオブジェクトファイルで使われています。ソースファイルにある `foo` の定義を、1 つを除いて全部、適切な宣言に置き換えてください。たいていは、ほかの定義があるオブジェクトファイルを示すメッセージも一緒に出ます。
 
-### Data alignment {#ssec-data-align}
+### データのアラインメント {#ssec-data-align}
 
-Data alignment is about the ‘natural’ memory addresses of variables. It is often beneficial to have a variable of a certain length to start at an address divisible by that length. For example, a 32-bit variable likes to be put at addresses that are a multiple of 4. Processors themselves also have certain preferred alignments. Addressing will work faster if you stick to their native types and alignment (say, 32-bit everything for 32-bit CPUs). For PCs it is not required to do any of this, it'll just run slower. For RISC systems, however, things *must* be aligned properly or data gets mangled.
+データのアラインメントは、変数の「自然な」メモリアドレスについての話です。ある長さの変数は、その長さで割り切れるアドレスから始まっていると、得をすることがよくあります。たとえば、32 ビットの変数は、4 の倍数のアドレスに置かれるのを好みます。プロセッサ自体にも、好みのアラインメントがあります。ネイティブな型とアラインメント（たとえば、32 ビットの CPU なら全部 32 ビット）に従えば、アドレスの扱いが速くなります。PC ではこうしたことは必須ではなく、遅くなるだけです。でも、RISC のシステムでは、ものが正しく揃っていなければ*ならず*、そうでないとデータがめちゃくちゃになります。
 
-In most cases, the compiler will align things for you. It will put all halfwords on even boundaries and words on quad-byte boundaries. As long as you stick to the normal programming rules, you can remain completely oblivious to this alignment stuff. Except that you *won't* always stick to the rules. In fact, C is a language that allows you to break the rules whenever you feel like it. It trusts you to know what you're doing. Whether that trust is always justified is another matter <kbd>:P</kbd>
+ほとんどの場合、コンパイラがアラインメントをしてくれます。ハーフワードは全部偶数の境界に、ワードは 4 バイトの境界に置いてくれます。普通のプログラミングの規則に従っている限り、このアラインメントの話はまったく気にしなくて構いません。ただ、あなたは*いつも*規則に従うとは限りません。実際、C は、好きなときに規則を破らせてくれる言語です。あなたが自分のしていることを分かっていると信頼してくれるのです。その信頼がいつも正しいかどうかは、また別の話ですが <kbd>:P</kbd>
 
-The best example of breaking the rules is pointer casting. For example, most graphics converters will output the data as `u16` arrays, so you can copy it to VRAM with a simple `for` loop. You can speed up copying by roughly 160% if you copy by words (32-bit) rather than halfwords (16-bit). Run the *[txt_se2](text.html#ssec-demo-se2)* demo and see for yourself. All you have to do for this is one or two pointer casts, as shown here.
+規則を破る一番の例は、ポインタのキャストです。たとえば、ほとんどのグラフィックの変換ツールはデータを `u16` の配列として出力するので、単純な `for` ループで VRAM にコピーできます。ハーフワード（16 ビット）ではなくワード（32 ビット）単位でコピーすれば、コピーを約 160% 速くできます。*[txt_se2](text.html#ssec-demo-se2)* のデモを動かして、自分で確かめてみてください。そのためにやることは、ここに示すように、ポインタのキャストを 1 つか 2 つするだけです。
 
 
 ```c
@@ -856,13 +856,13 @@ for(ii=0; ii<fooSize/4; ii++)
 ```
 
 
-Both these routines copy `fooSize` bytes from `fooData` to VRAM. Only the second version is much faster because there are half as many loop iterations and also because the ARM CPU is just better at dealing with 32-bit chunks. The only danger here is that while `fooData` will be halfword aligned, it need *not* be word aligned, which is a requirement for the second version. For those readers that think casts like this and mis-alignment only happen to other people, think again: the faster copy routines (`memcpy()`, `CpuFastSet()`, and DMA too) cast to word pointers implicitly. Use them (and you should) and you run the risk of misalignment.
+どちらのルーチンも、`fooData` から VRAM に `fooSize` バイトをコピーします。ただ、2 つ目の版のほうがずっと速いです。ループの回数が半分で済むうえに、ARM の CPU は 32 ビットの塊を扱うほうが得意だからです。ここでの唯一の危険は、`fooData` はハーフワードの境界には揃っていますが、ワードの境界に揃っている*とは限らない*ことです。2 つ目の版には、それが必要なのです。こんなキャストやアラインメントのずれはよその人にしか起きないと思っている読者は、考え直してください。速いコピーのルーチン（`memcpy()`、`CpuFastSet()`、それに DMA も）は、暗黙のうちにワードのポインタにキャストします。それらを使えば（そして、使うべきです）、アラインメントがずれる危険を冒すことになります。
 
-There are many ways of ensuring proper alignment. The easiest way is to not mix converted data with the rest of your stuff. That is, don't #include data-files. This should suffice. Another method is to convert to `u32` arrays in the first place. In assembly files, you can control alignment by using the `.p2align *n*` directive, where *n* aligns to 2<sup>n</sup> bytes. C itself doesn't allow manual alignment, but there is an extension for this in GCC: `__attribute__(( aligned(4) ))`. Add that to the definition and it'll be word aligned. This is often `#define`d as `ALIGN4` in some headers. Files in GBFS are also always correctly aligned.
+正しいアラインメントを保証する方法はたくさんあります。一番簡単なのは、変換したデータをほかのものと混ぜないことです。つまり、データのファイルを #include しないことです。これで十分なはずです。別の方法は、最初から `u32` の配列に変換しておくことです。アセンブリのファイルでは、`.p2align *n*` ディレクティブでアラインメントを制御できます。*n* を指定すると、2<sup>n</sup> バイトの境界に揃えます。C そのものには手動でアラインメントを指定する手段はありませんが、GCC にはそのための拡張があります。`__attribute__(( aligned(4) ))` です。これを定義に足せば、ワードの境界に揃います。ヘッダーによっては、これが `ALIGN4` として `#define` されています。GBFS のファイルも、常に正しく揃っています。
 
-#### Struct alignment
+#### 構造体のアラインメント
 
-One other area where alignment can cause problems is in `struct` definitions. Look at the following code. Here we have a `struct` named `FOO` consisting of one byte, *b*, one word *w* and one halfword *h*. So that's 1+4+2=7 bytes for the `struct` right? Wrong. Because of the alignment requirement, *w* doesn't immediately follow *b* but leaves 3 bytes of padding. When defining arrays of this type, you'll also see that there are also two padding bytes after *h*, because otherwise later array entries would run into trouble.
+アラインメントが問題を起こしうるもう 1 つの場面が、`struct` の定義です。次のコードを見てください。ここには、1 バイトの *b*、1 ワードの *w*、1 ハーフワードの *h* からなる、`FOO` という名前の `struct` があります。なので、`struct` の大きさは 1+4+2=7 バイトですよね？ 違います。アラインメントの要件のせいで、*w* は *b* のすぐあとには続かず、3 バイトの詰め物（パディング）が入ります。この型の配列を定義すると、*h* のあとにも 2 バイトのパディングがあることが分かります。そうしないと、配列のあとのほうの要素で困ったことになるからです。
 
 ```c
 // one byte, one word, one halfword. 7 byte struct? 
@@ -890,13 +890,13 @@ struct FOO foos[4]=
 // 40 00 00 00 | 41 42 43 44 | 45 46 00 00
 ```
 
-The *real* size is actually 12 bytes. Not only is this almost twice the size, if you ever try to copy the array using a hard-coded 7 rather than `sizeof(struct FOO)`, you completely mess it up. Take this lesson to heart. It's a very easy mistake to make and difficult to detect after the fact. If you were unaware of this fact and you've already done some GBA coding, check your `struct` (or `class`) declarations now; chances are there are gaps that shouldn't be there. Simply rearranging some of the members should suffice to make them fit better. Note that this is not specific to the GBA: `struct`s on PCs may behave the same way, as I noticed when I was writing my TGA functions.
+*本当の*大きさは、実は 12 バイトです。ほぼ 2 倍の大きさになるだけでなく、`sizeof(struct FOO)` ではなく決め打ちの 7 を使って配列をコピーしようとすると、完全にめちゃくちゃになります。この教訓を肝に銘じてください。とても犯しやすい間違いで、あとから見つけるのは難しいです。このことを知らずに、すでに GBA のコードを書いたことがあるなら、今すぐ自分の `struct`（や `class`）の宣言を確かめてください。あるべきでないすき間がある可能性が高いです。メンバーをいくつか並べ替えるだけで、うまく収まるはずです。なお、これは GBA に限った話ではありません。PC の `struct` も同じように振る舞うことがあります。私は、TGA の関数を書いていたときにそれに気づきました。
 
-There are ways of forcing packing, using the ‘`__attribute__((packed))`’ attribute. If `struct FOO` had that, it really would be 7 bytes long. The downside of this is that the non-byte members could be mis-aligned, and the compiler emits code to put the value together byte for byte. This is very much slower than the non-packed version, so only use this attribute if you have no other choice. What happens with mis-aligned (half)words then I can't tell you though, but I'm sure it's not pretty.
+‘`__attribute__((packed))`’ 属性を使って、詰め込みを強制する方法もあります。`struct FOO` にこれを付ければ、本当に 7 バイトになります。その欠点は、バイト以外のメンバーのアラインメントがずれることがあり、コンパイラが値をバイトごとに組み立てるコードを出力することです。これは詰め込まない版よりずっと遅いので、ほかに選択肢がない場合にだけ、この属性を使ってください。アラインメントがずれた（ハーフ）ワードがその後どうなるかは私には分かりませんが、ろくなことにならないのは確かでしょう。
 
-:::tip Forcing alignment and packing
+:::tip アラインメントと詰め込みを強制する
 
-GCC has two attributes that allow you to force alignment of arrays, and remove member-alignment in `struct`s.
+GCC には、配列のアラインメントを強制し、`struct` のメンバーのアラインメントをなくすための属性が 2 つあります。
 
 ```c
 // Useful macros
@@ -914,11 +914,11 @@ struct FOO {...} PACKED;
 
 :::
 
-#### Devkits and struct alignment {#sssec-devkit-align}
+#### 開発キットと構造体のアラインメント {#sssec-devkit-align}
 
-As far as I've been able to tell, `struct`s have always had word alignment. This was useful because it made copying `struct`s faster. C allows you to copy structs with a single assignment, just like the standard data types. Because of the word-alignment, these copies are fast because GCC will make use of ARM's block-copy instructions, which are much faster than copying member by member.
+私の知る限り、`struct` は昔からずっとワードの境界に揃えられていました。これは `struct` のコピーを速くしてくれるので便利でした。C では、標準のデータ型と同じように、1 回の代入で構造体をコピーできます。ワードの境界に揃っているので、GCC は ARM のブロックコピーの命令を使えます。これはメンバーを 1 つずつコピーするよりずっと速いので、こうしたコピーは速くなるのです。
 
-However, this does not seem to be true under devkitARM r19 (and presumably higher) anymore. The new rule seems to be that `struct`s are aligned to their largest member. This does make more sense as a struct of two bytes would actually be two bytes long. However, it does mean that GCC will now call `memcpy()` for non-aligned `struct`s. Apart from it being a function with quite a bit of overhead (i.e., it's *very* slow if you want to copy a single small `struct`), it will actually **fail** to produce correct results in some cases. The problem is that low-length copies it will copy by the byte, which is something you cannot do for VRAM, OAM, or the palette. For example, objects that we'll see later use a `struct` of four halfwords; using a `struct` copy there, something I am very fond of doing, screws up everything. The only way to make it work properly is to force word alignment on the `struct`.
+でも、devkitARM r19（とおそらくそれ以降）では、もうそうではないようです。新しい規則では、`struct` は一番大きなメンバーに合わせて揃えられるようです。2 バイトの構造体が実際に 2 バイトの長さになるので、これはより理にかなっています。でも、そのせいで、GCC はアラインメントが揃っていない `struct` に対して `memcpy()` を呼ぶようになりました。それなりのオーバーヘッドがある関数だというだけでなく（つまり、小さな `struct` を 1 つコピーしたいだけなら*とても*遅いです）、場合によっては正しい結果を出すのに**失敗**します。問題は、短いコピーではバイトごとにコピーすることで、それは VRAM、OAM、パレットにはできないことです。たとえば、あとで見るオブジェクトは 4 つのハーフワードからなる `struct` を使いますが、そこで `struct` のコピーを使う（私はこれが大好きなのですが）と、全部がめちゃくちゃになります。正しく動かす唯一の方法は、`struct` にワードのアラインメントを強制することです。
 
 ```c
 // This doesn't work on devkitARM r19 anymore
@@ -942,42 +942,42 @@ OBJ_ATTR a, b;
 b= a;   // No memcpy == no fail and over 10 times faster
 ```
 
-:::tip Forcing struct-alignment is a Good Thing
+:::tip 構造体のアラインメントを強制するのはよいこと
 
-The rules for `struct` alignment have changed since devkitARM r19. Instead of being always word-aligned, they are now aligned as well as their members will allow. If this means they're not necessarily word-aligned, then they will use `memcpy()` for `struct` copies, which is slow for small structs, and may even be wrong (see [next section](#ssec-data-memcpy)). If you want to be able to do `struct` copies fast and safe, either force alignment or cast to other datatypes.
+`struct` のアラインメントの規則は、devkitARM r19 から変わりました。常にワードの境界に揃うのではなく、メンバーが許す範囲で揃えられるようになりました。その結果、ワードの境界に揃うとは限らない場合は、`struct` のコピーに `memcpy()` が使われます。これは小さな構造体には遅く、間違った結果になることさえあります（[次の節](#ssec-data-memcpy)を参照）。`struct` のコピーを速く安全にしたいなら、アラインメントを強制するか、別のデータ型にキャストしてください。
 
 :::
 
-### Copying, memcpy() and sizeof {#ssec-data-memcpy}
+### コピー、memcpy()、sizeof {#ssec-data-memcpy}
 
-There are many different ways of copying data on this platform. Arrays, `struct` copies, standard copiers like `memcpy()`, and GBA specific routines like `CpuFastSet()` and DMA. All of these have their own strengths and weaknesses. All of them can be affected by misalignment and the no-byte-write rule. I discuss some of them in the [txt_se2](text.html#ssec-demo-se2) demo.
+このプラットフォームには、データをコピーするさまざまな方法があります。配列、`struct` のコピー、`memcpy()` のような標準のコピー関数、`CpuFastSet()` や DMA のような GBA 専用のルーチンです。どれにも長所と短所があります。どれも、アラインメントのずれとバイト書き込み禁止の規則の影響を受けることがあります。そのいくつかについては、[txt_se2](text.html#ssec-demo-se2) のデモで説明しています。
 
-I've chosen to use `memcpy()` in the early demos for a number of reasons. The main one is that it is part of the standard C library, meaning that C programmers should already be familiar with it. Secondly, it is somewhat optimized (see the txt_se2 demo for details). However, there are two potential pitfalls with the routine. The first is data alignment (yes, *that* again). If *either* the source *or* the destination is not word-aligned, you're in trouble. Secondly, if the number of bytes is too small, you're in trouble too.
+最初のほうのデモで `memcpy()` を使うことにしたのには、いくつか理由があります。一番の理由は、それが C の標準ライブラリの一部で、C のプログラマならもう知っているはずだからです。2 つ目に、ある程度は最適化されているからです（詳しくは txt_se2 のデモを見てください）。でも、このルーチンには落とし穴が 2 つあります。1 つ目はデータのアラインメントです（そう、また*それ*です）。コピー元とコピー先の*どちらか*がワードの境界に揃っていなければ、困ったことになります。2 つ目に、バイト数が少なすぎても、困ったことになります。
 
-Both of these have to do with the basic function of `memcpy()`, namely to be a fast *byte* copier. But as you know, you can't copy single bytes to VRAM directly. Fortunately, it has an optimised mode that uses an unrolled word-copy loop if two conditions are satisfied:
+どちらも、`memcpy()` の基本的な役割、つまり速い*バイト*のコピー関数であることに関係しています。でも、知ってのとおり、VRAM に直接 1 バイトずつコピーすることはできません。幸い、これには、次の 2 つの条件を満たすと、展開したワードのコピーのループを使う最適化されたモードがあります。
 
-1.  When both source and destinations are word aligned.
-2.  When you are copying more than 16 bytes.
+1.  コピー元とコピー先の両方がワードの境界に揃っているとき。
+2.  16 バイトより多くコピーするとき。
 
-This is usually the case so I figured it'd be safe enough for the demos. There are also look-alikes in libtonc that do the same thing only better, namely `memcpy16()` and `memcpy32()`, but these are in assembly so I thought I wouldn't lay them on you so soon. Highly recommended for later though.
+普通はこれを満たすので、デモには十分安全だろうと考えました。libtonc にも、同じことをもっとうまくやる、よく似た関数があります。`memcpy16()` と `memcpy32()` です。ただ、これらはアセンブリで書かれているので、こんなに早く紹介するのはやめておこうと思いました。でも、あとでぜひ使ってください。
 
-On a related subject, there is also `memset()` for memory fills. Be careful with that one, because that will *only* work with bytes. Tonclib also includes 16- and 32-bit versions of this routine, but also in assembly.
+関連する話題として、メモリを埋めるための `memset()` もあります。これには気をつけてください。バイト単位で*しか*動かないからです。tonclib には、このルーチンの 16 ビット版と 32 ビット版もありますが、これもアセンブリで書かれています。
 
-The last thing I want to discuss is the `sizeof()` operator. In other tutorials you will see this being used to find the size in bytes of arrays, which is then used in `memcpy()`. It's a good procedure but will not always work. First, `sizeof()` actually gives the size of the *variable*, which need not always be the array itself. For example, if you use it on a pointer to the array, it'll give the size of the pointer and *not* of the array. The compiler never complains, but you might when hardly anything is copied. Secondly, `sizeof()` is an *operator*, not a function. It is resolved at compile-time, so it needs to be able to find the size at that time as well. To do this, either the declaration (in the header) should indicate the size, or the array definition (in the source file) should be visible.
+最後に話しておきたいのは、`sizeof()` 演算子です。ほかのチュートリアルでは、配列の大きさをバイト数で求めるのにこれを使い、その値を `memcpy()` に渡しているのを見かけるでしょう。よいやり方ですが、いつもうまくいくとは限りません。まず、`sizeof()` は実際には*変数*の大きさを返すので、それが配列そのものとは限りません。たとえば、配列へのポインタに使うと、配列*ではなく*ポインタの大きさを返します。コンパイラは決して文句を言いませんが、ほとんど何もコピーされなかったとき、あなたは文句を言いたくなるでしょう。2 つ目に、`sizeof()` は関数ではなく*演算子*です。コンパイル時に解決されるので、その時点で大きさが分かる必要があります。そのためには、（ヘッダーの）宣言に大きさが書いてあるか、（ソースファイルの）配列の定義が見えている必要があります。
 
-Bottom line: you can use `sizeof()`, just pay attention to what you use it on.
+結論: `sizeof()` は使って構いませんが、何に対して使うかに注意してください。
 
-Okay, that was the long and boring –yet necessary– section on data. Congratulations if you've managed to stay awake till this point, especially if you've actually understood all of it. It's okay if you didn't though, in most cases you won't run into the problems discussed here. But just remember this section for if you do run into trouble when copying and you can't find it in the code; it might save you a few hours of debugging.
+さて、長くて退屈な――でも必要な――データの節は以上です。ここまで眠らずにいられたなら、おめでとうございます。全部理解できたなら、なおさらです。理解できなくても大丈夫です。ほとんどの場合、ここで話した問題にはぶつかりません。でも、コピーのときに問題が起きて、コードの中に原因が見つからないときのために、この節のことを覚えておいてください。デバッグの時間を何時間か節約できるかもしれません。
 
-### Data interpretation demo {#ssec-data-demo}
+### データの解釈のデモ {#ssec-data-demo}
 
-The *bm_modes* is an example of how the same data can result in different results depending on interpretation (in this case, modes 3, 4 and 5). In the code below, I make *one* copy into VRAM, and switch between the modes using Left and Right. The results can be seen in {*@fig:bm-modes}a-c.
+*bm_modes* は、同じデータが解釈（ここではモード 3、4、5）によって違う結果になる例です。下のコードでは、VRAM に*1 回だけ*コピーし、左右のキーでモードを切り替えます。結果は {*@fig:bm-modes}a〜c で見られます。
 
-I've arranged the data of the bitmap in such a way that the name of the current mode can be read clearly, as well as indicated the mode's boundaries in memory. Because the data intended for the other modes is still present, but not interpreted as intended, that part of the bitmap will look a little distorted. And that's partly the point of the demo: when filling VRAM, you need to know how the GBA will use the data in it, and make sure it'll be used. If the bitmap ends up being all garbled, this is the likely suspect; check the bitdepth, dimensions and format (linear, tiled, compressed, etc) and if something conflicts, fix it.
+ビットマップのデータは、今のモードの名前がはっきり読めるように、そしてメモリ上のモードの境界が分かるように並べてあります。ほかのモード向けのデータもまだ残っていますが、意図したとおりには解釈されないので、ビットマップのその部分は少しゆがんで見えます。そして、それがこのデモの要点の 1 つです。VRAM を埋めるときは、GBA がその中のデータをどう使うのかを知り、ちゃんと意図したとおりに使われるようにする必要があります。ビットマップが全部めちゃくちゃになったら、これが一番怪しいです。ビット深度、大きさ、形式（線形、タイル、圧縮など）を確かめ、何か食い違っていたら直してください。
 
-Now, sometimes this is not as easy as it sounds. The general procedure for graphics is to create it on the PC, then use an exporter tool to convert it to a raw binary format, then copy it to VRAM. If the exporter has been given the wrong options, or if it can't handle the image in the first place, you'll get garbage. This can happen with some of the older tools. In some cases, it's the bitmap editor that is the culprit. For paletted images, a lot depends on the exact layout of the palette, and therefore it is **vital** that you have a bitmap editor that allows total control over the palette, and leaves it intact when saving. Microsoft Paint and Pyxel Edit for example do neither. Even very expensive photo editing tools don't, so be careful.
+さて、これは言うほど簡単ではないこともあります。グラフィックの一般的な手順は、PC で作り、出力ツールで生のバイナリ形式に変換し、それを VRAM にコピーすることです。出力ツールに間違ったオプションを与えたり、そもそもツールがその画像を扱えなかったりすると、ゴミになります。古いツールでは、これが起きることがあります。ビットマップエディタが犯人の場合もあります。パレットを使う画像では、パレットの正確な並びに多くのことがかかっているので、パレットを完全に制御でき、保存するときにそのまま残してくれるビットマップエディタを使うことが**欠かせません**。たとえば Microsoft ペイントや Pyxel Edit は、どちらもできません。とても高価な画像編集ツールでさえできないことがあるので、気をつけてください。
 
-For this image, I used \<plug\>my own bitmap editor [Usenti](https://www.coranac.com/projects/#usenti)\</plug\>, which not only has some nice palette control options, and tiling functions, but a built-in GBA graphics exporter as well. To make the background be the same color in all modes, the two bytes of the 16-bit background color of modes 3 and 5 had to serve as palette entries for mode 4, both using that 16-bit color again. In this case, the color is `0x080F`, sort of a brownish color. The bytes are 8 and 15, so that's the palette entries where the color goes too. Normally you don't have to worry about switching bitdepths mid-game, but knowing how to read data like this is a useful debugging skill.
+この画像には、\<plug\>私自身のビットマップエディタ [Usenti](https://www.coranac.com/projects/#usenti)\</plug\> を使いました。パレットを制御するよいオプションとタイルの機能があるだけでなく、GBA のグラフィックの出力機能も内蔵しています。すべてのモードで背景を同じ色にするために、モード 3 と 5 の 16 ビットの背景色の 2 つのバイトを、モード 4 のパレットのエントリとして使い、どちらにもまたその 16 ビットの色を入れる必要がありました。ここでは、その色は `0x080F` で、茶色っぽい色です。バイトは 8 と 15 なので、その色を入れるパレットのエントリも 8 番と 15 番です。普通は、ゲームの途中でビット深度を切り替えることを気にする必要はありませんが、こうしたデータの読み方を知っておくのは、デバッグに役立つ技術です。
 
 ```c
 #include <string.h>
@@ -1020,29 +1020,29 @@ int main()
 <td>
   <div class="cpt" style="width:240px">
   <img src="./img/demo/bm_modes_3.png" alt="mode3 screen">
-  <b>{*@fig:bm-modes}a</b>: <tt>bm_modes</tt> in mode 3.
+  <b>{*@fig:bm-modes}a</b>: モード 3 の <tt>bm_modes</tt>。
   </div>
 <td>
   <div class="cpt" style="width:240px">
   <img src="./img/demo/bm_modes_4.png" alt="mode4 screen">
-  <b>{*@fig:bm-modes}b</b>: <tt>bm_modes</tt> in mode 4.
+  <b>{*@fig:bm-modes}b</b>: モード 4 の <tt>bm_modes</tt>。
   </div>
 <tr>
 <td>
   <div class="cpt" style="width:240px">
 <img src="./img/demo/bm_modes_5.png" alt="mode5 screen">
-  <b>{*@fig:bm-modes}c</b>: <tt>bm_modes</tt> in mode 5.
+  <b>{*@fig:bm-modes}c</b>: モード 5 の <tt>bm_modes</tt>。
   </div>
 <td>&nbsp;
 </table>
 </div>
 
-## Conclusions {#sec-conc}
+## まとめ {#sec-conc}
 
-Now we've seen some of the basics of the GBA bitmap modes: the properties of modes 3, 4 and 5, page flipping, rudimentary drawing for mode 3 and one of the most important rules of VRAM interactions: you cannot write to VRAM in bytes. There is much more that can be said, of course. Bitmap graphics is a rich subject, but going into more detail right now may not be the best idea. For one, the bitmap modes are very rarely used in games anyway, but also because there are other things to talk about as well. Things like button input, which is what the next chapter is about.
+これで、GBA のビットマップモードの基本をいくつか見てきました。モード 3、4、5 の性質、ページフリップ、モード 3 での初歩的な描画、そして VRAM とのやり取りで一番大事な規則の 1 つ、VRAM にはバイト単位で書き込めない、ということです。もちろん、話せることはまだまだたくさんあります。ビットマップのグラフィックは奥の深い話題ですが、今もっと詳しく立ち入るのは得策ではないかもしれません。1 つには、ビットマップモードはどのみちゲームではめったに使われないからですが、ほかにも話すべきことがあるからでもあります。たとえばボタンの入力で、それが次の章の話題です。
 
-This chapter also discussed a few things about handling data, a very important topic when you're this close to the hardware. Datatypes matter, especially when accessing memory through pointers, and you need to be aware of the differences between them, and the opportunities and dangers of each. Even if you don't remember every little detail in the data section, at least remember where to look when things go screwy.
+この章では、データの扱い方についてもいくつか話しました。ここまでハードウェアに近いところでは、とても大事な話題です。データ型は大事です。特にポインタを通してメモリにアクセスするときはそうで、データ型同士の違いと、それぞれの利点と危険を意識しておく必要があります。データの節の細かいところを全部覚えていなくても、何かがおかしくなったときにどこを見ればいいかだけは覚えておいてください。
 
-Before continuing with further chapters, this may be a good time to do some experimenting with data: try changing the data arrays and see what happens. Look at the different data interpretations, different casts, and maybe some intentional errors as well, just to see what kinds of problems you might face at some point. It's better to make mistakes early, while programs are still short and simple and you have less potential problems.
+次の章に進む前に、データでいろいろ試してみるのもいいかもしれません。データの配列を変えてみて、どうなるか見てみてください。データのさまざまな解釈、さまざまなキャスト、それにわざと間違いを入れてみるのもいいでしょう。いずれ直面するかもしれない問題の種類を知るためです。プログラムがまだ短くて単純で、問題が起きる余地が少ないうちに、早めに間違えておくほうがいいのです。
 
-Or not, of course <kbd>:P</kbd>. Maybe it's worth waiting a little longer with that; or at least until we've covered basic input, which allows for much more interesting things than just passive images.
+もちろん、やらなくても構いません <kbd>:P</kbd>。もう少し待ったほうがいいかもしれません。少なくとも、基本的な入力を扱うまでは。入力が使えれば、ただ眺めるだけの画像よりずっと面白いことができるようになります。

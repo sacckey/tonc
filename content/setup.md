@@ -1,111 +1,111 @@
-# 2. Setting up a development environment
+# 2. 開発環境の準備
 
 <!-- toc -->
 
-## Introduction {#sec-intro}
+## はじめに {#sec-intro}
 
-Unless you want to punch in the instructions in binary in a hex editor, you'll need a development environment to turn human readable code into machine code. This chapter will show you how to set up the necessary components and use them to compile Tonc's examples.
+16進エディタで命令を 2 進数で打ち込みたいのでなければ、人が読めるコードを機械語に変換するための開発環境が必要です。この章では、必要な部品を準備して、それを使って Tonc の例をコンパイルする方法を説明します。
 
-By the end you should have:
+この章を終えるころには、次のものがそろっているはずです。
 
-* A text editor
-* A GBA emulator _(mGBA)_
-* A cross-compiler toolchain _(devkitARM)_
-* Libraries used for GBA programming _(libtonc in particular)_
-* The examples which accompany this tutorial
+* テキストエディタ
+* GBA エミュレータ _(mGBA)_
+* クロスコンパイラのツールチェーン _(devkitARM)_
+* GBA プログラミングで使うライブラリ _(特に libtonc)_
+* このチュートリアルに付属する例
 
 
-:::warning Some command-line skills required
+:::warning コマンドラインの基本的な知識が必要です
 
-To compile a GBA game, you'll need a basic undestanding of the command-line. If this is unfamiliar to you, the following [Unix command-line tutorial](https://command-line-tutorial.readthedocs.io/) may be helpful.
+GBA のゲームをコンパイルするには、コマンドラインの基本的な理解が必要です。なじみがない場合は、こちらの [Unix のコマンドラインのチュートリアル](https://command-line-tutorial.readthedocs.io/)が役に立つかもしれません。
 
-If you're on Windows, you should use the **MSYS2** terminal which comes with devkitARM. On other OS's, the built-in terminal should be perfectly adequate.
+Windows を使っている場合は、devkitARM に付いてくる **MSYS2** のターミナルを使ってください。ほかの OS では、標準のターミナルで十分です。
 
 :::
 
 
-## Choosing a text editor {#sec-editor}
+## テキストエディタを選ぶ {#sec-editor}
 
-A decent text editor is essential for programming. At the bare minimum you'll want something that supports syntax highlighting and gives you control over indentation and line endings. That means _notepad.exe_ sadly won't cut it.
+プログラミングには、まともなテキストエディタが欠かせません。最低でも、構文の色分けに対応していて、インデントと改行コードを自分で制御できるものが必要です。つまり、残念ながら _notepad.exe_（メモ帳）では力不足です。
 
-There are many options, and you may already have a favourite. But in case you don't, here are some suggestions:
+選択肢はたくさんあり、すでにお気に入りがあるかもしれません。もしなければ、いくつかおすすめを挙げます。
 
-- [Visual Studio Code](https://code.visualstudio.com/) - a popular and featureful editor that works on Linux, Windows & Mac
+- [Visual Studio Code](https://code.visualstudio.com/) - Linux、Windows、Mac で動く、人気で多機能なエディタ
 
-- [Kate](https://kate-editor.org/) - another powerful editor, a bit lighter and fully open-source
+- [Kate](https://kate-editor.org/) - もう 1 つの強力なエディタ。少し軽く、完全にオープンソース
 
-- [Geany](https://www.geany.org/) - runs well on low-end machines and is still very extensible via plugins
+- [Geany](https://www.geany.org/) - 性能の低いマシンでもよく動き、プラグインで大きく拡張できる
 
-- [Notepad++](https://notepad-plus-plus.org/) - a lightweight and widely-loved choice on Windows
+- [Notepad++](https://notepad-plus-plus.org/) - Windows で広く愛されている、軽量な選択肢
 
-Once you've chosen an editor and gotten comfortable with it, you can move onto the next section.
+エディタを選んで使い慣れたら、次の節に進んでください。
 
 <div class="cpt cblock" style="width:420px;">
 <img src="img/setup/text_editor.png" id="fig:text-editor"><br>
-<b>{*@fig:text-editor}</b>: Editing a file in VS Code.
+<b>{*@fig:text-editor}</b>: VS Code でファイルを編集しているところ。
 </div>
 
-In many editors it's possible to set a hotkey (usually <kbd>F5</kbd> or <kbd>Ctrl+Enter</kbd>) to compile and run your code. This can be an effective workflow, but for the purposes of this tutorial we'll use the command-line, because it's essential to know what's going on under the hood.
+多くのエディタでは、コードをコンパイルして実行するショートカットキー（たいていは <kbd>F5</kbd> か <kbd>Ctrl+Enter</kbd>）を設定できます。これは効率のよい作業の流れになりえますが、このチュートリアルではコマンドラインを使います。内部で何が起きているかを知ることが欠かせないからです。
 
-Likewise, code-completion and error highlighting are also valuable features which you may want to spend time setting up, but are outside the scope of this chapter.
+同じように、コード補完やエラーの強調表示も、時間をかけて設定する価値のある便利な機能ですが、この章の範囲外です。
 
 
-## Installing a GBA emulator {#sec-emu}
+## GBA エミュレータを入れる {#sec-emu}
 
-Needless to say, you'll need a way to actually run your GBA programs. Testing on real hardware from time to time is highly recommended (and part of the fun), but for everyday development you'll want something more convenient. That's where emulators come in.
+言うまでもなく、作った GBA のプログラムを実際に動かす手段が必要です。ときどき実機でテストすることは強くおすすめしますし、それも楽しみの 1 つです。でも、毎日の開発にはもっと手軽なものが欲しいでしょう。そこで、エミュレータの出番です。
 
-At the time of writing, the most suitable emulator for GBA development is [<dfn>mGBA</dfn>](https://mgba.io/). It's highly accurate and has features for developers such as memory viewers, debug logging, and a GDB server for step debugging, all of which will make your life a lot easier when things go wrong (and they will)!
+これを書いている時点で、GBA の開発に最も向いているエミュレータは [<dfn>mGBA</dfn>](https://mgba.io/) です。とても正確で、メモリビューア、デバッグ用のログ出力、ステップ実行でデバッグするための GDB サーバーなど、開発者向けの機能があります。どれも、うまくいかないとき（そして、そういうときは必ず来ます）に、ずっと楽にしてくれるはずです！
 
 <div class="cpt cblock" style="width:320px;" markdown>
 <img src="img/setup/mgba_game.png" id="fig:mgba-game"><br>
-<b>{*@fig:mgba-game}</b>: A GBA ROM running inside mGBA
+<b>{*@fig:mgba-game}</b>: mGBA の中で動いている GBA の ROM
 </div>
 
-Other emulators which you might want to use are: [NanoBoyAdvance](https://github.com/nba-emu/NanoBoyAdvance) and [SkyEmu](https://github.com/skylersaleh/SkyEmu), which are both _cycle accurate_ and effectively the closest you can get to playing on real hardware without actually doing so.
+ほかに使ってみるとよいエミュレータには、[NanoBoyAdvance](https://github.com/nba-emu/NanoBoyAdvance) と [SkyEmu](https://github.com/skylersaleh/SkyEmu) があります。どちらも _サイクル単位で正確_ で、実機を使わずに実機で遊ぶ感覚に最も近づける選択肢です。
 
-Finally [no$gba](https://problemkaputt.github.io/gba.htm) (debug version) is a somewhat older and less accurate Windows-only GBA emulator, but has some unique debugging features you won't find elsewhere. Namely a visual debugger, performance profiler, CPU usage meters, and memory access checking which can catch buffer overflows and such. If you can get it working, it's an invaluable tool!
+最後に、[no$gba](https://problemkaputt.github.io/gba.htm)（デバッグ版）は、やや古く正確さも劣る Windows 専用の GBA エミュレータですが、ほかでは見られない独自のデバッグ機能を持っています。具体的には、画面で操作するデバッガ、性能のプロファイラ、CPU の使用率メーター、そしてバッファオーバーフローなどを見つけられるメモリアクセスのチェックです。うまく動かせれば、とても貴重な道具になります！
 
 
-## Installing devkitARM {#sec-dkp}
+## devkitARM を入れる {#sec-dkp}
 
-<dfn>devkitARM</dfn> has been the standard toolchain for GBA homebrew for many years. It is provided by a team called <dfn>devkitPro</dfn> (dkP), though informally the tools are often referred to as devkitPro too (much to the maintainers' lament).
+<dfn>devkitARM</dfn> は、長年にわたって GBA の自作ソフト（homebrew）の標準的なツールチェーンです。<dfn>devkitPro</dfn>（dkP）というチームが提供していますが、非公式には、これらのツールもよく devkitPro と呼ばれます（保守している人たちはそれを嘆いていますが）。
 
-To install devkitARM, visit the [devkitPro Getting Started](https://devkitpro.org/wiki/Getting_Started) page and follow the instructions for your OS.
+devkitARM を入れるには、[devkitPro の Getting Started](https://devkitpro.org/wiki/Getting_Started) のページを開いて、自分の OS 向けの手順に従ってください。
 
-:::danger Do not use spaces in paths
+:::danger パスにスペースを使わないでください
 
-devkitARM uses [`make`](https://en.wikipedia.org/wiki/Make_(software)) for building projects, which doesn't cope well with spaces in paths (such as `My Documents`). The reason for this is that `make` uses spaces as a separator between command-line options, but unlike e.g. shell scripts, it doesn't provide an adequate form of quoting/escaping, especially not when working with lists of filenames.
+devkitARM はプロジェクトのビルドに [`make`](https://en.wikipedia.org/wiki/Make_(software)) を使いますが、これは（`My Documents` のような）スペースを含むパスをうまく扱えません。これは、`make` がスペースをコマンドラインのオプションの区切りとして使うのに、シェルスクリプトなどとは違って、引用符やエスケープの十分な手段を持っていないためです。ファイル名の一覧を扱うときは、なおさらです。
 
 :::
 
-### Windows tips {#ssec-dkp-win}
+### Windows の場合のヒント {#ssec-dkp-win}
 
-If you are on Windows, there is a GUI installer which downloads and installs the components automatically. Be sure to select "GBA Development" during installation, as shown in @fig:devkitpro.
+Windows を使っている場合は、部品を自動でダウンロードしてインストールしてくれる、GUI のインストーラがあります。@fig:devkitpro のように、インストールのときに必ず「GBA Development」を選んでください。
 
 <div class="cpt cblock" style="width:420px;">
 <img src="img/setup/devkitpro.png" id="fig:devkitpro"><br>
-<b>{*@fig:devkitpro}</b>: Installing devkitARM with the GBA packages on Windows.
+<b>{*@fig:devkitpro}</b>: Windows で、GBA 用のパッケージと一緒に devkitARM を入れているところ。
 </div>
 
 
-### Linux & Mac tips {#ssec-dkp-unix}
+### Linux と Mac の場合のヒント {#ssec-dkp-unix}
 
-If you are using Linux or Mac, after following the instructions on dkP's Getting Started page, you should install the `gba-dev` package group via `dkp-pacman` in your terminal _(or just `pacman` if you use Arch Linux)_. To do this, run the following command:
+Linux か Mac を使っている場合は、dkP の Getting Started のページの手順に従ったあと、ターミナルで `dkp-pacman` を使って `gba-dev` のパッケージグループを入れてください _(Arch Linux を使っているなら、ただの `pacman` で構いません)_。それには、次のコマンドを実行します。
 
 ```sh
 sudo dkp-pacman -S gba-dev
 ```
 
-When asked which packages to install _("Enter a selection (default=all):")_ you should simply hit <kbd>Enter</kbd> to install everything in the entire `gba-dev` group.
+どのパッケージを入れるかを聞かれたら _("Enter a selection (default=all):")_、そのまま <kbd>Enter</kbd> を押して、`gba-dev` グループの全部を入れてください。
 
 
-## Obtaining Tonc's example code {#sec-examples}
+## Tonc の例のコードを手に入れる {#sec-examples}
 
-This tutorial comes with a [full set of examples](https://github.com/gbadev-org/libtonc-examples) to demonstrate the concepts taught in each chapter.
+このチュートリアルには、各章で教える概念を実際に示すための、[例の一式](https://github.com/gbadev-org/libtonc-examples)が付いています。
 
-Additionally, <dfn>libtonc</dfn> is the GBA programming library that accompanies Tonc, and is necessary to compile the examples. In the past, libtonc had to be downloaded separately and placed where your projects could find it. But nowadays it comes included as part of devkitARM. As long as you selected the `gba-dev` packages during installation, _you already have libtonc_.
+さらに、<dfn>libtonc</dfn> は Tonc に付属する GBA プログラミング用のライブラリで、例をコンパイルするのに必要です。以前は、libtonc を別にダウンロードして、プロジェクトから見つけられる場所に置く必要がありました。でも今は、devkitARM の一部として含まれています。インストールのときに `gba-dev` のパッケージを選んでいれば、_libtonc はもう入っています_。
 
-The bad news is devkitARM doesn't include the Tonc examples, so you still have to download those yourself. You can get them via _"Code -> Download&nbsp;Zip"_ on the repository page, or by using [git](https://git-scm.com/) in your terminal:
+悪い知らせは、devkitARM には Tonc の例が含まれていないことです。なので、例は自分でダウンロードする必要があります。リポジトリのページの _"Code -> Download&nbsp;Zip"_ から入手するか、ターミナルで [git](https://git-scm.com/) を使って取得できます。
 
 ```sh
 git clone https://github.com/gbadev-org/libtonc-examples
@@ -113,39 +113,39 @@ git clone https://github.com/gbadev-org/libtonc-examples
 <br>
 
 
-:::tip toolbox.h vs libtonc
+:::tip toolbox.h と libtonc
 
-In the early chapters, we'll be building our own library called `toolbox.h` which replicates parts of libtonc for educational purposes. But for real-world usage, sticking to a more featureful, tried-and-tested library (such as libtonc itself) should be preferred.
+最初のほうの章では、学ぶために libtonc の一部を再現した `toolbox.h` という自前のライブラリを作っていきます。でも、実際に使うときは、もっと機能が多く、実績のあるライブラリ（libtonc そのものなど）を使うほうがよいでしょう。
 
 :::
 
 
-## Compiling the examples {#sec-compile}
+## 例をコンパイルする {#sec-compile}
 
-To test your installation, let's try building one of the examples.
+インストールを確かめるために、例の 1 つをビルドしてみましょう。
 
-In the terminal, navigate to the directory where one of the examples is located (let's say, the *hello* example) and run `make`:
+ターミナルで、例の 1 つ（ここでは *hello* の例にしましょう）があるディレクトリに移動して、`make` を実行します。
 
 ```sh
 cd libtonc-examples/basic/hello
 make
 ```
 
-When invoked, `make` will build the project by following the rules in the file called _'Makefile'_ in the current working directory. Assuming this was successful, a `.gba` file will be produced, which you can run in your emulator of choice:
+`make` を実行すると、今いるディレクトリの _'Makefile'_ というファイルのルールに従って、プロジェクトがビルドされます。うまくいけば `.gba` ファイルができるので、好きなエミュレータで実行できます。
 
 <div class="cpt cblock" style="width:320px">
 <img src="img/setup/mgba_hello.png" id="fig:mgba-hello"><br>
-<b>{*@fig:mgba-hello}</b>: One of the Tonc examples running in mGBA.
+<b>{*@fig:mgba-hello}</b>: mGBA で動いている Tonc の例の 1 つ。
 </div>
 
-If you've gotten this far, congratulations! You are now ready to start writing your own GBA programs.
+ここまで来られたら、おめでとうございます！ これで、自分の GBA のプログラムを書き始める準備ができました。
 
-You can move onto the next chapter, or keep reading for more details.
+次の章に進んでもいいですし、もっと詳しく知りたければ、続きを読んでください。
 
 
-:::tip Setting environment variables
+:::tip 環境変数を設定する
 
-If you get an error such as `Please set DEVKITPRO in your environment`, it means your environment variables aren't set properly. The solution to this differs between machines, but usually you want to edit a file called `.bashrc` in your home directory, and add the following lines to it:
+`Please set DEVKITPRO in your environment` のようなエラーが出たら、環境変数が正しく設定されていません。解決方法はマシンによって違いますが、たいていは、ホームディレクトリにある `.bashrc` というファイルを編集して、次の行を足します。
 
 ```sh
 export DEVKITPRO=/opt/devkitpro
@@ -155,20 +155,20 @@ export DEVKITPPC=/opt/devkitpro/devkitPPC
 export PATH=$DEVKITARM/bin:$DEVKITPRO/tools/bin:$PATH  # optional
 ```
 
-The last line adds the compiler and related tools to your `PATH` environment variable, allowing you to use them directly in your terminal.
+最後の行は、コンパイラと関連するツールを `PATH` 環境変数に足して、ターミナルから直接使えるようにするものです。
 
-This is optional, because the example makefiles also set `PATH` during the build process. But having the tools on hand is useful, and *required* if you want to follow along in the next section.
+例の makefile はビルドのときに `PATH` を設定するので、この行は必須ではありません。でも、ツールをすぐ使えるようにしておくと便利ですし、次の節を一緒に試したいなら *必須* です。
 
-After editing `.bashrc`, you will have to close and reopen your terminal to apply the changes. Or you can run `source ~/.bashrc` to persist these changes in the current shell.
+`.bashrc` を編集したら、変更を反映するために、ターミナルを閉じて開き直す必要があります。または、`source ~/.bashrc` を実行して、今のシェルに変更を反映させることもできます。
 
 :::
 
 
-## Manual steps to build a GBA ROM {#sec-build-steps}
+## GBA の ROM を手作業でビルドする {#sec-build-steps}
 
-We've just seen how to compile a GBA program via `make`. Copying the makefile and using it for your own projects is absolutely encouraged! That said, it's valuable to know what's happening under the hood.
+`make` で GBA のプログラムをコンパイルする方法を見てきました。makefile をコピーして、自分のプロジェクトに使うのは大歓迎です！ とはいえ、内部で何が起きているかを知っておくことにも価値があります。
 
-Converting your C/C++/asm sources into a valid GBA ROM involves 4 steps, which can be seen in the output from running `make`:
+C/C++/アセンブリのソースを正しい GBA の ROM に変換するには、4 つの段階があります。`make` を実行したときの出力にも、それが表れています。
 
 ```sh
 $ make
@@ -178,26 +178,26 @@ built ... hello.gba   # <--- elf stripped
 ROM fixed!            # <--- header fixed
 ```
 
-The steps are as follows:
+段階は次のとおりです。
 
-1. **Compile/assemble the sources**. We turn the human readable C or C++ files (`.c`/`.cpp`) or assembly files (`.s`/`.asm`) to a binary format known as [object files](https://en.wikipedia.org/wiki/Object_code) (`.o`). There is one object file for each source file.
+1. **ソースをコンパイル、アセンブルする**。人が読める C や C++ のファイル（`.c`/`.cpp`）や、アセンブリのファイル（`.s`/`.asm`）を、[オブジェクトファイル](https://en.wikipedia.org/wiki/Object_code)（`.o`）と呼ばれるバイナリ形式に変換します。ソースファイル 1 つにつき、オブジェクトファイルが 1 つできます。
     
-    The tool for this is called `arm-none-eabi-gcc`. Actually, this is just a front-end for the real compiler, but that's just details. The `arm-none-eabi-` here is a prefix which means this version of GCC produces machine code for bare-metal ARM platforms; other target platforms have different prefixes. Note that C++ uses `g++` instead of `gcc`.
+    このためのツールは `arm-none-eabi-gcc` といいます。実はこれは本物のコンパイラの入り口にすぎないのですが、それは細かい話です。ここでの `arm-none-eabi-` という接頭辞は、この GCC が OS のない（ベアメタルの）ARM のプラットフォーム向けの機械語を作ることを表しています。ほかのプラットフォーム向けには、別の接頭辞が付きます。なお、C++ では `gcc` の代わりに `g++` を使います。
 
-2. **Link the object files**. After that, the separate object files are linked into a single executable [ELF](https://en.wikipedia.org/wiki/Executable_and_Linkable_Format) file. Any precompiled code libraries (`.a`) you may have specified are linked at this stage too.
+2. **オブジェクトファイルをリンクする**。次に、別々のオブジェクトファイルをリンクして、1 つの実行可能な [ELF](https://en.wikipedia.org/wiki/Executable_and_Linkable_Format) ファイルにします。指定したコンパイル済みのライブラリ（`.a`）があれば、それもこの段階でリンクされます。
     
-    You can actually compile and link at the same time, but it is good practice to keep them separate: serious projects usually contain multiple source files and you don't want to have to wait for the whole world to recompile when you only changed one. This becomes even more important when you start adding data (graphics, music, etc).
+    実は、コンパイルとリンクは一度にできますが、分けておくのがよい習慣です。本格的なプロジェクトにはたいてい複数のソースファイルがあり、1 つだけ変えたのに全部が再コンパイルされるのを待ちたくはないからです。データ（グラフィック、音楽など）を足し始めると、これはさらに重要になります。
     
-    Again, `arm-none-eabi-gcc` is used for invoking the linker, although the actual linker is called `arm-none-eabi-ld`.
+    ここでも、リンカを呼び出すのには `arm-none-eabi-gcc` を使います。ただし、実際のリンカは `arm-none-eabi-ld` という名前です。
 
-3. **Strip to raw binary**. The ELF file still contains debug data and can't actually be read by the GBA (though many emulators will accept it). `arm-none-eabi-objcopy` removes the debug data and makes sure the GBA will accept it. Well, almost.
+3. **純粋なバイナリにする**。ELF ファイルにはまだデバッグ用のデータが入っていて、GBA はそのままでは読めません（多くのエミュレータは受け付けてくれますが）。`arm-none-eabi-objcopy` がデバッグ用のデータを取り除き、GBA が受け付ける形にします。まあ、ほぼ受け付ける形に、ですが。
 
-4. **Fix the header**. Each GBA game has a header with a checksum to make sure it's a valid GBA ROM. The linking step makes room for one, but leaves it blank, so we have to use a tool like DarkFader's `gbafix` to fix the header. This tool comes with devkitARM, so you don't have to download it separately.
+4. **ヘッダーを直す**。どの GBA のゲームにも、正しい GBA の ROM であることを確かめるためのチェックサム付きのヘッダーがあります。リンクの段階でその場所は確保されますが、中身は空のままなので、DarkFader さんの `gbafix` のようなツールを使ってヘッダーを直す必要があります。このツールは devkitARM に付いてくるので、別にダウンロードする必要はありません。
 
 
-You can of course run all these commands in the terminal yourself without a makefile, provided the dkP tools are in your `PATH`.
+もちろん、dkP のツールが `PATH` に入っていれば、makefile を使わずに、これらのコマンドを全部自分でターミナルから実行することもできます。
 
-Let's try it with the example named *first* - this is the easiest one to compile because it doesn't depend on any libraries.
+*first* という名前の例で試してみましょう。どのライブラリにも依存していないので、コンパイルするのが一番簡単な例です。
 
 
 ```sh
@@ -216,36 +216,36 @@ arm-none-eabi-objcopy -O binary first.elf first.gba
 gbafix first.gba
 ```
 
-There you have it - a GBA program compiled from scratch! Well... we can always go deeper but this is probably a good place to stop for now. <kbd>x)</kbd>
+これで完成です。ゼロからコンパイルした GBA のプログラムです！ まあ……もっと深く掘ることもできますが、今はこのあたりでやめておくのがよいでしょう。 <kbd>x)</kbd>
 
-There are various options passed to the tools here that may not be immediately obvious. These are explained in the [makefile appendix](makefile.html#sec-flags) if you're interested.
+ここでツールに渡しているさまざまなオプションには、すぐには意味が分からないものもあるかもしれません。興味があれば、[makefile の付録](makefile.html#sec-flags)で説明しています。
 
 
-:::tip Avoid batch files for compiling
+:::tip コンパイルにバッチファイルを使わない
 
-You may be tempted to stick all these commands into a batch file or shell script, and use that to compile your project. This is simple, but not recommended. 
+これらのコマンドを全部バッチファイルやシェルスクリプトにまとめて、プロジェクトのコンパイルに使いたくなるかもしれません。簡単ですが、おすすめはしません。
 
-The reason becomes apparent as soon as your project has more than one source file: if you make an edit to a single file, you shouldn't have to recompile _all_ of the sources, only the one that changed. A build system such as `make` is smart enough to realise this, whereas simple shell scripts are not.
+理由は、プロジェクトのソースファイルが 2 つ以上になったとたんに分かります。1 つのファイルを編集したら、ソースを _全部_ 再コンパイルする必要はなく、変わったものだけで済むはずです。`make` のようなビルドシステムはそれを判断できるほど賢いのですが、単純なシェルスクリプトにはできません。
 
-When you get to the point where your project has dozens of source files, this makes a big difference! 
+プロジェクトのソースファイルが何十個にもなると、これは大きな違いになります！
 
 :::
 
-## Alternative toolchains {#sec-alt}
+## ほかのツールチェーン {#sec-alt}
 
-The advantage of devkitARM is that it provides a consistent environment for compiling GBA homebrew on Windows, Mac and Linux. However, if you're feeling adventurous there are other good options available nowadays:
+devkitARM の利点は、Windows、Mac、Linux のどれでも、GBA の自作ソフトをコンパイルするための一貫した環境を用意してくれることです。でも、冒険してみたい気分なら、今はほかにもよい選択肢があります。
 
-* [gba-toolchain](https://github.com/felixjones/gba-toolchain) - uses the CMake build system instead of Makefiles
-* [meson-gba](https://github.com/LunarLambda/meson-gba) - uses the Meson build system instead of Makefiles
-* [gba-bootstrap](https://github.com/AntonioND/gba-bootstrap) - the bare minimum needed to compile a GBA program. In other words, _roll your own toolchain_, with the hard bits done for you.
+* [gba-toolchain](https://github.com/felixjones/gba-toolchain) - Makefile の代わりに、CMake というビルドシステムを使う
+* [meson-gba](https://github.com/LunarLambda/meson-gba) - Makefile の代わりに、Meson というビルドシステムを使う
+* [gba-bootstrap](https://github.com/AntonioND/gba-bootstrap) - GBA のプログラムをコンパイルするのに必要な、最低限のもの。言い換えると、難しい部分はやってもらいつつ、_自分でツールチェーンを組み立てる_ ものです。
 
-Why would you want to use these? They might be easier to install (many Linux distros offer their own builds of `arm-none-eabi-gcc` and related packages, which is essentially the same thing devkitARM provides), or you could be using a machine for which devkitARM is not available (such as a Raspberry Pi). Or perhaps you just want a better build system than makefiles.
+なぜこれらを使いたくなるのでしょうか？ 入れるのがもっと簡単かもしれません（多くの Linux のディストリビューションは、`arm-none-eabi-gcc` と関連するパッケージを独自にビルドして提供しています。これは本質的に、devkitARM が提供するものと同じです）。または、devkitARM が使えないマシン（Raspberry Pi など）を使っているのかもしれません。あるいは、単に makefile よりよいビルドシステムを使いたいのかもしれません。
 
-Tonc assumes you're using devkitARM, but most of the information is relevant no matter which toolchain you're using.
+Tonc は devkitARM を使っている前提で書いていますが、ほとんどの情報は、どのツールチェーンを使っていても役に立ちます。
 
 
-:::danger Avoid 'devkitAdvance'
+:::danger 「devkitAdvance」は避ける
 
-You may encounter a toolchain called _devkitAdvance_. This is an ancient toolchain which hasn't been updated since 2003. By using it, you will be missing out on _two decades worth_ of compiler improvements and optimisations. If somebody recommends this to you, run away!
+_devkitAdvance_ というツールチェーンを見かけることがあるかもしれません。これは 2003年から更新されていない、大昔のツールチェーンです。使うと、_20年分_ のコンパイラの改良と最適化を逃すことになります。誰かにこれを勧められたら、逃げてください！
 
 :::
