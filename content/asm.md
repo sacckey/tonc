@@ -1,44 +1,44 @@
-# 23. Whirlwind Tour of ARM Assembly
+# 23. ARM アセンブリ駆け足ツアー
 
 <!-- toc -->
 
-## Introduction {#sec-intro}
+## はじめに {#sec-intro}
 
-Very broadly speaking, you can divide programming languages into 4 classes. At the lowest level is machine code: raw numbers that the CPU decodes into instructions to execute. One step up is assembly. This is essentially machine code in words: each assembly instruction corresponds to one machine code instruction. Above this are compiled languages like C, which use structured language element to read more like English, but need to be compiled to machine code to be able to run. Finally, there are scripted languages like PHP (and usually VB and Java) which are run through interpreters configured to run the right kinds of machine code for the desired effects.
+ごく大まかに言うと、プログラミング言語は 4 つの種類に分けられます。一番低い水準にあるのは機械語です。CPU がデコードして実行する命令にする、生の数値です。その一段上がアセンブリです。これは基本的に機械語を言葉にしたもので、アセンブリの各命令は機械語の 1 命令に対応します。その上には C のようなコンパイル型の言語があり、構造化された言語要素を使って英語に近い読み方ができますが、実行できるようにするには機械語にコンパイルする必要があります。最後に、PHP（と、たいていは VB や Java）のようなスクリプト型の言語があり、望む効果のために正しい種類の機械語を実行するように構成されたインタプリタを通して実行されます。
 
-Every step up the ladder increases the human readability factor and portability, at the cost of runtime speed and program size. In the old days, programmers were Real Programmers and did their work in machine code or assembly because of clock speed and/or memory constraints. For PCs, these days are long gone and most work is done in the higher level languages. This, admittedly, is a good thing: code can be written faster and maintained more easily. However, there are still a few instances where the higher languages are insufficient. The GBA, with its 16.7Mhz CPU and less than 1 MB of work RAM is one of them. Here the inefficiency of the highest languages will cost you dearly, if it'd run at all. This is why most GBA work is done in C/C++, sometimes affectionately nicknamed ‘portable assembly’, because it still has the capability of working with memory directly. But sometimes even that isn't enough. Sometimes you _really_ have to make every cycle count. And for this, you need **assembly**.
+はしごを 1 段上がるごとに、人間にとっての読みやすさと移植性が増しますが、その代わりに実行時の速さとプログラムの大きさが犠牲になります。昔のプログラマは真のプログラマで、クロックの速さやメモリの制約のために、機械語やアセンブリで仕事をしていました。PC では、そんな時代はとうに過ぎ去り、ほとんどの仕事は高水準の言語で行われています。確かにこれは良いことです。コードを速く書け、保守も楽になります。しかし、高水準の言語では不十分な場面もまだいくつかあります。16.7Mhz の CPU と 1MB 未満のワーク RAM しかない GBA もその 1 つです。ここでは、最も高水準の言語の非効率さは、そもそも動くとしても、高くつきます。GBA の仕事のほとんどが C/C++ で行われるのはこのためです。C は、まだメモリを直接扱えるので、親しみを込めて「移植可能なアセンブリ」とあだ名されることもあります。でも、それでも足りないことがあります。すべてのサイクルを_本当に_無駄なく使わなければならないことがあるのです。そのためには、**アセンブリ**が必要です。
 
-Now, in some circles the word “assembly” can be used to frighten small programmers. Because it is so closely tied to the CPU, you can make it do everything; but that also means you _have_ to do everything. Being close to hardware also means you're bypassing all the safety features that higher languages may have, so that it's _much_ easier to break things. So yeah, it is harder and more dangerous. Although some may prefer the term ‘adventurous’.
+さて、界隈によっては、「アセンブリ」という言葉は小さなプログラマを怖がらせるのに使われます。CPU にとても密接に結びついているので、何でもさせることができますが、それは何でも自分でし_なければならない_ということでもあります。ハードウェアに近いということは、高水準の言語にあるかもしれない安全機能をすべて迂回しているということでもあり、ものを壊すのが_ずっと_簡単になります。ですから、そう、難しくて危険です。もっとも、「冒険的」という言葉を好む人もいるかもしれません。
 
-To program in assembly, you need to know how a processor actually works and write in a way it can understand, rather than rely on a compiler or interpreter to do it for you. There are no structured for- or while- loops or even if/else branches, just `goto`; no structs or classes with inheritance, and even datatypes are mostly absent. It's anarchy, but the lack of bureaucracy is exactly what makes fast code possible.
+アセンブリでプログラミングするには、コンパイラやインタプリタに任せるのではなく、プロセッサが実際にどう動くのかを知り、それが理解できるように書く必要があります。構造化された for や while のループどころか、if/else の分岐すらなく、あるのは `goto` だけです。構造体も継承のあるクラスもなく、データ型さえほとんどありません。無政府状態ですが、この官僚主義のなさこそが速いコードを可能にするのです。
 
-Speed/size issues aside, there are other reasons why learning assembly might be a good idea. Like I said, it forces you to actually _understand_ how the CPU functions, and you can use that knowledge in your C code as well. A good example of this is the ‘best’ datatype for variables. Because the ARM processor is 32bit, it will prefer ints for most things, and other types will be slower, sometimes much slower. And while this is obvious from the description of the processor itself, knowledge of assembly will show you _why_ they are slower.
+速さや大きさの問題はさておき、アセンブリを学ぶのが良い考えである理由はほかにもあります。先ほど言ったように、CPU がどう機能するのかを本当に_理解_せざるをえなくなり、その知識は C のコードでも使えます。その良い例が、変数の「最適な」データ型です。ARM プロセッサは 32 ビットなので、ほとんどのものに int を好み、ほかの型は遅く、ときにはずっと遅くなります。これはプロセッサ自体の説明から明らかですが、アセンブリを知っていれば、_なぜ_遅いのかがわかります。
 
-A third reason, and not an inconsiderable one, is just for general coolness <kbd>=B)</kbd>. The very fact that it is harder than higher languages should appeal to your inner geek, who relishes such challenges. The simplicity of the statements themselves have an aesthetic quality as well: no messing about with classes, different loop styles, operator precedence, etc – it's one line, one opcode and never more than a handful of parameters.
+3 つ目の理由は、決して無視できないものですが、単にかっこいいからです <kbd>=B)</kbd>。高水準の言語より難しいという事実そのものが、そうした挑戦を楽しむあなたの中のオタクの心をくすぐるはずです。文そのものの単純さにも美しさがあります。クラスや、いろいろなループの書き方や、演算子の優先順位などをいじる必要はありません。1 行に 1 つのオペコードで、パラメータもほんの一握りを超えることはありません。
 
-Anyway, about this chapter. A complete document on assembly is nothing less than a full user's manual for a CPU. This would require an entire book in itself, which is not something I'm aiming at. My intention here is to give you an introduction (but a thorough one) to ARM assembly. I'll explain the most important instructions of the ARM and Thumb instruction sets, what you can and cannot do with them (and a little bit about why). I'll also cover how to use GCC's assembler to actually assemble the code and how to make your assembly and C files work together. Lastly, I'll give an example of a fast memory copier as an illustration of both ARM and Thumb code.
+ともかく、この章についてです。アセンブリについての完全な文書は、CPU の完全なユーザーマニュアルにほかなりません。それにはそれだけで本 1 冊が必要で、私が目指しているのはそういうものではありません。ここでの私の意図は、ARM アセンブリの入門（ただし徹底したもの）を提供することです。ARM と Thumb の命令セットの最も重要な命令と、それらでできること、できないこと（と、その理由も少し）を説明します。GCC のアセンブラを使って実際にコードをアセンブルする方法や、アセンブリと C のファイルを一緒に動かす方法も扱います。最後に、ARM と Thumb の両方のコードの例として、速いメモリのコピー処理を示します。
 
-With that information, you should be able to do a lot of stuff, or at least know how to make use of the various reference documents out there. This chapter is not an island, I am assuming you have some or all of the following documents:
+この情報があれば、たくさんのことができるはずです。少なくとも、出回っているいろいろなリファレンス文書の使い方はわかるでしょう。この章は孤立したものではなく、次の文書のいくつか、またはすべてを持っていることを前提にしています。
 
-- The rather large official ARM7TDMI Technical manual: [DDI0210B.pdf](https://documentation-service.arm.com/static/5f4786a179ff4c392c0ff819?token=).
-- GBATEK's ARM CPU reference: [ARM + Thumb](https://problemkaputt.de/gbatek.htm#armcpureference).
-- Official ARM quick-references (PDF): [ARM + Thumb](https://documentation-service.arm.com/static/5ed66080ca06a95ce53f932d?token=)
-- Re-eject's quick-references (PDF): [GAS](http://www.coranac.com/files/gba/re-ejected-gasref.pdf) / [ARM](http://www.coranac.com/files/gba/re-ejected-armref.pdf) / [Thumb](http://www.coranac.com/files/gba/re-ejected-thumbref2.pdf). (note: minor syntax discrepancies at times)
-- GNU Assembler manual: [GAS](http://sourceware.org/binutils/docs/as/index.html).
+- かなり大きな公式の ARM7TDMI テクニカルマニュアル: [DDI0210B.pdf](https://documentation-service.arm.com/static/5f4786a179ff4c392c0ff819?token=)。
+- GBATEK の ARM CPU のリファレンス: [ARM + Thumb](https://problemkaputt.de/gbatek.htm#armcpureference)。
+- 公式の ARM のクイックリファレンス（PDF）: [ARM + Thumb](https://documentation-service.arm.com/static/5ed66080ca06a95ce53f932d?token=)
+- Re-eject のクイックリファレンス（PDF）: [GAS](http://www.coranac.com/files/gba/re-ejected-gasref.pdf) / [ARM](http://www.coranac.com/files/gba/re-ejected-armref.pdf) / [Thumb](http://www.coranac.com/files/gba/re-ejected-thumbref2.pdf)。（注意: ときどき構文に細かい食い違いがあります）
+- GNU アセンブラのマニュアル: [GAS](http://sourceware.org/binutils/docs/as/index.html)。
 
-If you want more ARM/Thumb guides, you'll have to find them yourself.
+ARM/Thumb のガイドがもっと欲しければ、自分で探してください。
 
-## General assembly {#sec-asm}
+## アセンブリ全般 {#sec-asm}
 
-Assembly is little more than a glorified macro language for machine code. There is a one-to-one relationship between the assembly instructions and the actual machine code and assembly uses <dfn>mnemonics</dfn> for the operations the processor is capable of, which are much easier to remember than the raw binary. The tool that converts the asm code into machine code is the <dfn>assembler</dfn>.
+アセンブリは、機械語のための大げさなマクロ言語にすぎません。アセンブリの命令と実際の機械語は 1 対 1 に対応していて、アセンブリはプロセッサができる演算に<dfn>ニーモニック</dfn>を使います。これは生の 2 進数よりずっと覚えやすいものです。アセンブリのコードを機械語に変換するツールが<dfn>アセンブラ</dfn>です。
 
-### Basic operations {#ssec-asm-ops}
+### 基本の演算 {#ssec-asm-ops}
 
-Every processor must be able to do basic data processing: arithmetic and bit manipulation. They should also have instructions to access memory, and be able to jump from one place in the code to another of conditionals and loops and such. However, different processors will have different ways of doing these things, and some operations of one set might not be present in another. For example, ARM lacks a division instruction, and can't perform data processing on memory directly. However, the ARM instruction set has some benefits too, like a fair amount of general-purpose registers and a simple instruction set, for the proper definition of “simple”. And it has a _very_ nifty way of dealing with bit-shifts.
+どのプロセッサも、基本的なデータ処理、つまり算術演算とビット操作ができなければなりません。メモリにアクセスする命令も必要で、条件分岐やループなどのために、コードのある場所から別の場所へジャンプできなければなりません。しかし、プロセッサによってこれらのやり方は違い、ある命令セットにある演算が別の命令セットにはないこともあります。たとえば、ARM には除算の命令がなく、メモリ上のデータを直接処理することもできません。しかし ARM の命令セットには利点もあり、汎用レジスタがそこそこ多く、命令セットが単純です。「単純」を適切に定義すれば、ですが。そして、ビットシフトの扱い方が_とても_気が利いています。
 
-In the snippet below you can find a few examples of additions and memory reads in three different assembly languages: x86 (Intel), 68000, and ARM. The basic format is usually something like ‘`operation operand1, operand2, ...`’, though there are always exceptions. Note that where x86 and ARM put the destination in _Op1_, 68000 asm puts it in the last. The terminology of the registers is also different. Some semantics are pretty universal, the addition ‘`x += y` is found in all three, for example, but x86 also has a special instruction for increments by one, and in ARM the result register can be different from the two operands. These differences correspond to how the processors actually work! Higher languages allow you to use operations that do not seem present in the instruction set, but in fact they only _appear_ to do so: the compiler/interpreter will convert it to a form the processor can actually handle.
+下のコードには、x86（Intel）、68000、ARM の 3 つの異なるアセンブリ言語での、加算とメモリの読み込みの例がいくつかあります。基本の形はたいてい「`operation operand1, operand2, ...`」のようなものですが、いつも例外はあります。x86 と ARM は書き込み先を _Op1_ に置きますが、68000 のアセンブリは最後に置くことに注意してください。レジスタの用語も違います。かなり共通の意味もあり、たとえば加算「`x += y` は 3 つすべてにありますが、x86 には 1 を加えるための特別な命令もあり、ARM では結果のレジスタを 2 つのオペランドと違うものにできます。これらの違いは、プロセッサが実際にどう動くかに対応しています！ 高水準の言語では、命令セットにないように見える演算も使えますが、実際にはそう_見える_だけです。コンパイラやインタプリタが、プロセッサが実際に扱える形に変換しているのです。
 
-Another point I must make here is that even for a given processor, there can be differences in how you write assembly. Assemblers aren't difficult to write, and there's nothing to stop you from using a different kind of syntax. Apart from the wrath of other programmers, of course.
+ここで言っておくべきもう 1 つの点は、同じプロセッサでも、アセンブリの書き方には違いがありうるということです。アセンブラを書くのは難しくありませんし、別の種類の構文を使うことを妨げるものは何もありません。もちろん、ほかのプログラマの怒りは別ですが。
 
 ```armasm
 // Some examples
@@ -71,13 +71,13 @@ ldr     r0, [r2, #4]    // Load int from memory:    r0= r2[1];
 ldmia   r2, {r0, r1}    // Load multiple:           r0= r2[0]; r1= r2[1];
 ```
 
-### Variables: registers, memory and the stack {#ssec-asm-var}
+### 変数: レジスタ、メモリ、スタック {#ssec-asm-var}
 
-In HLLs you have variables to work on, in assembly you can have registers, variables (that is, specific ranges in memory), and the stack. A [<dfn>register</dfn>](https://en.wikipedia.org/wiki/Processor_register) is essentially a variable inside the chip itself, and can be accessed quickly. The downside is that there are usually only a few of them, from just one to perhaps a few dozen. Most programs will require a lot more, which is why you can put variables in addressable memory as well. There's a lot more bytes in memory than in registers, but it'll also be slower to use. Note that both registers and memory are essentially **global** variables, change them in one function and you'll have changed them for the rest of the program. For local variables, you can use the stack.
+高水準の言語では扱う変数がありますが、アセンブリにはレジスタ、変数（つまりメモリの特定の範囲）、スタックがあります。[<dfn>レジスタ</dfn>](https://en.wikipedia.org/wiki/Processor_register)は基本的にチップそのものの中にある変数で、すばやくアクセスできます。欠点は、普通は数が少なく、1 つからせいぜい数十個しかないことです。ほとんどのプログラムはもっとずっと多くを必要とするので、アドレス指定できるメモリにも変数を置けるようになっています。メモリにはレジスタよりずっと多くのバイトがありますが、使うのは遅くなります。レジスタもメモリも基本的に**グローバル**変数であることに注意してください。ある関数で変更すれば、プログラムの残りでも変更したことになります。ローカル変数には、スタックを使えます。
 
-The [<dfn>stack</dfn>](https://en.wikipedia.org/wiki/Stack_(abstract_data_type)) is a special region of memory used as, well, a stack: a Last-In, First-Out mechanism. There will be a special register called the <dfn>stack pointer</dfn> (SP for short) which contains the address of the top of the stack. You can _push_ variables onto the top of the stack for safe keeping, and then _pop_ them off once you're done with them, restoring the registers to their original values. The address of the stack (that is, the top of the stack, the contents of SP) is not fixed: it grows as you move deeper in the code's hierarchy, and shrinks as you move out again. The point is that each block of code should clean up after itself so that the stack pointer is the same before and after it. If not, prepare for a spectacular failure of the rest of the program.
+[<dfn>スタック</dfn>](https://en.wikipedia.org/wiki/Stack_(abstract_data_type))は、まさにスタック、つまり後入れ先出しの仕組みとして使われるメモリの特別な領域です。スタックの頂上のアドレスを持つ、<dfn>スタックポインタ</dfn>（略して SP）と呼ばれる特別なレジスタがあります。変数を安全に保管するためにスタックの頂上に_プッシュ_し、使い終わったら_ポップ_して、レジスタを元の値に戻せます。スタックのアドレス（つまりスタックの頂上、SP の中身）は固定されていません。コードの階層を深く進むにつれて伸び、また外に出るにつれて縮みます。要点は、コードの各ブロックは自分の後始末をして、前後でスタックポインタが同じになるようにすべきだということです。そうでないと、プログラムの残りが派手に失敗するのを覚悟してください。
 
-For example, suppose you have functions `foo()` and which uses registers A, B, C and D. Function `foo()` calls function `bar()`, which also uses A, B and C, but in a different context than `foo()`. To make sure `foo()` would still work, `bar()` pushes A, B and C onto the stack at its start, then uses them the way it wants, and then pops them off the stack into A, B and C again when it ends. In pseudo code:
+たとえば、レジスタ A、B、C、D を使う関数 `foo()` があるとします（訳注: 原文では関数名が 1 つ抜けているようです）。関数 `foo()` は関数 `bar()` を呼び、こちらも A、B、C を使いますが、`foo()` とは違う文脈で使います。`foo()` がちゃんと動き続けるように、`bar()` は最初に A、B、C をスタックにプッシュし、それから望むように使い、終わるときにスタックからポップして A、B、C に戻します。擬似コードで書くと次のようになります。
 
 ```armasm
 // Use of stack in pseudo-asm
@@ -126,17 +126,17 @@ bar:
     return
 ```
 
-While the syntax above is asm-like, it's not actually part of any assembly – at least not as far as I know. It is also particularly _bad_ assembly, because it's inefficient in its use of registers, for one. If you were to write the corresponding C code and compile it (with optimizations, mind you), you get better code. But the point was here stack-use, not efficiency.
+上の構文はアセンブリっぽく見えますが、実際にはどのアセンブリの一部でもありません。少なくとも私の知る限りでは。それに、たとえばレジスタの使い方が非効率なので、特に_ひどい_アセンブリでもあります。対応する C のコードを書いて（もちろん最適化を有効にして）コンパイルすれば、もっと良いコードが得られます。でも、ここでの要点は効率ではなく、スタックの使い方でした。
 
-What you see here is that `foo()` sets A, B and C to 1, 2 and 3, respectively (`mov` stands for ‘move’, which usually comes down to assignment), and then calls `bar()`, which sets them to something else and sets a global variable called `global_var0` to A+B+C. Because A, B and C are now different from what they were `foo()`, that function would use the wrong values in later calculations. To counter that, `bar()` uses the stack to save and restore A, B and C so that functions that call `bar()` still work. Note that `foo()` also uses the stack for A, B, C and D, because the function calling `foo()` may want to use them as well.
+ここでわかるのは、`foo()` が A、B、C をそれぞれ 1、2、3 に設定し（`mov` は「move」の略で、たいていは代入になります）、それから `bar()` を呼び、そちらはそれらを別の値に設定して、`global_var0` というグローバル変数を A+B+C に設定するということです。A、B、C は `foo()` のときとは違う値になっているので、その関数はそのあとの計算で間違った値を使ってしまいます。それに対抗するため、`bar()` はスタックを使って A、B、C を保存、復元し、`bar()` を呼ぶ関数がちゃんと動き続けるようにしています。`foo()` を呼ぶ関数もそれらを使いたいかもしれないので、`foo()` も A、B、C、D のためにスタックを使っていることに注意してください。
 
-Stacking registers inside the called function is only a _guideline_, not a law. You could make the caller save/restore the variables that it uses. You could even not use the stack at all, as if you meant A, B and C to change and consider them return values of the function. By not setting the registers manually in `bar()`, A and B would effectively be function arguments. Or you could use the stack for function arguments. And return values. Or use both registers and the stack. The point is, you are free to do deal with them in any way you want. At least, in principle. In practice, there are guidelines written down by the original manufacturers, and while not written in stone, it can be considered bad form not to adhere to them. And you can see just _how_ bad a form if you intend to make the code interface with compiled code, which _does_ adhere to them.
+呼ばれた関数の中でレジスタをスタックに積むのは_指針_にすぎず、法律ではありません。呼び出し側に自分が使う変数を保存、復元させることもできます。A、B、C が変わることを意図して関数の戻り値とみなすかのように、スタックをまったく使わないことさえできます。`bar()` でレジスタを手で設定しなければ、A と B は実質的に関数の引数になります。あるいは、関数の引数にスタックを使うこともできます。戻り値にも。あるいはレジスタとスタックの両方を使うことも。要するに、好きなように扱ってかまわないということです。少なくとも原理的には。実際には、元の製造元が書き記した指針があり、石に刻まれたものではないにせよ、それに従わないのは行儀が悪いとみなされかねません。そして、それに_従っている_コンパイル済みのコードとやり取りするコードを作るつもりなら、それが_どれほど_行儀の悪いことかがわかるでしょう。
 
-### Branching and condition codes {#ssec-asm-jmp}
+### 分岐と条件コード {#ssec-asm-jmp}
 
-The normal operation for a computer is to take instructions one by one and execute them. A special register known as the <dfn>program counter</dfn> (PC) indicates the address of the next instruction. When it's time, the processor reads that instruction, does its magic and increments the program counter for the next instruction. This is a relatively straightforward process; things start to get interesting when you can set the program counter to a completely different address, redirecting the flow of the program. Some might say that you can really only speak of a _computer_ if such a thing is possible.
+コンピュータの普通の動作は、命令を 1 つずつ取ってきて実行することです。<dfn>プログラムカウンタ</dfn>（PC）と呼ばれる特別なレジスタが、次の命令のアドレスを示します。そのときが来ると、プロセッサはその命令を読み、魔法をかけ、次の命令のためにプログラムカウンタを増やします。これは比較的素直な処理です。プログラムカウンタをまったく別のアドレスに設定して、プログラムの流れをそらせるようになると、話が面白くなってきます。そういうことができて初めて本当の_コンピュータ_と呼べる、と言う人もいるかもしれません。
 
-The technical term for this redirection is <dfn>branching</dfn>, though the term ‘jump’ is used as well. With branching you can create things like loops (infinite loops, mind you) and implement subroutines. The usual mnemonic for branching is something like `b` or `j(mp)`
+この流れの変更の技術的な用語は<dfn>分岐</dfn>（branching）ですが、「ジャンプ」という言葉も使われます。分岐を使えば、ループ（もっとも無限ループですが）のようなものを作ったり、サブルーチンを実装したりできます。分岐の普通のニーモニックは `b` や `j(mp)` のようなものです。
 
 ```armasm
 // Asm version of the while(1) { ... } endless loop
@@ -149,16 +149,16 @@ endless:
     b endless // Branch to endless, for an endless loop.
 ```
 
-The full power of branching comes from branching only when certain <dfn>conditions</dfn> are met. With that, you can perform if-else blocks and loops that can actually end. The conditions allowed depend on the processor, but the most common ones are:
+分岐の本当の力は、特定の<dfn>条件</dfn>が満たされたときにだけ分岐することから来ます。それがあれば、if-else のブロックや、実際に終わることのできるループを作れます。使える条件はプロセッサによりますが、最もよくあるものは次のとおりです。
 
-- **Zero** (Z). If the result of operation was 0.
-- **Negative** (N). Result was negative (i.e. most significant bit set).
-- **Carry bit set** (C). If the ‘mostest’ significant bit is set (like bit 32 for 32bit operations).
-- **Arithmetic overflow** (V). Like adding two positive numbers and getting a negative number because the result got too big for the registers.
+- **ゼロ**（Z）。演算の結果が 0 だった場合。
+- **負**（N）。結果が負だった（つまり最上位ビットが設定されている）。
+- **キャリービットの設定**（C）。「最上位よりさらに上」のビットが設定された場合（32 ビットの演算でのビット 32 など）。
+- **算術オーバーフロー**（V）。2 つの正の数を足したら、結果がレジスタに対して大きくなりすぎて負の数になった場合など。
 
-These condition flags are stores in the <dfn>Program Status Register</dfn> (PSR), and each data processing instruction will set these one of more of these flags, depending on the outcome of the operation. Special versions of the branch instruction can use these flags to determine whether to make the jump.
+これらの条件フラグは<dfn>プログラムステータスレジスタ</dfn>（PSR）に格納され、データ処理の命令はそれぞれ、演算の結果に応じて、これらのフラグの 1 つ以上を設定します。分岐命令の特別な版は、これらのフラグを使ってジャンプするかどうかを決められます。
 
-Below you can see a simple example of a basic for-loop. The `cmp` instruction compares `A` to 16 and sets the PSR flags accordingly. The instruction `bne` stands for ‘branch if Not Equal’, which corresponds to a clear Z-flag. the reason for the Zero-flag's involvement is that the equality of two numbers is indicated by whether the difference between them is zero or not. So if there's a difference between `A` and 16, we jump back to `for_start`; if not, then we continue with the rest of the code.
+下に、基本的な for ループの簡単な例を示します。`cmp` 命令は `A` を 16 と比べ、それに応じて PSR のフラグを設定します。命令 `bne` は「branch if Not Equal（等しくなければ分岐）」の略で、Z フラグがクリアされていることに対応します。ゼロフラグが関わってくる理由は、2 つの数が等しいかどうかは、その差がゼロかどうかで示されるからです。ですから、`A` と 16 に差があれば `for_start` に戻り、なければコードの残りに進みます。
 
 ```armasm
 // Asm version of for(A=0; A != 16; A++)
@@ -174,11 +174,11 @@ for_start:
     bne for_start   // Branch to beginning of loop if A isn't 16
 ```
 
-The number and names of the conditional codes depends on the platform. The ARM has 16 of these, but I'll cover these later.
+条件コードの数と名前はプラットフォームによります。ARM にはこれが 16 個ありますが、それはあとで扱います。
 
-### An example: GCC generated ARM assembly {#ssec-asm-gcc}
+### 例: GCC が生成した ARM アセンブリ {#ssec-asm-gcc}
 
-Before getting into ARM assembly itself, I'd like to show you a real-life example it. Assembly is an intermediary step of the build process, and you can capture GCC's assembly output by using the ‘`-S`’ or ‘`-save-temps`’ flags. This gives you the opportunity to see what the compiler is actually doing, to compare the C and assembly versions of a given algorithm, and provides quick pointers on how to code non-trivial things in assembly, like function calling, structures, loops etc. This section is optional, and you may not understand all the things here, but it is very educational nonetheless.
+ARM アセンブリそのものに入る前に、実際の例をお見せしたいと思います。アセンブリはビルドの過程の中間段階で、「`-S`」や「`-save-temps`」のフラグを使えば GCC のアセンブリの出力を取り出せます。これで、コンパイラが実際に何をしているのかを見たり、あるアルゴリズムの C とアセンブリの版を比べたりする機会が得られますし、関数の呼び出し、構造体、ループなど、アセンブリで些細でないことをどう書けばいいかの手早い手がかりにもなります。この節は任意で、ここにあることを全部は理解できないかもしれませんが、それでもとても勉強になります。
 
 ```Makefile
 # Makefile settings for producing asm output
@@ -295,39 +295,39 @@ main:
     .ident  "GCC: (GNU) 4.1.0 (devkitARM release 18)"
 ```
 
-After the initial shock of seeing a non-trivial assembly file for the first time, you may be able to notice a few things, even without any prior knowledge of assembly.
+些細でないアセンブリのファイルを初めて見たショックが過ぎれば、アセンブリの予備知識がなくても、いくつかのことに気づけるかもしれません。
 
-- First, the assembly is much longer than the C file. This is not surprising as you can only have one instruction per line. While it makes the file longer, it also makes parsing each line easier.
+- まず、アセンブリは C のファイルよりずっと長いです。1 行に 1 命令しか書けないので、これは驚くことではありません。ファイルは長くなりますが、各行の解析は楽になります。
 
-- There are four basic types of line formats: labels (lines ending in a colon ‘:’), and instructions, and then in lines starting with a period or not. The instructions that start with a period are not really instructions, but <dfn>directives</dfn>; they are hints to the assembler, not part of the CPU's instruction set. As such, you can expect them to differ between assemblers.
+- 行の形式には基本的に 4 種類あります。ラベル（コロン「:」で終わる行）と命令、そしてそれぞれピリオドで始まる行とそうでない行です。ピリオドで始まる命令は本当は命令ではなく、<dfn>ディレクティブ</dfn>です。これらはアセンブラへのヒントで、CPU の命令セットの一部ではありません。そのため、アセンブラによって違うことが予想されます。
 
-  The real instructions are usually composed of a mnemonic (`add`, `ldr`, `b`, `mov`) followed by register identifiers, numbers or labels. With a little thought, you should be able to piece together what each of these might do. For example, `add` performs an addition, `ldr` read something from memory, `b` branches, i.e. jumps to another memory address and `mov` does an assignment.
+  本当の命令は、たいていニーモニック（`add`、`ldr`、`b`、`mov`）と、そのあとに続くレジスタの識別子、数値、ラベルでできています。少し考えれば、それぞれが何をするのか推し量れるはずです。たとえば、`add` は加算をし、`ldr` はメモリから何かを読み、`b` は分岐、つまり別のメモリアドレスへジャンプし、`mov` は代入をします。
 
-- Function structure and calling. In GAS, a function is preceded by a number of directives for alignment, code section and instruction set, and a ‘`.global`’ directive to make it globally visible. And a label to mark the start of the function of course. Note that for thumb functions, require a ‘`.thumb_func`’ directive as well as either ‘`.code 16`’ or ‘`.thumb`’. GCC also inserts a size info, but this are not required.
+- 関数の構造と呼び出し。GAS では、関数の前に、アラインメント、コードの領域、命令セットのためのいくつかのディレクティブと、関数をグローバルに見えるようにする「`.global`」ディレクティブが置かれます。そしてもちろん、関数の始まりを示すラベルも。Thumb の関数には、「`.code 16`」か「`.thumb`」のどちらかに加えて、「`.thumb_func`」ディレクティブも必要なことに注意してください。GCC は大きさの情報も挿入しますが、これは必須ではありません。
 
-  Calling and returning from functions uses the `bl` and `bx` instructions. What isn't very clear from this code, except in my added comments, is that the arguments of the functions are put in registers r0-r3. What you definitely don't see is that if there are more than 4 parameters, these are put on the stack, and that the return value is put in r0.
+  関数の呼び出しと関数からの戻りには、`bl` 命令と `bx` 命令を使います。私が付け加えたコメントを除けば、このコードからはあまりはっきりしませんが、関数の引数はレジスタ r0-r3 に入れられます。まったく見えないのは、パラメータが 4 つより多ければスタックに置かれること、そして戻り値は r0 に入れられることです。
 
-  You _also_ don't see that r0-r3 (and r12) are expected to be trashed in each function, so that the functions calling them should save their values if they want to use them after the call. The other registers (r4-r15) should be pushed into the stack by the called function. The standard procedure for function calling can be found in the [AAPCS](https://github.com/ARM-software/abi-aa/releases/download/2023Q3/aapcs32.pdf). Failure to adhere to this standard will break your code if you try to combine it with C or other asm.
+  さらに見え_ない_のは、r0-r3（と r12）は各関数で壊されるものと想定されていて、それらを呼ぶ関数は、呼び出しのあとで値を使いたければ保存しておくべきだということです。ほかのレジスタ（r4-r15）は、呼ばれた関数がスタックにプッシュするべきです。関数呼び出しの標準の手順は [AAPCS](https://github.com/ARM-software/abi-aa/releases/download/2023Q3/aapcs32.pdf) にあります。この標準に従わないと、C やほかのアセンブリと組み合わせようとしたときにコードが壊れます。
 
-- Loading the CLR_LIME color (0x03E0) doesn't happen in one go, but is spread over two instructions: a move and a shift. Why not move it in one go? Well, because it can't. The ARM architecture only allows byte-sized immediate values; bigger things have to be constructed in other ways. I'll get back to this later.
+- CLR_LIME の色（0x03E0）の読み込みは一度には行われず、2 つの命令、移動とシフトに分かれています。なぜ一度に移動しないのでしょうか？ そう、できないからです。ARM のアーキテクチャではバイトの大きさの即値しか使えず、もっと大きなものはほかの方法で組み立てなければなりません。これについてはあとでまた触れます。
 
-- The last thing I'd like to mention is the performance of the `PlotPixel3()` loop versus the `m3_plot()` loop, which you can find in the assembly because I've used a macro that can write asm comments in C. The `m3_plot()` loop contains 4 instructions. The `PlotPixel3()` loop takes 8, plus an additional 10 from the function itself. So that's 4 instructions against 18 instructions. The C code _seems_ pretty much the same, so what gives?
+- 最後に触れておきたいのは、`PlotPixel3()` のループと `m3_plot()` のループの性能の違いです。C でアセンブリのコメントを書けるマクロを使ったので、アセンブリの中でそれらを見つけられます。`m3_plot()` のループには 4 つの命令があります。`PlotPixel3()` のループは 8 命令に、関数そのものの 10 命令が加わります。つまり 4 命令対 18 命令です。C のコードはほとんど同じに_見える_のに、いったいどういうことでしょうか？
 
-  Welcome to the wonderful world of _function call overhead_. In principle, you only need the instructions of the shorter loop: a store, an add for the next destination, a compare and a loop-branch. Because `m3_plot()` is inlined, the compiler can see that this is all that's required and optimize the loop accordingly.
+  _関数呼び出しのオーバーヘッド_の素晴らしい世界へようこそ。原理的には、短いほうのループの命令、つまり書き込み、次の書き込み先のための加算、比較、ループの分岐だけで済みます。`m3_plot()` はインライン化されているので、コンパイラはそれだけで十分だとわかり、それに応じてループを最適化できます。
 
-  In contrast, because `PlotPixel()` is a full function, the caller does not know what its internal code is, hence no optimizations are possible. The loop should reset the registers on _every iteration_ because `PlotPixel()` will clobber them, making the loop in `main()` unnecessarily long. Furthermore, `PlotPixel3()` doesn't know under what conditions it will be called, so there are no optimizations there either. That means piecing together the destination in every iteration, rather than just incrementing it like the inline version does. All in all, you get a line plotter that's nearly 4 times as slow _purely_ because you've used a function for a single line of code instead of inlining it via a macro or inline function. While anyone could have told you something like that would happen, actually looking at the differences leaves a stronger impression.
+  対照的に、`PlotPixel()` は完全な関数なので、呼び出し側はその内部のコードがどうなっているかを知らず、そのため最適化ができません。`PlotPixel()` がレジスタを壊すので、ループは_反復のたびに_レジスタを設定し直さなければならず、`main()` のループが不必要に長くなります。さらに、`PlotPixel3()` は自分がどんな条件で呼ばれるかを知らないので、そこでも最適化ができません。つまり、インライン版のように単に増やしていくのではなく、反復のたびに書き込み先を組み立てることになります。結局、1 行のコードをマクロやインライン関数でインライン化する代わりに関数を使った_だけ_で、ほぼ 4 倍遅い線の描画処理になってしまうのです。そういうことが起きるとは誰でも教えてくれたでしょうが、実際に違いを見ると、より強い印象が残ります。
 
-There is a lot more that could be learned from this code, but I'll leave it at this for now. The main aim was to show you what assembly (in this case Thumb asm) looks like. In this small piece of code, you can already see many of the elements that go into a full program. Even though the lack of variable identifiers is a bit of a pain, it should be possible to follow along with the code, just as you would with a C program. See, it's not all that bad now, is it?
+このコードから学べることはもっとたくさんありますが、今はここまでにしておきます。主な目的は、アセンブリ（この場合は Thumb のアセンブリ）がどんな見た目なのかを示すことでした。この小さなコードの中にも、完全なプログラムに入る多くの要素がすでに見られます。変数の識別子がないのは少し困りものですが、C のプログラムと同じように、コードを追っていけるはずです。ほら、それほどひどくないでしょう？
 
-:::warning On working by example
+:::warning 例から学ぶことについて
 
-Looking at other people's code (in this case GCC's assembly) is a nice way of learning how to make things work, it is _not_ a substitute for the manual. It may show you how to get something done, there is always the danger of getting them done wrongly or inefficiently. Programming is hardly ever trivial and you are likely to miss important details: the compiler may not be not optimising correctly, you could misinterpret the data, etc. This kind of learning often leads to [cargo-cult programming](http://www.catb.org/~esr/jargon/html/C/cargo-cult-programming.html), which often does more harm than good. If you want examples of these problems, look at nearly all other GBA tutorials and a lot of the available GBA demo code out there.
+他人のコード（この場合は GCC のアセンブリ）を見るのは、ものの動かし方を学ぶ良い方法ですが、マニュアルの代わりには_なりません_。何かのやり方を示してはくれるかもしれませんが、間違ったやり方や非効率なやり方を身につけてしまう危険が常にあります。プログラミングが些細なものであることはまずなく、重要な細部を見落とす可能性が高いのです。コンパイラが正しく最適化していないかもしれませんし、データを誤解するかもしれません。この種の学び方は、しばしば[カーゴカルトプログラミング](http://www.catb.org/~esr/jargon/html/C/cargo-cult-programming.html)につながり、益より害をもたらすことがよくあります。こうした問題の例が見たければ、ほかの GBA のチュートリアルのほぼすべてと、出回っている GBA のデモのコードの多くを見てください。
 
 :::
 
-### Assembling assembly {#ssec-gen-as}
+### アセンブリをアセンブルする {#ssec-gen-as}
 
-The assembler of the GNU toolchains is known as the GNU assembler or GAS, and the tool's name is `arm-none-eabi-as`. You can call this directly, or you can use the familiar `arm-none-eabi-gcc` to act as a gateway. The latter is probably a better choice, as it'll allow the use of the C preprocessor with ‘`-x assembler-with-cpp`’. That's right, you can then use macros, C-style comments _and_ #include if you wish. A rule for assembling things might look something like this.
+GNU ツールチェーンのアセンブラは GNU アセンブラ、または GAS として知られていて、ツールの名前は `arm-none-eabi-as` です。これを直接呼ぶこともできますし、おなじみの `arm-none-eabi-gcc` を入り口として使うこともできます。後者のほうがおそらく良い選択です。「`-x assembler-with-cpp`」で C のプリプロセッサを使えるからです。そうです、望むならマクロ、C 形式のコメント、_そして_ #include を使えるのです。アセンブルのためのルールは次のようなものになるでしょう。
 
 ```armasm
 AS      := arm-none-eabi-gcc
@@ -338,80 +338,80 @@ $(SOBJ) : %.o : %.s
     $(AS) $(ASFLAGS) -c $< -o $@
 ```
 
-This rule should work on the generated output of `gcc -S`. Note that it will probably not assemble under other assemblers (ARM SDT, Goldroad) because they have different standards for directives and comments and the like. I'll cover some important directives of GAS [later](#sec-gas), after we've seen what ARM assembly itself is like.
+このルールは `gcc -S` が生成した出力に使えるはずです。ディレクティブやコメントなどの標準が違うので、ほかのアセンブラ（ARM SDT、Goldroad）ではおそらくアセンブルできないことに注意してください。GAS の重要なディレクティブのいくつかは、ARM アセンブリそのものがどんなものかを見たあとで、[あとで](#sec-gas)扱います。
 
-## The ARM instruction set {#sec-arm}
+## ARM の命令セット {#sec-arm}
 
-The ARM core is a [<dfn>RISC</dfn>](https://en.wikipedia.org/wiki/RISC) (Reduced Instruction Set Computer) processor. Whereas CISC (Complex Instruction Set Computer) chips have a rich instruction set capable of doing complex things with a single instruction, RISC architectures try to go for more generalized instructions and efficiency. They have a comparatively large number of general-purpose registers and data instructions usually use three registers: one destination and two operands. The length of each instruction is the same, easing the decoding process, and RISC processors strive for 1-cycle instructions.
+ARM のコアは [<dfn>RISC</dfn>](https://en.wikipedia.org/wiki/RISC)（Reduced Instruction Set Computer、縮小命令セットコンピュータ）のプロセッサです。CISC（Complex Instruction Set Computer、複雑命令セットコンピュータ）のチップは 1 つの命令で複雑なことができる豊富な命令セットを持っていますが、RISC のアーキテクチャは、より汎用的な命令と効率を目指します。比較的多くの汎用レジスタを持ち、データの命令はたいてい 3 つのレジスタ、つまり書き込み先 1 つとオペランド 2 つを使います。各命令の長さは同じで、デコードの処理が楽になり、RISC のプロセッサは 1 サイクルの命令を目指します。
 
-There are actually two instruction sets that the ARM core can use: ARM code with 32bit instructions, and a subset of this called Thumb, which has 16bit long instructions. Naturally, the ARM set is more powerful, but because the most used instructions can be found in both, an algorithm coded in Thumb uses less memory and may actually be faster if the memory buses are 16bit; which is true for GBA ROM and EWRAM and the reason why most of the code is compiled to Thumb. The focus in this section will be the ARM set, to learn Thumb is basically a matter of knowing which things you cannot do anymore.
+実は、ARM のコアが使える命令セットは 2 つあります。32 ビットの命令の ARM コードと、その一部で 16 ビットの長さの命令を持つ Thumb です。当然 ARM のほうが強力ですが、最もよく使われる命令はどちらにもあるので、Thumb で書いたアルゴリズムはメモリの使用量が少なく、メモリのバスが 16 ビットなら実際に速いこともあります。GBA の ROM と EWRAM はそうなっていて、それがほとんどのコードが Thumb にコンパイルされる理由です。この節の焦点は ARM の命令セットです。Thumb を学ぶのは、基本的に何がもうできなくなるかを知ることです。
 
-The GBA processor's full name is [ARM7TDMI](https://en.wikipedia.org/wiki/ARM7TDMI), meaning it's an ARM 7 code (aka ARM v4), which can read **T**HUMB code, has a **D**ebug mode and a fast **M**ultiplier. This chapter has this processor in mind, but most of it should be applicable to other chips in the ARM family as well.
+GBA のプロセッサの正式な名前は [ARM7TDMI](https://en.wikipedia.org/wiki/ARM7TDMI) で、ARM 7 のコア（別名 ARM v4）で、**T**HUMB のコードを読め、**D**ebug（デバッグ）モードと高速な **M**ultiplier（乗算器）を持つという意味です。この章はこのプロセッサを念頭に置いていますが、そのほとんどは ARM ファミリーのほかのチップにも当てはまるはずです。
 
-### Basic features {#ssec-arm-base}
+### 基本の特徴 {#ssec-arm-base}
 
-#### ARM registers
+#### ARM のレジスタ
 
-ARM processors have 16 32bit registers named r0-r15, of which the last three are usually reserved for special purposes: **r13** is used as the stack pointer (SP); **r14** is the <dfn>link register</dfn> (LR), indicating where to return to from a function, and **r15** is the program counter (PC).. The rest are free, but there are a few conventions. The first four, **r0-r3**, are <dfn>argument</dfn> and/or <dfn>scratch registers</dfn>; function parameters go here (or onto the stack), and these registers are expected to be clobbered by the called function. **r12** falls into this category too. The rest, **r4-r11**, are also known as <dfn>variable registers</dfn>.
+ARM のプロセッサには r0-r15 という名前の 16 個の 32 ビットのレジスタがあり、そのうち最後の 3 つは普通、特別な目的のために予約されています。**r13** はスタックポインタ（SP）として、**r14** は関数からどこに戻るかを示す<dfn>リンクレジスタ</dfn>（LR）として、**r15** はプログラムカウンタ（PC）として使われます。残りは自由に使えますが、いくつかの慣習があります。最初の 4 つ、**r0-r3** は<dfn>引数</dfn>レジスタや<dfn>スクラッチレジスタ</dfn>です。関数のパラメータはここ（かスタック）に入れられ、これらのレジスタは呼ばれた関数によって壊されるものと想定されています。**r12** もこの部類に入ります。残りの **r4-r11** は<dfn>変数レジスタ</dfn>とも呼ばれます。
 
 <div class="lblock">
   <table id="tbl:regnames" class="table-data">
     <caption align="bottom">
-      <b>{*@tbl:regnames}</b>. Standard and alternative register names.
+      <b>{*@tbl:regnames}</b>。標準のレジスタ名と別名。
     </caption>
     <tbody align="center">
-      <tr> <th>std</th><th>gcc</th> <th>arm</th><th>description</th> </tr>
+      <tr> <th>標準</th><th>gcc</th> <th>arm</th><th>説明</th> </tr>
       <tr> 
         <td>r0-r3</td> <td>r0-r3</td> <td>a1-a4</td>
-        <td>argument / scratch</td>
+        <td>引数 / スクラッチ</td>
       </tr>
       <tr> 
         <td>r4-r7</td> <td>r4-r7</td> <td>v1-v4</td>
-        <td>variable</td> 
+        <td>変数</td> 
       </tr>
       <tr> 
         <td rowspan=2>r8<br>r9</td>
         <td rowspan=2>r8<br>r9</td> <td>v5</td>
-        <td>variable</td> 
+        <td>変数</td> 
       </tr>
-      <tr> <td>v6/SB</td> <td>platform specific</td> </tr>
+      <tr> <td>v6/SB</td> <td>プラットフォーム依存</td> </tr>
       <tr>
         <td rowspan=2>r10<br>r11</td>
-        <td>sl</td> <td>v7</td> <td> variable </td>
+        <td>sl</td> <td>v7</td> <td> 変数 </td>
       </tr>
       <tr> 
         <td>fp</td> <td>v8</td> 
-        <td> variable / frame pointer</td>
+        <td> 変数 / フレームポインタ</td>
       </tr>
       <tr>
         <td>r12</td> <td>ip</td> <td>IP</td> 
-        <td>Intra-Procedure-call scratch</td>
+        <td>プロシージャ内呼び出しのスクラッチ</td>
       </tr>
       <tr>
         <td>r13</td> <td>sp</td> <td>SP</td> 
-        <td>Stack Pointer</td>
+        <td>スタックポインタ</td>
       </tr>
       <tr>
         <td>r14</td> <td>lr</td> <td>LR</td> 
-        <td>Link Register</td>
+        <td>リンクレジスタ</td>
       </tr>
       <tr>
         <td>r15</td> <td>pc</td> <td>PC</td> 
-        <td>Program Counter</td>
+        <td>プログラムカウンタ</td>
       </tr>
     </tbody>
   </table>
 </div>
 
-#### ARM instructions
+#### ARM の命令
 
-Nearly all of the possible instructions fall into the following three classes: <dfn>data operations</dfn>, such as arithmetic and bit ops; <dfn>memory operations</dfn>, load and store in many guises and <dfn>branches</dfn> for jumping around code for loops, ifs and function calls. The speed of instructions almost follows this scheme as well. Data instructions usually happen in a cycle; memory ops uses two or three and branches uses 3 or 4. The whole timing thing is actually a _lot_ more complicated than this, but it's a useful rule of thumb.
+可能な命令のほぼすべては、次の 3 つの種類に分けられます。算術演算やビット演算などの<dfn>データ演算</dfn>、いろいろな形の読み込みと書き込みである<dfn>メモリ演算</dfn>、そしてループ、if、関数呼び出しのためにコードの中を飛び回る<dfn>分岐</dfn>です。命令の速さもほぼこの区分に従います。データの命令はたいてい 1 サイクルで済み、メモリ演算は 2 か 3、分岐は 3 か 4 サイクルを使います。タイミング全体の話は実際にはこれよりずっと_ずっと_複雑ですが、経験則としては役に立ちます。
 
-#### All instructions are conditional
+#### すべての命令は条件付き
 
-On most processors, you can only use branches conditionally, but on ARM systems you can attach the conditionals to _all_ instructions. This can be very handy for small if/else blocks, or compound conditions, which would otherwise require the use of the more time-consuming branches. The code below contains asm versions of the familiar `max(a, b)` macro. The first one is the traditional version, which requires two labels, two jumps (although only one of those is executed) and the two instructions that actually do the work. The second version just uses two `mov`'s, but only one of them will actually be executed thanks to the conditionals. As a result, it is shorter, faster and more readable.
+ほとんどのプロセッサでは、条件付きで使えるのは分岐だけですが、ARM のシステムでは_すべての_命令に条件を付けられます。これは、小さな if/else のブロックや複合条件にとても便利です。そうでなければ、時間のかかる分岐を使わなければならないからです。下のコードには、おなじみの `max(a, b)` マクロのアセンブリ版が入っています。1 つ目は伝統的な版で、2 つのラベル、2 つのジャンプ（実行されるのはそのうち 1 つだけですが）、そして実際に仕事をする 2 つの命令が必要です。2 つ目の版は 2 つの `mov` を使うだけですが、条件のおかげで、実際に実行されるのはそのうち 1 つだけです。その結果、短く、速く、読みやすくなります。
 
-These kinds of conditionals shouldn't be used blindly, though. Even though you won't execute the instruction if the conditional fails, you still need to read it from memory, which costs one cycle. As a rough guideline, after about 3 skipped instructions, the branch would actually be faster.
+ただし、この種の条件はやみくもに使うべきではありません。条件が成り立たなければ命令は実行されませんが、それでもメモリから読み込む必要があり、それに 1 サイクルかかります。大まかな目安として、飛ばす命令が 3 つほどを超えると、分岐のほうが実際に速くなります。
 
 ```armasm
 @ // r2= max(r0, r1):
@@ -434,21 +434,21 @@ These kinds of conditionals shouldn't be used blindly, though. Even though you w
     ...             @ rest of code
 ```
 
-Another optional item is whether or not the status flags are set. Test instructions like `cmp` always set them, but most of the other require an ‘`-s`’ affix. For example, `sub` would not set the flags, but `sub`**`s`** would. Because this kinda clashes with the plural ‘s’, I'm using adding an apostrophe for the plural form, so `subs` means `sub` with status flags, but `sub`'s means multiple `sub` instructions.
+もう 1 つの任意の項目は、ステータスフラグを設定するかどうかです。`cmp` のような判定の命令は常にフラグを設定しますが、ほかのほとんどは「`-s`」の接尾辞が必要です。たとえば、`sub` はフラグを設定しませんが、`sub`**`s`** は設定します。これは英語の複数形の「s」と少しぶつかるので、原文では複数形にアポストロフィを付けて、`subs` はステータスフラグ付きの `sub`、`sub`'s は複数の `sub` 命令を意味するように書き分けています。
 
-:::tip All instructions are conditional
+:::tip すべての命令は条件付き
 
-Each instruction of the ARM set can be run conditionally, allowing shorter, cleaner and faster code.
+ARM の命令セットの各命令は条件付きで実行でき、より短く、すっきりした、速いコードを書けます。
 
 :::
 
-#### The barrel shifter
+#### バレルシフタ
 
-A barrel shifter is a circuit dedicated to performing bit-shifts. Well, shifts and rotations, but I'll use the word ‘shift’ for both here. The barrel shifter is part of the ARM core itself and comes before any arithmetic so that you it can handle shifted numbers very fast. The real value of the barrel shifter comes from the fact that almost all instructions can apply a shift to one of their operands at no extra cost.
+バレルシフタは、ビットシフトを行う専用の回路です。正確にはシフトと回転ですが、ここではどちらにも「シフト」という言葉を使います。バレルシフタは ARM のコアそのものの一部で、どの算術演算よりも前に置かれているので、シフトした数をとても速く扱えます。バレルシフタの本当の価値は、ほぼすべての命令が、追加のコストなしにオペランドの 1 つにシフトをかけられるという事実から来ています。
 
-There are four barrel-shift operations: left shift (`lsl`), logical right-shift (`lsr`), arithmetic right-shift (`asr`) and rotate-right (`ror`). The difference between arithmetic and logical shift right is one of signed/unsigned numbers; see the [bit ops section](numbers.html#ssec-bitops-false) for details. These operations are attached to the last register in an operation, followed by an immediate value or a register. For example, instead of simply `Rm` you can have ‘`Rm, lsl #2`’ means `Rm<<2` and ‘`Rm, lsr Rs`’ for `Rm>>Rs`. Because shifted registers can apply to almost all instructions and I don't want to write it in full all the time, I will designate the shifted register as _Op2_.
+バレルシフトの演算は 4 つあります。左シフト（`lsl`）、論理右シフト（`lsr`）、算術右シフト（`asr`）、右回転（`ror`）です。算術右シフトと論理右シフトの違いは、符号付きと符号なしの数の違いです。詳しくは[ビット演算の節](numbers.html#ssec-bitops-false)を見てください。これらの演算は、演算の最後のレジスタに付けられ、そのあとに即値かレジスタが続きます。たとえば、単なる `Rm` の代わりに、`Rm<<2` を意味する「`Rm, lsl #2`」や、`Rm>>Rs` を意味する「`Rm, lsr Rs`」が使えます。シフトしたレジスタはほぼすべての命令に使え、毎回全部書きたくはないので、シフトしたレジスタを _Op2_ と表すことにします。
 
-Now this may seem like esoteric functionality, but it's actually very useful and more common than you think. One application is multiplications by 2<sup>n</sup>±1, without resorting to relatively slow multiplication instructions. For example, _x_\*9 is the same as _x_\*(1+8) = *x* + *x*\*8 = _x_+(_x_\<\<3). This can be done in a single `add`. Another use is in loading values from arrays, for which indices would have to be multiplied by the size of the elements to get the right addresses.
+さて、これは難解な機能に思えるかもしれませんが、実はとても便利で、思ったよりよく使われます。1 つの応用は、比較的遅い乗算の命令に頼らずに、2<sup>n</sup>±1 を掛けることです。たとえば、_x_\*9 は _x_\*(1+8) = *x* + *x*\*8 = _x_+(_x_\<\<3) と同じです。これは 1 つの `add` でできます。もう 1 つの使い道は配列から値を読み込むことで、正しいアドレスを得るには、インデックスに要素の大きさを掛けなければなりません。
 
 ```armasm
 @ Multiplication by shifted add/sub
@@ -460,21 +460,21 @@ rsb r0, r1, r1, lsl #4      @ r0= (r1<<2)-r1 = r1*15
 ldr r0, [r1, r2, lsl #2]    @ u32 *r1; r0= r1[r2]
 ```
 
-Other uses are certainly possible as well. Like the conditional, you might not really need use of shifted `add`'s and such, but they allow for some _wonderfully_ optimized code in the hands of the clever programmer. These are things that make assembly fun.
+もちろん、ほかの使い道もあります。条件付きの場合と同じく、シフト付きの `add` などは本当には必要ないかもしれませんが、賢いプログラマの手にかかれば、_素晴らしく_最適化されたコードを書けます。こういうことがアセンブリを楽しくするのです。
 
-:::tip Shifts are free!
+:::tip シフトはタダ！
 
-Or at least very nearly so. Shifts-by-value can be performed at no extra cost, and shifts-by-register cost only one cycle. Actually, bit-rotates behave like this as well, but they're rather rare and since I don't know of the correct term that encompasses both, I'll use the word “shift” for both.
+少なくとも、ほぼタダです。値によるシフトは追加のコストなしで行え、レジスタによるシフトも 1 サイクルしかかかりません。実はビット回転もこのようにふるまいますが、それはかなりまれですし、両方を包む正しい用語を知らないので、どちらにも「シフト」という言葉を使います。
 
 :::
 
-#### Restricted use of immediate values
+#### 即値の使い方の制限
 
-And now for one of the points that makes ARM assembly less fun. As I said, each instruction is 32bits long. Now, there are 16 condition codes, which take up 4 bits of the instruction. Then there's 2x four for the destination and first operand registers, one for the set-status flag, and then an assorted number of bits for other matters like the actual opcodes. The bottom line is that you only have 12 bits left for any immediate value you might like to use.
+そしてここからは、ARM アセンブリをあまり楽しくなくする点の 1 つです。先ほど言ったように、各命令は 32 ビットの長さです。さて、条件コードは 16 個あり、命令の 4 ビットを占めます。それから、書き込み先と最初のオペランドのレジスタのために 4 ビットが 2 つ、ステータスの設定のフラグに 1 ビット、そして実際のオペコードのようなほかのことのために、いろいろな数のビットがあります。結局、使いたい即値には 12 ビットしか残りません。
 
-That's right 12. **A whole 12 bits**. You may have already figured out that, since this will only allow for 4096 distinct values, this presents a bit of a problem. And you'd be right. This is one of the major points of bad news for RISC processors: after assigning bits to instruction-type, registers and other fields, there's very little room for actual numbers left. So how is one to load a number like `0601:0000` (object VRAM) then? Well … you _can't_! At least, not in one go.
+そうです、12 です。**まるまる 12 ビット**です。もうお気づきかもしれませんが、これでは 4096 通りの異なる値しか使えないので、少し問題があります。そのとおりです。これは RISC のプロセッサにとっての大きな悪い知らせの 1 つです。命令の種類、レジスタ、そのほかのフィールドにビットを割り当てると、実際の数値のための余地はほとんど残らないのです。では、`0601:0000`（オブジェクトの VRAM）のような数値はどうやって読み込めばいいのでしょうか？ ええと……_できません_！ 少なくとも、一度には。
 
-So, there is only a limited amount of numbers that can be used directly; the rest must be pieced together from multiple smaller numbers. Instead of just taking the 12 bits for a single integer, what the designers have done is split it into an 8bit number (_n_) and a 4bit rotation field (_r_). The barrel shifter will take care of the rest. The full immediate value _v_ is given by:
+つまり、直接使える数値は限られていて、残りは複数の小さな数から組み立てなければなりません。設計者たちは、12 ビットを単に 1 つの整数に使う代わりに、8 ビットの数（_n_）と 4 ビットの回転のフィールド（_r_）に分けました。残りはバレルシフタが面倒をみます。完全な即値 _v_ は次の式で与えられます。
 
 <table id="eq-imm">
   <tr>
@@ -507,9 +507,9 @@ So, there is only a limited amount of numbers that can be used directly; the res
   </tr>
 </table>
 
-This means that you can create values like 255 (_n_=255, _r_=0) and 0x06000000 (_n_=6, _r_=4 (remember, rotate-_right_)). However, 511 and 0x06010000 are still invalid because the bit-patterns can't fit into one byte. For these invalid numbers you have two options: construct them in multiple instructions, or load them from memory. Both of these can become quite expensive so if it is possible to avoid them, do so.
+つまり、255（_n_=255、_r_=0）や 0x06000000（_n_=6、_r_=4（右回転であることを思い出してください））のような値を作れます。しかし、511 や 0x06010000 はやはり無効です。ビットのパターンが 1 バイトに収まらないからです。これらの無効な数には 2 つの選択肢があります。複数の命令で組み立てるか、メモリから読み込むかです。どちらもかなり高くつきかねないので、避けられるなら避けてください。
 
-The faster method of forming bigger numbers is a matter of debate. There are many factors involved: the number in mind, memory section, instruction set and amount of space left, all interacting in nasty ways. It's probably best not to worry about it too much, but as a guideline, I'd say if you can do it in two data instructions do so; if not, use a load. The easiest way of creating big numbers is with a special form of the `ldr` instruction: ‘`ldr Rd,=num`’ (note: no ‘#’!). The assembler will turn this into a mov if the number allows it, or an `ldr` if it doesn't. The space that the number needs will be created automatically as well.
+大きな数を作るのにどちらの方法が速いかは議論の分かれるところです。多くの要因が関わっています。対象の数、メモリの領域、命令セット、残っている領域の量で、それらが厄介な形で絡み合います。たぶんあまり気にしないのが一番ですが、目安として、2 つのデータの命令でできるならそうし、できなければ読み込みを使う、と言っておきます。大きな数を作る一番簡単な方法は、`ldr` 命令の特別な形「`ldr Rd,=num`」（注意: 「#」はありません！）を使うことです。アセンブラは、数がそれを許せばこれを mov に、そうでなければ `ldr` に変えます。数のために必要な領域も自動的に作られます。
 
 ```armasm
     @ form 511(0x101) with mov's
@@ -521,45 +521,45 @@ The faster method of forming bigger numbers is a matter of debate. There are man
     ldr     r0,=511
 ```
 
-That there is only room for an 8bit number + 4bit rotate for immediate operands is something you'll just have to learn to live with. If the assembler occasionally complains about invalid constants, you now know what it means and how you can correct for it. Oh, and if you thought this was bad, think of how it would work for Thumb code, which only has 16 bits to work with.
+即値のオペランドには 8 ビットの数 + 4 ビットの回転の余地しかないということには、慣れてもらうしかありません。アセンブラがときどき無効な定数について文句を言ってきたら、それが何を意味するのか、どう直せばいいのかが今ならわかります。ああ、それから、これがひどいと思ったなら、16 ビットしか使えない Thumb のコードではどうなるか考えてみてください。
 
-:::warning The only valid immediate values are rotated bytes
+:::warning 有効な即値は回転したバイトだけ
 
-When instructions allow immediate values, the only permissible values are those that can be reduced to a byte rotated by an even number. 0xFF and 0x100 are allowed, but 0x101 is not. This has consequences for data operations, but also for memory addressing since it will not be possible to load a full 32bit address in one go. You can either construct the larger value out of smaller parts, or use a load-assignment construct: ‘`ldr `_`Rd`_`,=`_`num`_’ which the assembler will convert into a `mov` if possible, or a PC-relative load if not.
-
-:::
-
-:::tip Remember the previous note
-
-Is this worth a separate note? Maybe not, but the previous note is important enough to remember. It is not exactly intuitive that code should behave that way and if you found yourself staring at the enigmatic [invalid constant](https://gbadev.net/forum-archive/thread/8/9602.html) error message, you'd probably be lost without this bit of info.
+命令が即値を許すとき、許される値は、バイトを偶数だけ回転したものに帰着できる値だけです。0xFF と 0x100 は使えますが、0x101 は使えません。これはデータの演算に影響しますが、32 ビットのアドレス全体を一度に読み込むことはできないので、メモリのアドレス指定にも影響します。より大きな値を小さな部品から組み立てるか、読み込みと代入の構文「`ldr `_`Rd`_`,=`_`num`_」を使ってください。アセンブラは、可能ならこれを `mov` に、そうでなければ PC 相対の読み込みに変換します。
 
 :::
 
-### Data instructions {#ssec-arm-data-ins}
+:::tip 前の注意を覚えておこう
 
-The data operations carry out the calculations of a program, which includes both arithmetic and logical operations. You can find a summary of the data instructions in {@tbl:ins-data}. While this lists them in four groups, the only real division is between the multiplies and the rest. As you can see, there is **no** division instruction. While this can be considered highly annoying, as it turns out the need for division is actually quite small – small enough to cut it out of the instruction set, anyway.
+これは独立した注意にする価値があるでしょうか？ たぶんないでしょうが、前の注意は覚えておく価値があるほど重要です。コードがそういうふるまいをするのは直感的とは言えませんし、謎めいた [invalid constant](https://gbadev.net/forum-archive/thread/8/9602.html) のエラーメッセージを見つめているときに、この情報がなければ途方に暮れてしまうでしょう。
 
-Unlike some processors, ARM can only perform data processing on registers, not on memory variables directly. Most data instructions use one destination register and two operands. The first operand is always a register, the second can be four things: an immediate value or register ( \#_n_ / `Rm`) or a register shifted by an immediate value or register (‘`Rm, lsl #`_`n`_’, ‘`Rm, lsl Rs`’, and similar for `lsr`, `asr` and `ror`). Because this arrangement is quite common, it is often referred to as simply _Op2_, even if it's not actually a second operand.
+:::
 
-Like all instructions, data instructions can be executed conditionally by adding the appropriate affix. They can also alter the status flags by appending the -`s` prefix. When using both, the conditional affix always comes first.
+### データの命令 {#ssec-arm-data-ins}
+
+データの演算は、算術演算と論理演算の両方を含む、プログラムの計算を行います。データの命令のまとめは {@tbl:ins-data} にあります。そこでは 4 つのグループに分けて挙げていますが、本当の区別は乗算とそれ以外の間だけです。ご覧のとおり、除算の命令は**ありません**。これはとても腹立たしいと思えるかもしれませんが、実は除算が必要になることはかなり少ないのです。少なくとも、命令セットから外せるくらいには少ないのです。
+
+一部のプロセッサとは違い、ARM はレジスタ上でしかデータを処理できず、メモリ上の変数を直接処理することはできません。ほとんどのデータの命令は、書き込み先のレジスタ 1 つとオペランド 2 つを使います。最初のオペランドは常にレジスタで、2 つ目は 4 つのもののどれかになれます。即値かレジスタ（ \#_n_ / `Rm`）、あるいは即値かレジスタでシフトしたレジスタ（「`Rm, lsl #`_`n`_」、「`Rm, lsl Rs`」、そして `lsr`、`asr`、`ror` についても同様）です。この構成はとてもよく出てくるので、実際には 2 つ目のオペランドでなくても、単に _Op2_ と呼ばれることがよくあります。
+
+すべての命令と同じく、データの命令も適切な接尾辞を付けることで条件付きで実行できます。-`s` の接頭辞（訳注: 実際には接尾辞です）を付けることで、ステータスフラグを変更することもできます。両方を使うときは、常に条件の接尾辞が先に来ます。
 
 <div class="cblock">
   <table id="tbl:ins-data">
     <caption align="bottom">
-      <b>{!@tbl:ins-data}</b>: Data processing instructions. Basic format <code>op{cond}{s} Rd, Rn, Op2</code>, <code>cond</code> and <code>s</code> are the optional condition and status codes, and <i>Op2</i> a shifted register.
+      <b>{!@tbl:ins-data}</b>: データ処理の命令。基本の形は <code>op{cond}{s} Rd, Rn, Op2</code>。<code>cond</code> と <code>s</code> は任意の条件コードとステータスコードで、<i>Op2</i> はシフトしたレジスタです。
     </caption>
     <tr>
       <td>
         <table class="table-data">
-          <tr align="center"><th>opcode		<th>operands	<th> function</tr>
-          <tr><th colspan=3 align="center">Arithmetic				</tr>
+          <tr align="center"><th>オペコード		<th>オペランド	<th> 機能</tr>
+          <tr><th colspan=3 align="center">算術演算				</tr>
           <tr><td>adc		<td>Rd, Rn, Op2 <td>Rd = Rn + Op2 + C	</tr>
           <tr><td>add		<td>Rd, Rn, Op2 <td>Rd = Rn + Op2		</tr>
           <tr><td>rsb		<td>Rd, Rn, Op2 <td>Rd = Op2 - Rn		</tr>
           <tr><td>rsc		<td>Rd, Rn, Op2 <td>Rd = Op2 - Rn - !C	</tr>
           <tr><td>sbc		<td>Rd, Rn, Op2 <td>Rd = Rn - Op2 -!C	</tr>
           <tr><td>sub		<td>Rd, Rn, Op2 <td>Rd = Rn - Op2		</tr>
-          <tr><th colspan=3 align="center">Logical ops				</tr>
+          <tr><th colspan=3 align="center">論理演算				</tr>
           <tr><td>and		<td>Rd, Rn, Op2 <td>Rd = Rn &amp; Op2	</tr>
           <tr><td>bic		<td>Rd, Rn, Op2 <td>Rd = Rn &amp;~ Op2	</tr>
           <tr><td>eor		<td>Rd, Rn, Op2 <td>Rd = Rn ^ Op2		</tr>
@@ -571,13 +571,13 @@ Like all instructions, data instructions can be executed conditionally by adding
       <td width=10%>&nbsp;</td>
       <td>
         <table class="table-data">
-          <tr align="center"><th>opcode		<th>operands	<th> function
-          <tr><th colspan=3 align="center">Status ops			</tr>
+          <tr align="center"><th>オペコード		<th>オペランド	<th> 機能
+          <tr><th colspan=3 align="center">ステータスの演算			</tr>
           <tr><td>cmp		<td>Rn, Op2		<td>Rn - Op2		</tr>
           <tr><td>cmn		<td>Rn, Op2		<td>Rn + Op2		</tr>
           <tr><td>teq		<td>Rn, Op2		<td>Rn &amp; Op2	</tr>
           <tr><td>tst		<td>Rn, Op2		<td>Rn ^ Op2		</tr>
-          <tr><th colspan=3 align="center">Multiplies			</tr>
+          <tr><th colspan=3 align="center">乗算			</tr>
           <tr><td>mla		<td>Rd, Rm, Rs, Rn		<td>Rd = Rm * Rs + Rn	</tr>
           <tr><td>mul		<td>Rd, Rm, Rs			<td>Rd = Rm * Rs		</tr>
           <tr><td>smlal	<td>RdLo, RdHi, Rm, Rs	<td>RdHiLo += Rm * Rs	</tr>
@@ -590,21 +590,21 @@ Like all instructions, data instructions can be executed conditionally by adding
   </table>
 </div>
 
-The first group, arithmetic, only contains variants of addition and subtraction. `add` and `sub` are their base forms. `rsb` is a special thing that reverses the operand order; the difference with the regular `sub` is that _Op2_ is now the _minuend_ (the thing subtracted from). Only _Op2_ is allowed to have immediate values and shifted registers, which allows you to negate values (0−*x*) and fast-multiply by 2<sup>n</sup>−1.
+最初のグループの算術演算には、加算と減算の変種しかありません。`add` と `sub` が基本の形です。`rsb` はオペランドの順序を逆にする特別なものです。普通の `sub` との違いは、今度は _Op2_ が_被減数_（引かれる側）になることです。即値やシフトしたレジスタを使えるのは _Op2_ だけなので、これで値の符号を反転したり（0−*x*）、2<sup>n</sup>−1 を高速に掛けたりできます。
 
-The variants ending in ‘`c`’ are additions and subtractions with carry, which allows for arithmetic for values larger than the register size. For example, consider you have 8bit registers and want to add 0x00FF and 0x0104. Because the latter doesn't fit into one register, you have to split it and then add twice, starting with with the least significant byte. This gives 0xFF+0x04=0x103, represented by 0x02 in the destination register and a set carry flag. For the second part you have to add 0x00 and 0x01 from the operands, _and_ the carry from the lower byte, giving 0x00+0x01+1 = 0x02. Now string the separate parts together to give 0x0203.
+「`c`」で終わる変種はキャリー付きの加算と減算で、レジスタの大きさより大きな値の算術演算ができます。たとえば、8 ビットのレジスタがあって、0x00FF と 0x0104 を足したいとします。後者は 1 つのレジスタに収まらないので、分けて、最下位のバイトから始めて 2 回足さなければなりません。これで 0xFF+0x04=0x103 になり、書き込み先のレジスタの 0x02 と、設定されたキャリーフラグで表されます。2 つ目の部分では、オペランドの 0x00 と 0x01、_そして_下位のバイトからのキャリーを足さなければならず、0x00+0x01+1 = 0x02 になります。これらの部分をつなげると 0x0203 になります。
 
-Because ARM registers are 32bit wide you probably won't be using the those instructions much, but you never know.
+ARM のレジスタは 32 ビットの幅があるので、これらの命令をあまり使うことはないでしょうが、わかりません。
 
-The second group are the bit operations, most of which you should be familiar with already. The all have exact matches in C operators, with the exception of bit-clear. However, the value of such an instruction should be obvious. You will notice a distinct absence of shift instructions here, for the simple reason that they're not really necessary: thanks to the barrel shifter, the `mov` instruction can be used for shifts and rotates. ‘r1 = r0\<\<4’ could be written as ‘`mov r1, r0, lsl #4`’.
+2 つ目のグループはビット演算で、ほとんどはもうおなじみのはずです。ビットクリアを除いて、どれも C の演算子とぴったり対応しています。とはいえ、そういう命令の価値は明らかでしょう。ここにはシフトの命令がまったくないことに気づくでしょうが、それは単に、実は必要ないからです。バレルシフタのおかげで、`mov` 命令をシフトや回転に使えるのです。「r1 = r0\<\<4」は「`mov r1, r0, lsl #4`」と書けます。
 
-I have mentioned this a couple of times now, but as we're dealing with another language now it bares repeating: there is a difference between right-shifting a signed and unsigned numbers. Right-shifts remove bits from the top; unsigned numbers should be zero-extended (filled with 0), but signed numbers should be sign-extended (filled with the original MSB). This is the difference between a <dfn>logical shift right</dfn> and an <dfn>arithmetic shift right</dfn>. This doesn't apply to left-shifts, because that fills zeroes either way.
+これはもう何度か触れましたが、今は別の言語を扱っているので、繰り返しておく価値があります。符号付きの数と符号なしの数の右シフトには違いがあります。右シフトは上からビットを取り除きます。符号なしの数はゼロ拡張（0 で埋める）すべきですが、符号付きの数は符号拡張（元の最上位ビットで埋める）すべきです。これが<dfn>論理右シフト</dfn>と<dfn>算術右シフト</dfn>の違いです。左シフトはどちらにせよゼロで埋めるので、これは当てはまりません。
 
-The third group isn't much of a group, really. The status flag operations set the status bits according to the results of their functionality. Now, you can do this with the regular instructions as well; for example, a compare (`cmp`) is basically a subtraction that also sets the status flags, i.e., a `subs`. The only real difference is that this time there's no register to hold the result of the operation.
+3 つ目のグループは、実はグループというほどのものではありません。ステータスフラグの演算は、その機能の結果に応じてステータスのビットを設定します。さて、これは普通の命令でもできます。たとえば、比較（`cmp`）は基本的にステータスフラグも設定する減算、つまり `subs` です。唯一の本当の違いは、今度は演算の結果を保持するレジスタがないことです。
 
-Lastly, the multiplication formats. At the table indicates, you cannot use immediate values; if you want to multiply with a constant you _must_ load it into a register first. Second, no _Op2_ means no shifted registers. There is also a third rule that Rd and Rm can't use the same register, because of how the multiplication algorithm is implemented. That said, there don't _seem_ to be any adverse effects using Rd=Rm.
+最後に、乗算の形式です。表が示すとおり、即値は使えません。定数を掛けたければ、まずそれをレジスタに読み込ま_なければなりません_。次に、_Op2_ がないので、シフトしたレジスタも使えません。3 つ目の規則もあって、乗算のアルゴリズムの実装の仕方のせいで、Rd と Rm に同じレジスタは使えません。とはいえ、Rd=Rm を使っても悪影響はない_ようです_。
 
-The instruction `mla` stands for ‘multiply with accumulate’, which can be handy for dot-products and the like. The `mull` and `mlal` instructions are for 64bit arithmetic, useful for when you expect the result not to fit into 32bit registers.
+`mla` 命令は「multiply with accumulate（乗算して累積）」の略で、内積などに便利です。`mull` 命令と `mlal` 命令は 64 ビットの算術演算用で、結果が 32 ビットのレジスタに収まらないと予想されるときに役立ちます。
 
 ```armasm
 @ Possible variations of data instructions
@@ -637,11 +637,11 @@ add     r0, r0, r1, lsr #28     @ += 0 or += (0xFFFFFFFF>>28 = 0xF)
 mov     r1, r0, asr #4          @ r1 = r0>>4;
 ```
 
-### Memory instructions: load and store {#ssec-arm-mem}
+### メモリの命令: 読み込みと書き込み {#ssec-arm-mem}
 
-Because ARM processors can only perform data processing on registers, interactions with memory only come in two flavors: loading values from memory into registers and storing values into memory from registers.
+ARM のプロセッサはレジスタ上でしかデータを処理できないので、メモリとのやり取りは 2 種類しかありません。メモリからレジスタへ値を読み込むことと、レジスタからメモリへ値を書き込むことです。
 
-The basic instructions for that are `ldr` (LoaD Register) and `str` (STore Register), which load and store words. Again, the most general form uses two registers and an _Op2_:
+そのための基本の命令は `ldr`（LoaD Register）と `str`（STore Register）で、ワードを読み込み、書き込みます。ここでも、最も一般的な形は 2 つのレジスタと _Op2_ を使います。
 
 <table>
   <tr>
@@ -651,13 +651,13 @@ The basic instructions for that are `ldr` (LoaD Register) and `str` (STore Regis
     </td>
 </table>
 
-Here _op_ is either `ldr` or `str`. Because they're so similar in appearance, I will just use `ldr` for the remainder of the discussion on syntax, except when things are different. The condition flag again goes directly behind the base opcode. The _type_ refers to the datatype to load (or store), which can be words, halfwords or bytes. The word forms do not use any extension, halfwords use `-h` or `-sh`, and bytes use `-b` and `-sb`. The extra `s` is to indicate a signed byte or halfword. Because the registers are 32bit, the top bits need to be sign-extended or zero-extended, depending on the desired datatype.
+ここで _op_ は `ldr` か `str` です。見た目がとても似ているので、違う場合を除いて、構文の説明の残りでは `ldr` だけを使います。条件フラグはここでも基本のオペコードのすぐ後ろに来ます。_type_ は読み込む（または書き込む）データ型を指し、ワード、ハーフワード、バイトのどれかです。ワードの形には接尾辞が付かず、ハーフワードは `-h` か `-sh`、バイトは `-b` と `-sb` を使います。余分な `s` は符号付きのバイトやハーフワードであることを示します。レジスタは 32 ビットなので、望むデータ型に応じて、上位のビットを符号拡張かゼロ拡張する必要があります。
 
-The first register here, `Rd` can be either the destination or source register. The thing between brackets always denotes the memory address; `ldr` means load _from_ memory, in which case `Rd` is the destination, and `str` means store _to_ memory, so `Rd` would be the source there. `Rn` is known as the <dfn>base register</dfn>, for reasons that we will go into later, and _Op2_ often serves as an offset. The combination works very much like array indexing and pointer arithmetic.
+ここでの最初のレジスタ `Rd` は、書き込み先にも読み込み元にもなりえます。角かっこの中のものは常にメモリのアドレスを表します。`ldr` はメモリ_から_読み込むという意味で、その場合 `Rd` は書き込み先です。`str` はメモリ_へ_書き込むという意味なので、そこでは `Rd` は読み込み元になります。`Rn` は、あとで説明する理由から<dfn>ベースレジスタ</dfn>と呼ばれ、_Op2_ はたいていオフセットとして働きます。この組み合わせは、配列のインデックスやポインタ演算ととてもよく似た働き方をします。
 
-:::note Memory ops vs C pointers/arrays
+:::note メモリの演算と C のポインタ/配列
 
-To make the comparison to C a little easier, I will sometimes indicate what happens using pointers, but in order to do that I will have to indicate the type of the pointer somehow. I could use some horrid casting notation, but it would be easiest to use a form of arrays for this, and use the register-name + an affix to show the data type. I'll use ‘\_w’ for words, ‘\_h’ for halfwords, and ‘\_b’ for bytes, and ‘\_sw’, etc. for their signed versions. For example, `r0_sh` would indicate that `r0` is a signed halfword pointer. This is just a useful bit of shorthand, not actually part of assembly itself.
+C との比較を少し楽にするために、ときどきポインタを使って何が起きるかを示しますが、そのためにはポインタの型を何らかの方法で示す必要があります。ひどいキャストの表記を使うこともできますが、一番簡単なのは一種の配列を使い、レジスタ名 + 接尾辞でデータ型を示すことです。ワードには「\_w」、ハーフワードには「\_h」、バイトには「\_b」、それらの符号付き版には「\_sw」などを使います。たとえば、`r0_sh` は `r0` が符号付きのハーフワードのポインタであることを示します。これは単に便利な略記で、アセンブリそのものの一部ではありません。
 
 ```armasm
 @ Basic load/store examples. Assume r1 contains a word-aligned address
@@ -667,19 +667,19 @@ str     r0, [r1]    @ *(u32*)r1= r0; //or r1_w[0]= r0;
 
 :::
 
-#### Addressing modes
+#### アドレッシングモード
 
-There are several ways of interacting, known as <dfn>addressing modes</dfn>. The simplest form is _direct addressing_, where you indicate the address directly via an immediate value. However, that mode is unavailable to ARM systems because full addresses don't fit in the instruction. What we do have is several indirect addressing forms.
+やり取りの方法はいくつかあり、<dfn>アドレッシングモード</dfn>と呼ばれます。最も単純な形は_直接アドレッシング_で、即値でアドレスを直接示します。しかし、完全なアドレスは命令に収まらないので、ARM のシステムではこのモードは使えません。使えるのは、いくつかの間接アドレッシングの形です。
 
-The first available form is <dfn>register indirect addressing</dfn>, which gets the address from a register, like ‘`ldr Rd, [Rn]`’. An extension of this is <dfn>pre-indexed addressing</dfn>, which adds an offset to the base register before the load. The base form of this is ‘`ldr Rd, [Rn, `_`Op2`_`]`’. This is very much like array accesses. For example ‘`ldr r1, [r0, r2, lsl #2]`’ corresponds to `r0_w[r2]`: an word-array load using `r2` as the index.
+最初に使える形は<dfn>レジスタ間接アドレッシング</dfn>で、「`ldr Rd, [Rn]`」のように、レジスタからアドレスを得ます。これを拡張したのが<dfn>プリインデックスアドレッシング</dfn>で、読み込みの前にベースレジスタにオフセットを加えます。この基本の形は「`ldr Rd, [Rn, `_`Op2`_`]`」です。これは配列へのアクセスにとてもよく似ています。たとえば、「`ldr r1, [r0, r2, lsl #2]`」は `r0_w[r2]` に対応します。`r2` をインデックスに使った、ワードの配列からの読み込みです。
 
-Another special form of this is <dfn>PC-relative addressing</dfn>, which makes up for not having direct addressing. Suppose you have a variable in memory somewhere. While you may not be able to use that variable's address directly, what you can do is store the address close to where you are in the code. _That_ address is at a certain allowed offset from the program counter register (PC), so you could load the variable's address from there and then read the variable's contents. You can also use this to load constants that are too large to fit into a shifted byte.
+これのもう 1 つの特別な形が<dfn>PC 相対アドレッシング</dfn>で、直接アドレッシングがないことを補います。メモリのどこかに変数があるとします。その変数のアドレスを直接使うことはできないかもしれませんが、できるのは、コードの今いる場所の近くにそのアドレスを置いておくことです。_その_アドレスはプログラムカウンタのレジスタ（PC）から許される範囲のオフセットにあるので、そこから変数のアドレスを読み込み、それから変数の中身を読めます。シフトしたバイトに収まらない大きな定数を読み込むのにも、これを使えます。
 
-While it is possible to calculate the required offset manually, you'll be glad to know you can let the assembler do this for you. There are two ways of doing this. The first is to create a <dfn>data-pool</dfn> where you intend to put the addresses and constants, and label it. You can then get its address via ‘`ldr Rd, `_`LabelName`_’ (note the absence of brackets here). The assembler will turn this into pc-relative loads. The second method is to let the assembler do all the work by using ‘`ldr Rd,=`_`foo`_’, where _foo_ is the variable name or an immediate value. The assembler will then allocate space for _foo_ itself. Please remember that using _=varname_ does **not** load the variable itself, only its address.
+必要なオフセットを手で計算することもできますが、アセンブラに任せられると知ればうれしいでしょう。これには 2 つの方法があります。1 つ目は、アドレスや定数を置くつもりの<dfn>データプール</dfn>を作り、それにラベルを付けることです。そうすれば、「`ldr Rd, `_`LabelName`_」（ここでは角かっこがないことに注意）でそのアドレスを得られます。アセンブラはこれを PC 相対の読み込みに変えます。2 つ目の方法は、「`ldr Rd,=`_`foo`_」を使ってアセンブラにすべての仕事をさせることです。ここで _foo_ は変数名か即値です。そうすると、アセンブラが _foo_ のための領域を自分で確保します。_=varname_ を使うと変数そのものではなく、そのアドレスしか読み込ま**ない**ことを覚えておいてください。
 
-And then there are the so-called <dfn>write-back</dfn> modes. In the pre-index mode, the final address was made up of `Rn`+_Op2_, but that had no effect on `Rn`. With write-back, the final address is put in `Rn`. This can be useful for walking through arrays because you won't need an actual index.
+それから、いわゆる<dfn>ライトバック</dfn>のモードがあります。プリインデックスのモードでは、最終的なアドレスは `Rn`+_Op2_ でできていましたが、`Rn` には何の影響もありませんでした。ライトバックでは、最終的なアドレスが `Rn` に入れられます。これは、実際のインデックスが必要ないので、配列をたどるのに便利なことがあります。
 
-There are two forms of write-back, pre-indexing and post-indexing. Pre-indexing write-back works much like the normal write-back and is indicated by an exclamation mark after the brackets: ‘`ldr Rd, [Rn, `_`Op2`_`]!`’. Post-indexing doesn't add _Op2_ to the address (and `Rn`) until _after_ the memory access; its format is ‘`ldr Rd, [Rn], `_`Op2`_’.
+ライトバックには、プリインデックスとポストインデックスの 2 つの形があります。プリインデックスのライトバックは普通のライトバックとほぼ同じように働き、角かっこの後ろの感嘆符で示します。「`ldr Rd, [Rn, `_`Op2`_`]!`」です。ポストインデックスは、メモリへのアクセスの_あと_まで、アドレス（と `Rn`）に _Op2_ を加えません。その形式は「`ldr Rd, [Rn], `_`Op2`_」です。
 
 ```armasm
 @ Examples of addressing modes
@@ -704,11 +704,11 @@ fooData:
     .word   0x0000F002
 ```
 
-:::tip PC-relative specials
+:::tip PC 相対の特別な書き方
 
-PC-relative instructions are common, and have a special shorthand that is easier and shorter to use than creating a pool of data to load from. The format for this is ‘`ldr Rd,=`_`foo`_’, where _foo_ is a label or an immediate value. In both cases, a pool is created to hold these numbers automatically. Note that the value for the label is its _address_, not the address' contents.
+PC 相対の命令はよく使われ、読み込み元のデータのプールを作るより簡単で短く書ける特別な略記があります。その形式は「`ldr Rd,=`_`foo`_」で、_foo_ はラベルか即値です。どちらの場合も、これらの数値を保持するプールが自動的に作られます。ラベルの値は、そのアドレスの中身ではなく、_アドレス_であることに注意してください。
 
-If the label is near enough you can also use `adr`, which is assembled to a PC-add instruction. This will not create a pool-entry.
+ラベルが十分に近ければ、`adr` も使えます。これは PC に加算する命令にアセンブルされます。こちらはプールのエントリを作りません。
 
 ```armasm
 @ Normal pc-relative method:
@@ -728,17 +728,17 @@ If the label is near enough you can also use `adr`, which is assembled to a PC-a
     ldr     r0, [r0]        @ Load far_var's contents
 ```
 
-Note that I'm not actually creating `far_var` here; just storage room for its address. Creation of variables is covered later.
+ここでは実際に `far_var` を作っているのではなく、そのアドレスのための保管場所を作っているだけであることに注意してください。変数の作り方はあとで扱います。
 
 :::
 
-#### Data types
+#### データ型
 
-It is also possible to load/store bytes and halfwords. The opcodes for loads are `ldrb` and `ldrh` for unsigned, and `ldrsb` and `ldrsh` for signed bytes and halfwords, respectively. The ‘r’ in the signed versions is actually optional, so you'll also see `ldsb` and `ldsh` now and then. As stores can cast away the more significant bytes anyway, `strb` and `strh` will work for both signed and unsigned stores.
+バイトやハーフワードを読み込んだり書き込んだりすることもできます。読み込みのオペコードは、符号なしのバイトとハーフワードにはそれぞれ `ldrb` と `ldrh`、符号付きには `ldrsb` と `ldrsh` です。符号付きの版の「r」は実は省略できるので、`ldsb` や `ldsh` もときどき見かけるでしょう。書き込みではどのみち上位のバイトを捨てられるので、`strb` と `strh` は符号付きと符号なしの両方の書き込みに使えます。
 
-All the things you can do with `ldr/str`, you can do with the byte and halfword versions as well: PC-relative, indirect, pre/post-indexing it's all there … with one exception. The signed-byte load (`ldsb`) and _all_ of the halfword loads and stores cannot do shifted register-loads. Only `ldrb` has the complete functionality of the word instructions. The consequence is that signed-byte or halfword arrays may require extra instructions to keep the offset and index in check.
+`ldr/str` でできることはすべて、バイトとハーフワードの版でもできます。PC 相対、間接、プリ/ポストインデックス、全部そろっています……1 つの例外を除いては。符号付きのバイトの読み込み（`ldsb`）と、ハーフワードの読み込みと書き込みの_すべて_は、シフトしたレジスタでの読み込みができません。ワードの命令の機能を完全に持っているのは `ldrb` だけです。その結果、符号付きのバイトやハーフワードの配列では、オフセットとインデックスを合わせるために余分な命令が必要になることがあります。
 
-Oh, one more thing: alignment. In C, you could rely on the compiler to align variables to their preferred boundaries. Now that you're taking over from the compiler, it stands to reason that you're also in charge of alignment. This can be done with the ‘.align _n_’ directive, with aligns the next piece of code or data to a 2<sup>n</sup> boundary. Actually, you're supposed to properly align code as well, something I'm taking for granted in these snippets because it makes things easier.
+ああ、もう 1 つ。アラインメントです。C では、変数をそれぞれ望ましい境界に揃えるのをコンパイラに任せられました。今はコンパイラの代わりをしているので、アラインメントも自分の責任になるのは当然です。これは「.align _n_」ディレクティブでできます。これは次のコードやデータを 2<sup>n</sup> の境界に揃えます。実はコードも正しく揃えるべきなのですが、これらのコードでは話を簡単にするために、それは当然のこととしています。
 
 <pre><code class="language-armasm hljs">    mov     r2, #1
 @ Byte loads
@@ -761,9 +761,9 @@ hwords:
     .hword  0xF110, 0xFFFF, 0xF112
 </code></pre>
 
-#### Block transfers
+#### ブロック転送
 
-Block transfers allow you to load or store multiple successive words into registers in one instruction. This is useful because it saves on instructions, but more importantly, it saves time because individual memory instructions are quite costly and with block transfers you only have to pay the overhead once. The basic instructions for block transfers are `ldm` (LoaD Multiple) and `stm` (STore Multiple), and the operands are a base register (with an optional exclamation mark for `Rd` write-back) and a list of registers between braces.
+ブロック転送を使うと、1 つの命令で、連続した複数のワードをレジスタに読み込んだり書き込んだりできます。これは命令を節約できるので便利ですが、もっと重要なのは時間を節約できることです。個々のメモリの命令はかなり高くつき、ブロック転送ならオーバーヘッドを 1 回払うだけで済むからです。ブロック転送の基本の命令は `ldm`（LoaD Multiple）と `stm`（STore Multiple）で、オペランドはベースレジスタ（`Rd` のライトバックのための任意の感嘆符付き）と、中かっこの中のレジスタのリストです。
 
 <table>
   <tr>
@@ -773,9 +773,9 @@ Block transfers allow you to load or store multiple successive words into regist
     </td>
 </table>
 
-This register list can be comma separated, or hyphenated to indicate a range. For example, `{r4-r7, lr}` means registers r4, r5, r6, r7 and r14. The order in which the registers are actually loaded or stored are **not** based on the order in which they are specified in this list! Rather, the list indicates the number of words used (in this case 5), and the order of addresses follows the index of the registers: the lowest register uses the lowest address in the block, etc.
+このレジスタのリストはカンマで区切ることも、範囲を示すためにハイフンでつなぐこともできます。たとえば、`{r4-r7, lr}` はレジスタ r4、r5、r6、r7、r14 を意味します。レジスタが実際に読み込まれたり書き込まれたりする順序は、このリストで指定した順序に基づくもので**はありません**！ リストは使うワードの数（この場合は 5）を示し、アドレスの順序はレジスタの番号に従います。一番小さいレジスタがブロックの一番小さいアドレスを使う、という具合です。
 
-The block-transfer opcodes can take a number of affixes that determine how the block extends from the base register `Rd`. The four possibilities are: `-IA`/`-IB` (Increment After/Before) and `-DA`/`-DB` (Decrement After/Before). The differences are essentially those between pre/post-indexing and incrementing or decrementing from the base address. It should be noted that these increments/decrements happen regardless of whether the base register carries an exclamation mark or not: that thing only indicates that the base register _itself_ is updated afterwards.
+ブロック転送のオペコードには、ベースレジスタ `Rd` からブロックがどう伸びるかを決める接尾辞をいくつか付けられます。4 つの可能性は、`-IA`/`-IB`（Increment After/Before、あとで/先に増やす）と `-DA`/`-DB`（Decrement After/Before、あとで/先に減らす）です。違いは基本的に、プリ/ポストインデックスの違いと、ベースアドレスから増やすか減らすかの違いです。これらの増減は、ベースレジスタに感嘆符が付いているかどうかに関係なく起きることに注意してください。感嘆符は、ベースレジスタ_そのもの_があとで更新されることを示すだけです。
 
 ```armasm
     adr     r0, words+16    @ u32 *src= &words[4];
@@ -790,17 +790,17 @@ words:
     .word    0,  1,  2,  3, 4
 ```
 
-The block transfers are also used for stack-work. There are four types of stacks, depending on whether the address that `sp` points to already has a stacked value or not (Full or Empty), and whether the stack grows down or up in memory (Descending/Ascending). These have special affixes (`-FD`, `-FA`, `-ED` and `-EA`) because using the standard affixes would be awkward. For example, the GBA uses an FD-type stack, which means that pushing is done with `stmdb` because decrementing after the store would overwrite an already stacked value (full stack), but popping requires `ldmia` for similar reasons. A `stmfd/ldmfd` pair is much easier to deal with. Or you could just use `push` and `pop`, which expand to ‘`stmfd sp!,`’ and ‘`ldmfd sp!,`’, respectively.
+ブロック転送はスタックの操作にも使われます。スタックには 4 つの種類があり、`sp` が指すアドレスにすでに積まれた値があるかどうか（Full か Empty）と、スタックがメモリの下に伸びるか上に伸びるか（Descending/Ascending）によって決まります。標準の接尾辞を使うと扱いにくいので、これらには特別な接尾辞（`-FD`、`-FA`、`-ED`、`-EA`）があります。たとえば、GBA は FD 型のスタックを使います。つまり、書き込みのあとで減らすとすでに積まれた値を上書きしてしまう（フルスタック）のでプッシュには `stmdb` を使い、同様の理由でポップには `ldmia` が必要です。`stmfd/ldmfd` の組のほうがずっと扱いやすいです。あるいは単に `push` と `pop` を使うこともでき、これらはそれぞれ「`stmfd sp!,`」と「`ldmfd sp!,`」に展開されます。
 
 <div class="lblock">
   <table id="tbl:block" class="table-data">
     <caption align="bottom">
-      <b>{*@tbl:block}</b>: Block transfer instructions.
+      <b>{*@tbl:block}</b>: ブロック転送の命令。
     </caption>
     <tr>
-      <th>Block op</th>
-      <th>Standard</th>
-      <th>Stack alt</th>
+      <th>ブロックの演算</th>
+      <th>標準</th>
+      <th>スタック用の別名</th>
     </tr>
     <tr> 
       <td>Increment After</td>  
@@ -825,131 +825,131 @@ The block transfers are also used for stack-work. There are four types of stacks
   </table>
 </div>
 
-:::warning push and pop are not universal ARM instructions
+:::warning push と pop はすべての ARM で使える命令ではない
 
-They seem to work for devkitARM r15 and up (haven't checked older versions), but DevKitAdv for example doesn't accept them. Just try and see what happens.
+devkitARM r15 以降では動くようです（それより古い版は確かめていません）が、たとえば DevKitAdv はこれらを受け付けません。とにかく試してみて、どうなるか見てください。
 
 :::
 
-### Conditionals and branches {#ssec-arm-cnd}
+### 条件と分岐 {#ssec-arm-cnd}
 
-Higher languages typically have numerous methods for implementing choices, loops and function calls. The all come down to the same thing though: the ability to move the program counter and thereby diverting the flow of the program. This procedure is known as branching.
+高水準の言語には、選択、ループ、関数呼び出しを実装するための方法がたいていたくさんあります。でも、どれも結局は同じことになります。プログラムカウンタを動かし、それによってプログラムの流れをそらす能力です。この処理は分岐と呼ばれます。
 
-There are three branching instructions in ARM: the simple branch `b` for ifs and loops, the branch with link `bl` used for function calls, and branch with exchange `bx` used for switching between ARM and Thumb code, returning from functions and out-of-section jumps. `b` and `bl` use a label as their argument, but `bx` uses a register with the address to branch to. Technically there are more ways of branching (PC is just another register, after all) but these three are the main ones.
+ARM には 3 つの分岐命令があります。if やループのための単純な分岐 `b`、関数呼び出しに使うリンク付き分岐 `bl`、そして ARM と Thumb のコードの切り替え、関数からの戻り、領域の外へのジャンプに使う交換付き分岐 `bx` です。`b` と `bl` は引数にラベルを使いますが、`bx` は分岐先のアドレスを入れたレジスタを使います。厳密には、分岐の方法はもっとあります（結局 PC もただのレジスタですから）が、主なものはこの 3 つです。
 
-#### Status flags and condition codes
+#### ステータスフラグと条件コード
 
-I've already mentioned part of this in the introduction, so I'll make this brief. The ARM processor has 4 status flags, (**Z**)ero, (**N**)egative, (**C**)arry and signed o(**V**)erflow, which can be found in the program status register. There are actually two of these: one for the _current_ status (CPSR) and a _saved_ status register (SPSR), which is used in interrupt handlers. You won't have to deal with either of these, though, as reacting to status registers usually goes through the conditional codes (table 23.4). But first, a few words about the flags themselves:
+これの一部はすでにはじめにで触れたので、手短に済ませます。ARM のプロセッサには 4 つのステータスフラグ、(**Z**)ero（ゼロ）、(**N**)egative（負）、(**C**)arry（キャリー）、符号付きの o(**V**)erflow（オーバーフロー）があり、プログラムステータスレジスタにあります。実は 2 つあって、_現在の_ステータス（CPSR）と、割り込みハンドラで使われる_保存された_ステータスレジスタ（SPSR）です。ただし、ステータスレジスタへの反応はたいてい条件コード（表 23.4）を通して行うので、どちらも直接扱う必要はありません。でもまず、フラグそのものについて少し説明します。
 
-- **Zero** (Z). If the result of operation was 0.
-- **Negative** (N). Result was negative (i.e. most significant bit set).
-- **Carry bit set** (C). If the ‘mostest’ significant bit is set (like bit 32 for 32bit operations).
-- **Arithmetic overflow** (V). Like adding two positive numbers and getting a negative number because the result got too big for the registers.
+- **ゼロ**（Z）。演算の結果が 0 だった場合。
+- **負**（N）。結果が負だった（つまり最上位ビットが設定されている）。
+- **キャリービットの設定**（C）。「最上位よりさらに上」のビットが設定された場合（32 ビットの演算でのビット 32 など）。
+- **算術オーバーフロー**（V）。2 つの正の数を足したら、結果がレジスタに対して大きくなりすぎて負の数になった場合など。
 
-Each of the data instructions can set the status flags by appending `-s` to the instruction, except for `cmp`, `cmn`, `tst` and `teq`, which always set the flags.
+データの命令はそれぞれ、命令に `-s` を付けることでステータスフラグを設定できます。ただし `cmp`、`cmn`、`tst`、`teq` は例外で、常にフラグを設定します。
 
-{\*@tbl:cnd-afx} lists 16 affixes that can be added to the basic branch instruction. For example, `bne Label` would jump to `Label` if the status is non-zero, and continue with the next instruction if it isn't.
+{\*@tbl:cnd-afx} に、基本の分岐命令に付けられる 16 個の接尾辞を挙げます。たとえば、`bne Label` はステータスがゼロでなければ `Label` にジャンプし、ゼロなら次の命令に進みます。
 
 <div class="lblock">
   <table id="tbl:cnd-afx" class="table-data">
     <caption align="bottom">
-      <b>{*@tbl:cnd-afx}</b>: conditional affixes.
+      <b>{*@tbl:cnd-afx}</b>: 条件の接尾辞。
     </caption>
     <col span=2 align="center">
       <tr>
-        <th>Affix</th>
-        <th>Flags</th>
-        <th>Description</th>
+        <th>接尾辞</th>
+        <th>フラグ</th>
+        <th>説明</th>
       </tr>
       <tr>
         <td>eq</td>
         <td>Z=1</td>
-        <td>Zero (EQual to 0)</td>
+        <td>ゼロ（0 と等しい、EQual）</td>
       </tr>
       <tr>
         <td>ne</td>
         <td>Z=0</td> 
-        <td>Not zero  (Not Equal to 0)</td>
+        <td>ゼロでない（0 と等しくない、Not Equal）</td>
       </tr>
       <tr>
         <td>cs / hs</td>
         <td>C=1</td> 
-        <td>Carry Set / unsigned Higher or Same </td>
+        <td>キャリーセット / 符号なしで以上（Carry Set / Higher or Same） </td>
       </tr>
       <tr>
         <td>cc / lo</td>
         <td>C=0</td> 
-        <td>Carry Clear / unsigned LOwer</td>
+        <td>キャリークリア / 符号なしで未満（Carry Clear / LOwer）</td>
       </tr>
       <tr>
         <td>mi</td>
         <td>N=1</td> 
-        <td>Negative (MInus)</td>
+        <td>負（MInus）</td>
       </tr>
       <tr>
         <td>pl</td>
         <td>N=0</td> 
-        <td>Positive or zero (PLus)</td>
+        <td>正またはゼロ（PLus）</td>
       </tr>
       <tr>
         <td>vs</td>
         <td>V=1</td> 
-        <td>Sign overflow (oVerflow Set)</td>
+        <td>符号付きオーバーフロー（oVerflow Set）</td>
       </tr>
       <tr>
         <td>vc</td>
         <td>V=0</td>
-        <td>No sign overflow (oVerflow Clear)</td>
+        <td>符号付きオーバーフローなし（oVerflow Clear）</td>
       </tr>
       <tr>
         <td>hi</td>
         <td>C=1 &amp; Z=0</td> 
-        <td>Unsigned HIgher</td>
+        <td>符号なしで大きい（HIgher）</td>
       </tr>
       <tr>
         <td>ls</td>
         <td>C=0 | Z=1</td> 
-        <td>Unsigned Lower or Same</td>
+        <td>符号なしで以下（Lower or Same）</td>
       </tr>
       <tr>
         <td>ge</td>
         <td>N=V</td> 
-        <td>Signed Greater or Equal</td>
+        <td>符号付きで以上（Greater or Equal）</td>
       </tr>
       <tr>
         <td>lt</td>
         <td>N != V</td> 
-        <td>Signed Less Than</td>
+        <td>符号付きで未満（Less Than）</td>
       </tr>
       <tr>
         <td>gt</td>
         <td>Z=0 &amp; N=V</td> 
-        <td>Signed Greater Than</td>
+        <td>符号付きで大きい（Greater Than）</td>
       </tr>
       <tr>
         <td>le</td>
         <td>Z=1 | N != V</td> 
-        <td>Signed Less or Equal</td>
+        <td>符号付きで以下（Less or Equal）</td>
       </tr>
       <tr>
         <td>al</td>
         <td> - </td> 
-        <td>ALways (default)</td>
+        <td>常に（ALways、デフォルト）</td>
       </tr>
       <tr>
         <td>nv</td>
         <td> - </td> 
-        <td>NeVer</td>
+        <td>決してしない（NeVer）</td>
       </tr>
     </col>
   </table>
 </div>
 
-To use these condition codes properly, you need to know what each stands for, but also how the data operations set the flags. The effect on the status flags depends on the instruction itself, and not all flags are affected by all instructions. For example, overflow only has meaning for arithmetic, not bit operations.
+これらの条件コードを正しく使うには、それぞれが何を表すかだけでなく、データの演算がどうフラグを設定するかも知る必要があります。ステータスフラグへの影響は命令そのものによって違い、すべての命令がすべてのフラグに影響するわけではありません。たとえば、オーバーフローは算術演算でしか意味を持たず、ビット演算では意味がありません。
 
-In the case of Z and N, the case is pretty easy. The operation gives a certain 32bit value as its result; if it's 0, then the Zero flag is set. Because of two's complement, the Negative flag is the same as bit 31. The reason `-eq` and `ne` are linked to the zero flags is because a comparison (`cmp`) is basically a subtraction: it looks at the difference between the two numbers and when that's zero, then the numbers are equal.
+Z と N の場合は、話はかなり簡単です。演算は結果として何らかの 32 ビットの値を出します。それが 0 ならゼロフラグが設定されます。2 の補数のおかげで、負のフラグはビット 31 と同じです。`-eq` と `ne` がゼロフラグに結びついているのは、比較（`cmp`）が基本的に減算だからです。2 つの数の差を見て、それがゼロなら、2 つの数は等しいのです。
 
-For the carry bit it can get a little harder. The best way to see it is as an extra most significant bit. You can see how this work in the example of {@tbl:carry}. Here we add two unsigned numbers, 2<sup>31</sup> = 0x80000000. When adding them, the result would overflow 32bits, giving 0 and not 2<sup>32</sup>. However, that overflowed bit will go into the carry. With the `adc` instruction you could then go on to build adders for numbers larger thatn the registers.
+キャリービットは少し難しくなることがあります。一番良い見方は、最上位のさらに上にある追加のビットと考えることです。これがどう働くかは {@tbl:carry} の例で見られます。ここでは 2 つの符号なしの数 2<sup>31</sup> = 0x80000000 を足しています。足すと結果は 32 ビットをあふれ、2<sup>32</sup> ではなく 0 になります。しかし、そのあふれたビットはキャリーに入ります。`adc` 命令を使えば、そこからレジスタより大きな数の加算器を作っていけます。
 
 <style>
    #tbl\:carry, #tbl\:overflow {
@@ -1002,7 +1002,7 @@ For the carry bit it can get a little harder. The best way to see it is as an ex
 <div class="lblock">
   <table id="tbl:carry">
     <caption align="bottom">
-    <b>{*@tbl:carry}</b>: carry bit in (unsigned) addition.
+    <b>{*@tbl:carry}</b>: （符号なしの）加算でのキャリービット。
     </caption>
     <col width=200>
       <tr valign="bottom">
@@ -1028,16 +1028,16 @@ For the carry bit it can get a little harder. The best way to see it is as an ex
   </table>
 </div>
 
-Bit-operations like `orr` or `and` don't affect it because they operate purely on the lower 32bits. Shifts, however do.
+`orr` や `and` のようなビット演算は下位の 32 ビットだけを操作するので、キャリーには影響しません。しかし、シフトは影響します。
 
-You may find it odd that `-cc` is the code for unsigned higher than. As mentioned, a comparison is essentially a subtraction, but when you subtract, say 7−1, there doesn't really seem to be a carry here. The key here is that subtractions are infact forms of additions: 7−1 is actually 7+0xFFFFFFFF, which would cause an overflow into the carry bit. You can also think of subtractions as starting out with the carry bit set.
+`-cc` が符号なしで大きいことを表すコードだというのは、変に思えるかもしれません。先ほど言ったように、比較は基本的に減算ですが、たとえば 7−1 を引いても、キャリーがあるようには見えません。ここでの鍵は、減算は実は加算の一形態だということです。7−1 は実際には 7+0xFFFFFFFF で、これはキャリービットへのあふれを引き起こします。減算はキャリービットが設定された状態から始まると考えることもできます。
 
-The overflow flag indicates _signed_ overflow (the carry bit would be unsigned overflow). Note, this is _not_ merely a sign change, but a sign change the wrong way. For example, an addition of two positive numbers _should_ always be positive, but if the numbers are big enough (say, 2<sup>30</sup>, see {@tbl:overflow}) then the results of the lower 30 bits may overflow into bit 31, therefore changing the sign and you'll have an incorrect addition. For subtraction, there can be a similar problem. Short of doing the full operation and checking whether the signs are correct, there isn't a simple way of figuring out what counts as overflow, but fortunately you don't have to. Usually overflow is only important for signed comparisons, and the condition mnemonics themselves should provide you with enough information to pick the right one.
+オーバーフローのフラグは_符号付き_のオーバーフローを示します（キャリービットは符号なしのオーバーフローになります）。これは単に符号が変わることでは_なく_、間違った方向に符号が変わることだということに注意してください。たとえば、2 つの正の数の和は常に正になる_べき_ですが、数が十分に大きい（たとえば 2<sup>30</sup>。{@tbl:overflow} を見てください）と、下位の 30 ビットの結果がビット 31 にあふれて符号が変わり、正しくない加算になってしまいます。減算でも同じような問題が起こりえます。演算を完全に行って符号が正しいかを確かめる以外に、何がオーバーフローに当たるかを求める簡単な方法はありませんが、幸いその必要はありません。オーバーフローが重要になるのは普通、符号付きの比較だけで、条件のニーモニックそのものが、正しいものを選ぶのに十分な情報を与えてくれるはずです。
 
 <div class="lblock">
   <table id="tbl:overflow">
     <caption align="bottom">
-      <b>{*@tbl:overflow}</b>: sign overflow.
+      <b>{*@tbl:overflow}</b>: 符号のオーバーフロー。
     </caption>
     <col width=200>
       <tr valign="bottom">
@@ -1063,11 +1063,11 @@ The overflow flag indicates _signed_ overflow (the carry bit would be unsigned o
   </table>
 </div>
 
-With these points in mind, the conditional codes shouldn't be too hard to understand. The descriptions tell you what code you should use when. Also, don't forget that any instruction can be conditionally executed, not just a branch.
+これらの点を念頭に置けば、条件コードはそれほど理解しにくくないはずです。説明を読めば、どのときにどのコードを使えばいいかがわかります。それから、分岐だけでなく、どの命令も条件付きで実行できることを忘れないでください。
 
-#### The basic branch
+#### 基本の分岐
 
-Let's start with the most basic of branches, `b`. This is the most used branch, used to implement normal conditional code and loops of all kinds. It is most often used in conjunction with one of the 16 conditional codes of {@tbl:cnd-afx}. Most of the times a branch will look something like this:
+最も基本的な分岐 `b` から始めましょう。これは最もよく使われる分岐で、普通の条件付きのコードや、あらゆる種類のループを実装するのに使われます。{@tbl:cnd-afx} の 16 個の条件コードのどれかと組み合わせて使われることがほとんどです。分岐はたいてい次のような形になります。
 
 ```armasm
 @ Branch example, pseudo code
@@ -1080,7 +1080,7 @@ Let's start with the most basic of branches, `b`. This is the most used branch, 
     @ more code B
 ```
 
-First, you have a data processing instruction that sets the status flags, usually a `subs` or `cmp`, but it can be any one of them. Then a `b`_cond_ diverts the flow to `.Llabel` if the conditions are met. A simple example of this would be a division routine which checks if the denominator is zero first. For example, the `Div()` routine that uses [BIOS Call](swi.html) #6 could be safeguarded against division by 0 like this:
+まず、ステータスフラグを設定するデータ処理の命令があります。たいていは `subs` か `cmp` ですが、どれでもかまいません。それから、`b`_cond_ が、条件が満たされていれば流れを `.Llabel` にそらします。簡単な例は、まず分母がゼロかどうかを確認する除算のルーチンです。たとえば、[BIOS コール](swi.html) #6 を使う `Div()` ルーチンは、次のようにしてゼロ除算から守れます。
 
 ```armasm
 @ int DivSafe(int num, int den);
@@ -1098,9 +1098,9 @@ DivSafe:
     bx      lr
 ```
 
-The numerator and denominator will be in registers r0 and r1, respectively. The `cmp` checks whether the denominator is zero. If it's not, no branch is taken, the swi 6 is executed and the function returns afterwards. If it is zero, the `beq` will take the code to `.Ldiv_bad`. The two instructions there set r0 to either INT_MAX (2<sup>31</sup>−1 = 0x7FFFFFFF) or INT_MIN (−2<sup>31</sup> = 0x80000000), depending on whether r0 is positive or negative. If it's a little hard to see that, `mvn` inverts bits, so the first line after `.Ldiv_bad` sets r0 to INT_MAX. The second line we've seen before: ‘`r0, asr #31`’ does a sign-extension in to all other bits, giving 0 or −1 for positive and negative numbers, respectively, giving INT_MAX− −1 = INT_MIN for negative values of r0. Little optimizing tricks like these decide if you're fit to be an assembly programmer; if not you could just as well let the compiler do them, because it does know. (It's where I got the ‘`asr #31`’ thing from in the first place.)
+分子と分母は、それぞれレジスタ r0 と r1 にあります。`cmp` は分母がゼロかどうかを確認します。ゼロでなければ分岐は起きず、swi 6 が実行され、そのあとで関数は戻ります。ゼロなら、`beq` がコードを `.Ldiv_bad` に飛ばします。そこにある 2 つの命令は、r0 が正か負かに応じて、r0 を INT_MAX（2<sup>31</sup>−1 = 0x7FFFFFFF）か INT_MIN（−2<sup>31</sup> = 0x80000000）に設定します。少しわかりにくければ、`mvn` はビットを反転するので、`.Ldiv_bad` のあとの最初の行は r0 を INT_MAX に設定します。2 行目は前にも見たものです。「`r0, asr #31`」はほかのすべてのビットに符号拡張をして、正と負の数に対してそれぞれ 0 か −1 を与えるので、r0 が負の値なら INT_MAX− −1 = INT_MIN になります。このようなちょっとした最適化の技が使えるかどうかで、アセンブリのプログラマに向いているかどうかが決まります。向いていないなら、コンパイラに任せたほうがいいでしょう。コンパイラは知っていますから。（そもそも私が「`asr #31`」のことを知ったのもそこからです。）
 
-Now in this case I used a branch, but in truth, it wasn't even necessary. The non-branch part consists of one instruction, and the branched part of two, so using conditional instructions throughout would have been both shorter and faster:
+さて、この場合は分岐を使いましたが、実は必要すらありませんでした。分岐しない部分は 1 命令、分岐する部分は 2 命令なので、全体に条件付きの命令を使えば、短く、速くなったでしょう。
 
 ```armasm
 @ Second version using conditionally executed code
@@ -1112,17 +1112,17 @@ DivSafe:
     bx      lr
 ```
 
-If the denominator is not zero, the `mvneq` and `subeq` are essentially skipped. Actually, not so much skipped, but turned into `nop`: non-operations. So is `swine` (i.e., `swi` + `ne`, no piggies here) if it is zero. True, the division line has increased by a cycle, not taking the branch makes the exception line a little faster and the function itself has shrunk from 7 to 5 instructions.
+分母がゼロでなければ、`mvneq` と `subeq` は実質的に飛ばされます。実際には飛ばされるというより、`nop`、つまり何もしない命令になります。ゼロなら `swine`（つまり `swi` + `ne`。ここに子豚（swine）はいません）がそうなります。たしかに、除算する側の流れは 1 サイクル増えましたが、分岐しないので例外の流れは少し速くなり、関数そのものも 7 命令から 5 命令に縮みました。
 
-:::tip Symbol vs internal labels
+:::tip シンボルのラベルと内部のラベル
 
-In the first `DivSafe` snippet, the internal branch destination used a `.L` prefix, while the function label did not. The `.L` prefix is used by GCC to indicate labels for the sake of labels, as opposed to symbol labels like `DivSafe`. While not required, it's a useful convention.
+最初の `DivSafe` のコードでは、内部の分岐先には `.L` の接頭辞を使い、関数のラベルには使いませんでした。`.L` の接頭辞は、`DivSafe` のようなシンボルのラベルとは対照的に、ラベルのためだけのラベルを示すために GCC が使うものです。必須ではありませんが、便利な慣習です。
 
 :::
 
-#### Major and minor branches
+#### 主な分岐と副次的な分岐
 
-Any sort of branch will create a fork in the road and, depending on the conditions, one road will be taken more often. That would be the <dfn>major</dfn> branch. The other one would be the <dfn>minor</dfn> branch, probably some sort of exception. The branch instruction, `b`, represents a deviation from the normal road and is relatively costly, therefore it pays to have to branch to the exceptions. Consider these possibilities:
+どんな分岐も道の分かれ目を作り、条件によっては、一方の道のほうがよく通られることになります。それが<dfn>主な</dfn>分岐です。もう一方は<dfn>副次的な</dfn>分岐で、おそらく何らかの例外です。分岐命令 `b` は普通の道からの逸脱を表し、比較的高くつくので、例外のほうへ分岐するようにすると得をします。次の可能性を考えてみてください。
 
 ```c
 // Basic if statement in C
@@ -1152,19 +1152,19 @@ if(r0 == 0)
     bx      lr      @ function ends
 ```
 
-The first version is more like the C version: it splits off for the IF-clause and the returns to the rest of the code. The flow branches twice if the conditions are met, but if they aren't the rest of the code doesn't branch at all. The second version branches if the conditions _aren't_ met: it skips the IF-clause. Overall, the assembly code is simpler and shorter, but the fact that the branch-conditions are inverted with respect to the C version could take some getting used to.
+1 つ目の版は C の版に近いものです。IF 節のために分かれ、それからコードの残りに戻ります。条件が満たされれば流れは 2 回分岐しますが、満たされなければ、コードの残りはまったく分岐しません。2 つ目の版は、条件が満たされ_ない_ときに分岐し、IF 節を飛ばします。全体として、アセンブリのコードは単純で短くなりますが、分岐の条件が C の版と逆になっているので、慣れが必要かもしれません。
 
-So which to use? Well, that depends actually. All things being equal, the second one is better because it's one instruction and label shorter. As far as I know, this is what GCC uses. The problem is that some things may be more equal than others. If the IF-clause is exceptional (i.e., the minor branch), it'd mean that the second version almost always takes the branch, while the first version would hardly ever branch, so on average the latter would be faster.
+では、どちらを使えばいいのでしょうか？ 実は、場合によります。ほかの条件がすべて同じなら、命令とラベルが 1 つ少ないので 2 つ目のほうが良いです。私の知る限り、GCC はこちらを使います。問題は、中にはほかより同じなものもあるかもしれないということです。IF 節が例外的なもの（つまり副次的な分岐）なら、2 つ目の版はほぼ常に分岐し、1 つ目の版はほとんど分岐しないことになるので、平均すると後者のほうが速くなります。
 
-Which one you chose is entirely up to you as you know your intentions best. I hope. For the remainder of this chapter I'll use the skip-branch because in demonstrations things usually are equal. Of course, if the clause is small enough you can just use conditional instructions and be done with it <kbd>:)</kbd>.
+どちらを選ぶかは完全にあなた次第です。自分の意図は自分が一番よくわかっているはずですから。そうだといいのですが。この章の残りでは、デモではたいていほかの条件が同じなので、飛ばす分岐を使います。もちろん、節が十分に小さければ、条件付きの命令を使って済ませてしまえばいいのです <kbd>:)</kbd>。
 
-#### Common branching constructs
+#### よくある分岐の構文
 
-Even though all you have now is `b`, it doesn't mean you can't implement branching construct found in HLLs in assembly. After all, the compiler seems to manage. Here's a couple of them.
+今使えるのが `b` だけだからといって、高水準の言語にある分岐の構文をアセンブリで実装できないわけではありません。結局、コンパイラはうまくやっているようですから。いくつか示します。
 
 ##### if-elseif
 
-The `if-elseif` is an extension of the normal `if-else`, and from it you can extend to longer `if-elseif-else` chains. In this case I want to look at a wrapping algorithm for keeping numbers within certain boundaries: the number _x_ should stay within range \[_mn_, _mx_⟩, if it exceeds either boundary it should come out the other end. In C it looks like this:
+`if-elseif` は普通の `if-else` を拡張したもので、そこからさらに長い `if-elseif-else` の連鎖に広げられます。ここでは、数を特定の範囲に収めるための回り込みのアルゴリズムを見てみます。数 _x_ は範囲 \[_mn_, _mx_⟩ に収まるべきで、どちらかの境界を超えたら、反対側から出てくるようにします。C では次のようになります。
 
 ```c
 // wrap(int x, int mn, int mx), C version:
@@ -1177,7 +1177,7 @@ else
     res= x;
 ```
 
-The straightforward compilation would be:
+素直にコンパイルすると次のようになります。
 
 ```armasm
 @ r0= x ; r1= mn ; r2= mx
@@ -1195,9 +1195,9 @@ The straightforward compilation would be:
     ...
 ```
 
-This is what GCC gives, and it's pretty good. The ordering of the clauses remained, which means that the condition for the branches have to be inverted, so ‘`if(x >= mx) {}`’ becomes ‘skip if NOT _x_ \>= _mx_’. At the end of each clause, you'd need to skip all the others: branch to `.Lend`. The conditional branches mean ‘go to the next branch’.
+これは GCC が出すもので、かなり良いものです。節の順序が保たれているので、分岐の条件を逆にしなければならず、「`if(x >= mx) {}`」は「_x_ \>= _mx_ でなければ飛ばす」になります。各節の最後では、ほかのすべてを飛ばす必要があります。`.Lend` に分岐するのです。条件付きの分岐は「次の分岐へ行け」を意味します。
 
-And now an optimized version. First, a `cmp` is equivalent to `sub` except that it doesn't put the result in a register. However, as we need the result later on anyway, we might as well combine the ‘`cmp`’ and ‘`sub`’. Secondly, the clauses are pretty small, so we can use conditional ops as well. The new version would be:
+そして、次は最適化した版です。まず、`cmp` は結果をレジスタに入れないことを除けば `sub` と同じです。しかし、どのみちあとで結果が必要なので、「`cmp`」と「`sub`」を組み合わせてしまえばいいでしょう。次に、節はかなり小さいので、条件付きの演算も使えます。新しい版は次のようになります。
 
 ```armasm
 @ Optimized wrapper
@@ -1210,7 +1210,7 @@ And now an optimized version. First, a `cmp` is equivalent to `sub` except that 
     ...
 ```
 
-Cleans up nicely, wouldn't you say? Less branches, less code and it matches the C code more closely. We can even get rid of the last branch too because we can execute the `subs` conditionally as well. Because `ge` and `lt` are each others complements there won't be any interference. So the final version is:
+すっきりしたと思いませんか？ 分岐もコードも少なくなり、C のコードにもっと近くなりました。`subs` も条件付きで実行できるので、最後の分岐もなくせます。`ge` と `lt` は互いに補い合うので、干渉することはありません。そこで最終版は次のとおりです。
 
 ```armasm
 @ Optimized wrapper, version 2
@@ -1221,11 +1221,11 @@ Cleans up nicely, wouldn't you say? Less branches, less code and it matches the 
     ...
 ```
 
-Of course, it isn't always possible to optimize to such an extent. However, if the clauses have small bodies conditional instructions may become attractive. Also, converting a compare to some form of data operation that you'd need later anyway is common and recommended.
+もちろん、いつもここまで最適化できるとは限りません。しかし、節の本体が小さければ、条件付きの命令は魅力的になりえます。また、比較を、どのみちあとで必要になる何らかのデータの演算に変えるのは、よくあることで、おすすめです。
 
-##### Compound logical expressions
+##### 複合した論理式
 
-Higher languages often allow you to string multiple conditions together using logical AND (`&&`) and logical OR (`||`). What the books often won't say is that these are merely shorthand notations of a chain of `if`s. Here's what actually happens.
+高水準の言語では、論理 AND（`&&`）と論理 OR（`||`）を使って複数の条件をつなげられることがよくあります。本がたいてい教えてくれないのは、これらが単に `if` の連鎖の略記にすぎないということです。実際に起きていることは次のとおりです。
 
 ```c
 // === if(x && y) { /* clause */ } ===
@@ -1242,7 +1242,7 @@ else if(y)
 { /* clause */ }
 ```
 
-The later terms in the AND are only evaluated if earlier expressions were true. If not, they're simply skipped. Much fun can be had if the second term happens to be a function with side effects. A logical OR is basically an if-else chain with identical clauses; this is just for show of course, in the final version there's one clause which is branched to. In assembly, these would look something like this.
+AND の後ろの項は、前の式が真だった場合にだけ評価されます。そうでなければ、単に飛ばされます。2 つ目の項が副作用のある関数だったりすると、たっぷり楽しめます。論理 OR は基本的に、同じ節を持つ if-else の連鎖です。もちろんこれは見せるためだけのもので、最終版では分岐先となる節が 1 つあります。アセンブリでは、これらは次のようなものになるでしょう。
 
 ```armasm
 @ if(r0 != 0 && r1 != 0) { /* clause */ }
@@ -1275,15 +1275,15 @@ The later terms in the AND are only evaluated if earlier expressions were true. 
     ...
 ```
 
-As always, alternative solutions will present themselves for your specific situation. Also note that you can transform ANDs into ORs using [De Morgan's Laws](https://en.wikipedia.org/wiki/De_Morgan%27s_laws).
+いつものように、具体的な状況に応じて別の解決策が見えてくるでしょう。また、[ド・モルガンの法則](https://en.wikipedia.org/wiki/De_Morgan%27s_laws)を使えば AND を OR に変換できることにも注意してください。
 
-##### Loops
+##### ループ
 
-One of the most important reasons to use assembly is speeding up oft-used code, which will probably involve loops because that's where most of the time will be spent. If you can remove one instruction in a non-loop situation, you'll have won one cycle. If you remove one from a loop, you'll have gained one for every iteration of the loop. For example, saving a cycle in a clear-screen function would save 240\*160 = 19200 cycles – more, actually, because of memory wait-states. That one cycle can mean the difference between smooth and choppy animation.
+アセンブリを使う最も重要な理由の 1 つは、よく使われるコードを速くすることで、それにはおそらくループが関わります。ほとんどの時間はそこで費やされるからです。ループでないところで命令を 1 つ減らせば、1 サイクル得をします。ループから 1 つ減らせば、ループの反復のたびに 1 サイクル得をします。たとえば、画面をクリアする関数で 1 サイクル節約すれば、240\*160 = 19200 サイクルが節約できます。メモリのウェイトステートのせいで、実際にはもっとです。その 1 サイクルが、なめらかなアニメーションとカクカクしたアニメーションの違いになりうるのです。
 
-In short, optimization is pretty much all about loops, especially inner loops. Interestingly, this is where GCC often misses the mark, because it adds more stuff than necessary. For example, in older versions (DKA and DKP r12, something like that) it often kept constructed memory addresses (VRAM, etc) inside the loop. Unfortunately, DKP r19 also has major issues with struct copies and `ldm/stm` pairs, which are now only give a small benefit over other methods. Now, before you blame GCC for slow loops, it's also often the C programmer that forces GCC to produce slow code. In the introduction, you could see the major difference that inlining makes, and in the [profiling](text.html#ssec-demo-se2) demo I showed how much difference using the wrong datatype makes.
+要するに、最適化はほとんどループ、特に内側のループの話なのです。面白いことに、GCC がよく的を外すのはここです。必要以上のものを加えてしまうのです。たとえば、古い版（DKA や DKP r12 あたり）では、組み立てたメモリのアドレス（VRAM など）をループの中に置いたままにすることがよくありました。残念ながら、DKP r19 にも構造体のコピーと `ldm/stm` の組に大きな問題があり、今ではほかの方法に比べてわずかな利点しかありません。さて、遅いループを GCC のせいにする前に言っておくと、GCC に遅いコードを生成させているのは、C のプログラマであることもよくあります。はじめにでは、インライン化がもたらす大きな違いを見ましたし、[プロファイリング](text.html#ssec-demo-se2)のデモでは、間違ったデータ型を使うとどれほどの違いが出るかを示しました。
 
-Anyway, loops in assembly. Making a loop is the easiest thing in the world: just branch to a previous label. The differences between `for`, `do-while` and `while` loops are a matter of where you increment and test. In C, you usually use a for-loop with an incrementing index. In assembly, it's customary to use a while-loop with a decrementing index. Here are two examples of a word-copy loop that should show you why.
+ともかく、アセンブリでのループです。ループを作るのは世界一簡単なことです。前のラベルに分岐するだけです。`for`、`do-while`、`while` のループの違いは、どこで増やしてどこで判定するかの問題です。C では普通、増えていくインデックスを持つ for ループを使います。アセンブリでは、減っていくインデックスを持つ while ループを使うのが慣例です。その理由がわかる、ワードをコピーするループの例を 2 つ示します。
 
 ```armasm
 @ Asm equivalents of copying 16 words.
@@ -1312,7 +1312,7 @@ Anyway, loops in assembly. Making a loop is the easiest thing in the world: just
     bne .LabelW
 ```
 
-In an incrementing for-loop you need to increment and then compare against the limit. In the decrementing while loop you subtract and test for zero. Because the zero-test is already part of every instruction, you don't need to compare separately. True, it's not much faster, maybe 10% or so, but many 10 percents here and there do add up. There are actually many versions of this kind of loop, here's another one using block-transfers. The benefit of those is that they also work in Thumb:
+増えていく for ループでは、増やしてから上限と比較する必要があります。減っていく while ループでは、引いてゼロかどうかを判定します。ゼロの判定はすでにすべての命令の一部なので、別に比較する必要はありません。たしかに、それほど速くなるわけではなく、10% かそこらでしょうが、あちこちの 10% がたくさん集まれば積み重なります。実はこの種のループにはたくさんの版があり、ブロック転送を使ったものをもう 1 つ示します。その利点は、Thumb でも動くことです。
 
 ```armasm
 @ Yet another version, using ldm/stm
@@ -1325,36 +1325,36 @@ In an incrementing for-loop you need to increment and then compare against the l
     bne .LabelW
 ```
 
-This is one of those occasions where knowing assembly can help you write efficient C. Using a decrementing counter and pointer arithmetic will usually be a little faster, but usually GCC willl do this for you anyway. Another point is using the right datatype. And with ‘right’ I mean `int`, of course. Non-ints require implicit casts (`lsl`/`lsr` pairs) after every arithmetic operation. That's two instructions after **every** plus, minus or whatever. While GCC has become quite proficient in converting non-ints into ints where possible, this has not always been the case, and it may not always be possible. I've seen the loops above cost between 600% more because the index and pointer were `u16`, I shit you not.
+これは、アセンブリを知っていることが効率的な C を書くのに役立つ場面の 1 つです。減っていくカウンタとポインタ演算を使うと、たいてい少し速くなりますが、たいていは GCC がどのみちそうしてくれます。もう 1 つの点は、正しいデータ型を使うことです。そして「正しい」とは、もちろん `int` のことです。int でないものは、算術演算のたびに暗黙のキャスト（`lsl`/`lsr` の組）を必要とします。足し算、引き算、何であれ、その**すべて**のあとに 2 命令です。GCC は可能なところで int でないものを int に変換するのがかなりうまくなりましたが、いつもそうだったわけではありませんし、いつもそれが可能とは限りません。インデックスとポインタが `u16` だったせいで、上のループに 600% も余計にかかっているのを見たことがあります。嘘じゃありません。
 
-When dealing with loops, be extremely careful with how you start and stop the loop. It's very easy to come up with a loop that runs once too often or too little. I'm pretty sure these two versions are correct. The way I usually check it is to see how it runs when the count should be 1 or 2. If that works out, larger numbers will too.
+ループを扱うときは、ループをどう始めてどう止めるかに極めて注意してください。1 回多すぎたり少なすぎたりするループを作るのはとても簡単です。この 2 つの版は正しいとかなり確信しています。私がいつも確認するやり方は、個数が 1 か 2 のときにどう動くかを見ることです。それでうまくいけば、もっと大きな数でもうまくいきます。
 
-:::tip Merge comparisons with data instructions
+:::tip 比較とデータの命令をまとめよう
 
-The **Z** status flag revolves around the number zero, so if you use 0 to compare to you can often combine the comparison with the data instruction that sets the flags.
+**Z** のステータスフラグはゼロという数を中心に回っているので、比較の相手に 0 を使えば、たいてい比較をフラグを設定するデータの命令とまとめられます。
 
-This is also true for testing individual bits. The **N** and **C** flags are effectively bits 31 and 32, respectively. If you can manipulate the algorithm to use those, you don't need a `cmp` or `tst`.
-
-:::
-
-:::warning “No, there is another”
-
-You probably know this already, but this is a good time to repeat the warning: watch out for off-by-one errors (also known as [obi-wan errors](http://www.catb.org/~esr/jargon/html/O/obi-wan-error.html)). It is just way too easy to do one iteration too few or too many, so always check whether the code you have does the right thing. Goes for other programming languages too, of course.
+これは個々のビットを判定する場合にも当てはまります。**N** フラグと **C** フラグは、実質的にそれぞれビット 31 と 32 です。それらを使うようにアルゴリズムを工夫できれば、`cmp` や `tst` は必要ありません。
 
 :::
 
-#### Function calls
+:::warning 「いや、もう一人いる」
 
-Function calls use a special kind of branching instruction, namely `bl`. It works exactly like the normal branch, except that it saves the address after the `bl` in the link register (`r14` or `lr`) so that you know where to return to after the called function is finished. In principle, you can return with to the function using ‘`mov pc, lr`’, which points the program counter back to the calling function, but in practice you might be better off with `bx` (Branch and eXchange). The difference is that `bx` can also switch between ARM and Thumb states, which isn't possible with the `mov` return. Unlike `b` and `bl`, `bx` takes a register as its argument, instead of a label. This register will usually be `lr`, but the others are allowed as well.
+もう知っているでしょうが、ここは警告を繰り返すのに良い場面です。1 つずれのエラー（[obi-wan エラー](http://www.catb.org/~esr/jargon/html/O/obi-wan-error.html)とも呼ばれます）に気をつけてください。反復を 1 回少なくしたり多くしたりするのは本当に簡単すぎるので、手元のコードが正しいことをしているか、いつも確認してください。もちろん、ほかのプログラミング言語でも同じです。
 
-There's also the matter of passing parameters to the function and returning values from it. In principle you're free to use any system you like, it is recommended to ARM's own [ARM Architecture Procedure Call Standard](https://github.com/ARM-software/abi-aa/releases/download/2023Q3/aapcs32.pdf) (AAPCS) for this. For the majority of the work this can be summarized like this.
+:::
 
-- The first 4 arguments go into r0-r3. Later ones go on the stack, in order of appearance.
-- The return value goes into r0.
-- The scratch registers r0-r3 (and r12) are free to use without restriction in a function. As such, after _calling_ a function they should be considered ‘dirty’.
-- The other registers must leave a function with the same values as they came in. Push them on the stack before use, and pop them when leaving the function. Note that another `bl` sets `lr`, so stack that one too in that case.
+#### 関数呼び出し
 
-Below is a real-world example of function calling, complete with parameter passing, stackwork and returning from the call. The function `oamcpy()` copies OBJ_ATTRs. The function uses the same argument order as `memcpy()`, and these need to be set by the calling function; before and after the call, `lr` is pushed and popped. These two things are part of what's called the function overhead, which can be disastrous for small functions, as we've already seen. Inside `oamcpy()` we either jump back immediately if the count was 0, or proceed with the copies and then return. Note that `r4` is stacked here, because that's what the caller expects; if I hadn't and the caller used `r4` as well, I'd be screwed and rightly so. I should probably point out that `r12` is usually considered a scratch register as well, which I could have used here instead of `r4`, removing the need for stacking.
+関数呼び出しには、特別な種類の分岐命令 `bl` を使います。普通の分岐とまったく同じように働きますが、`bl` の後ろのアドレスをリンクレジスタ（`r14` または `lr`）に保存するので、呼ばれた関数が終わったあとでどこに戻ればいいかがわかります。原理的には、プログラムカウンタを呼び出し側の関数に戻す「`mov pc, lr`」で戻れますが、実際には `bx`（Branch and eXchange）を使ったほうがよいかもしれません。違いは、`bx` は ARM と Thumb のステートを切り替えることもできる点で、`mov` での戻りではそれはできません。`b` や `bl` と違って、`bx` は引数にラベルではなくレジスタを取ります。このレジスタはたいてい `lr` ですが、ほかのものも使えます。
+
+関数に引数を渡し、関数から値を返すという問題もあります。原理的には好きな仕組みを使ってかまいませんが、これには ARM 自身の [ARM Architecture Procedure Call Standard](https://github.com/ARM-software/abi-aa/releases/download/2023Q3/aapcs32.pdf)（AAPCS）を使うことがすすめられています。仕事の大部分については、次のようにまとめられます。
+
+- 最初の 4 つの引数は r0-r3 に入れます。それ以降のものは、出てくる順にスタックに置きます。
+- 戻り値は r0 に入れます。
+- スクラッチレジスタ r0-r3（と r12）は、関数の中で制約なしに自由に使えます。そのため、関数を_呼んだ_あとは、それらは「汚れている」とみなすべきです。
+- ほかのレジスタは、関数に入ってきたときと同じ値で関数を出なければなりません。使う前にスタックにプッシュし、関数を出るときにポップします。別の `bl` は `lr` を設定するので、その場合はそれもスタックに積んでください。
+
+下は関数呼び出しの実際の例で、引数の受け渡し、スタックの操作、呼び出しからの戻りまでそろっています。関数 `oamcpy()` は OBJ_ATTR をコピーします。この関数は `memcpy()` と同じ引数の順序を使い、引数は呼び出し側の関数が設定する必要があります。呼び出しの前後で `lr` をプッシュ、ポップします。この 2 つは関数のオーバーヘッドと呼ばれるものの一部で、すでに見たように、小さな関数にとっては致命的になりえます。`oamcpy()` の中では、個数が 0 ならすぐに戻り、そうでなければコピーを進めてから戻ります。ここで `r4` をスタックに積んでいることに注意してください。呼び出し側がそれを期待しているからです。そうせずに、呼び出し側も `r4` を使っていたら、私はひどい目にあいますし、それは当然の報いです。`r12` も普通はスクラッチレジスタとみなされることは指摘しておくべきでしょう。ここでは `r4` の代わりにそれを使うこともでき、そうすればスタックに積む必要がなくなります。
 
 ```armasm
 @ Function calling example: oamcpy
@@ -1383,21 +1383,21 @@ oamcpy:
     pop     {lr}        @ Restore lr
 ```
 
-:::tip Use bx instead of mov pc,lr
+:::tip mov pc,lr ではなく bx を使おう
 
-The `bx` instruction is what makes interworking between ARM and Thumb function possible. Interworking is good. Therefore, `bx` is good.
+`bx` 命令が、ARM と Thumb の関数の相互呼び出し（インターワーキング）を可能にしています。インターワーキングは良いものです。したがって、`bx` は良いものです。
 
 :::
 
-This concludes the primary section on ARM assembly. There are more things like different processor states, and data-swap (`swp`) and co-processor instructions, but those are rare. If you need more information, look them up in the proper reference guides. The next two subsections cover instruction speeds and what an instruction actually looks like in binary, i.e., what the processor actually processes. Neither section is necessary in the strictest sense, but still informative. If you do not want to be informed, move on to the next section: [the Thumb instruction set](asm.html#sec-thumb).
+これで ARM アセンブリの主な節は終わりです。プロセッサのいろいろなステート、データの交換（`swp`）、コプロセッサの命令などもありますが、それらはまれです。もっと情報が必要なら、適切なリファレンスガイドで調べてください。次の 2 つの小節では、命令の速さと、命令が実際に 2 進数でどんな形をしているか、つまりプロセッサが実際に処理するものを扱います。どちらの節も厳密な意味では必要ありませんが、それでもためになります。ためにならなくていいなら、次の節、[Thumb の命令セット](asm.html#sec-thumb)に進んでください。
 
-### Cycle counting {#ssec-misc-cycles}
+### サイクル数を数える {#ssec-misc-cycles}
 
-Since the whole reason for coding in asm is speed (well, that and space efficiency), it is important to know how fast each instruction is so that you can decide on which one to use where. The term ‘cycle’ actually has two different meanings: there is the <dfn>clock cycle</dfn>, which measures the amount of clock ticks, and there's <dfn>functional cycle</dfn> (for lack of a better word), which indicates the number of stages in an instruction. In an ideal world these two would be equal. However, this is the real world, where we have to deal with waitstates and buswidths, which make functional cycles cost multiple clock cycles. A <dfn>wait(state)</dfn> is the added cost for accessing memory; memory might just not be as fast as the CPU itself. Memory also as a fixed <dfn>buswidths</dfn>, indicating the maximum number of bits that can be sent in one cycle: if the data you want to transfer is larger than the memory bus can handle, it has to be cut up into smaller sections and put through, costing additional cycles. For example, ROM has a 16bit bus which is fine for transferring bytes or halfwords, but words are transferred as two halfwords, costing two functional cycles instead of just one. If you hadn't guessed already, this is why Thumb code is recommended for ROM/EWRAM code.
+アセンブリでコードを書く理由はひとえに速さ（まあ、それと領域の効率）なので、どこでどの命令を使うかを決められるように、各命令がどれくらい速いかを知っておくことが大事です。「サイクル」という言葉には、実は 2 つの異なる意味があります。クロックの刻みの量を測る<dfn>クロックサイクル</dfn>と、命令の段階の数を示す（もっと良い言葉がないので）<dfn>機能サイクル</dfn>です。理想の世界では、この 2 つは等しいでしょう。しかしここは現実の世界で、ウェイトステートやバス幅を扱わなければならず、そのせいで機能サイクルは複数のクロックサイクルを消費します。<dfn>ウェイト（ステート）</dfn>はメモリにアクセスするための追加のコストです。メモリは単に CPU そのものほど速くないことがあるのです。メモリには決まった<dfn>バス幅</dfn>もあり、1 サイクルで送れる最大のビット数を示します。転送したいデータがメモリのバスで扱える量より大きければ、小さな部分に切り分けて通さなければならず、追加のサイクルがかかります。たとえば、ROM は 16 ビットのバスで、バイトやハーフワードの転送には問題ありませんが、ワードは 2 つのハーフワードとして転送されるので、1 つではなく 2 つの機能サイクルがかかります。まだ察していなかったなら、これが ROM/EWRAM のコードに Thumb のコードがすすめられる理由です。
 
-There are three types of functional cycles: the <dfn>non-sequential</dfn> (N), the <dfn>sequential</dfn> (S) and the <dfn>internal</dfn> (I) cycle. There is a fourth, the coprocessor cycle (C), but as the GBA doesn't have a coprocessor I'm leaving that one out.
+機能サイクルには 3 種類あります。<dfn>非シーケンシャル</dfn>（N）、<dfn>シーケンシャル</dfn>（S）、<dfn>内部</dfn>（I）サイクルです。4 つ目にコプロセッサのサイクル（C）がありますが、GBA にはコプロセッサがないので省きます。
 
-Anyway, the N- and S-cycles have to do with memory fetches: if the transfer of the current (functional) cycle is not related to the previous cycle, it is non-sequential; otherwise, it's sequential. Most instructions will be sequential (from the instruction fetch), but branches and loads/stores can have non-sequentials as they have to look up another address. Both sequential and non-sequential cycles are affected by section waitstates. The internal cycles is one where the CPU is already doing something else so that even though it's clear what the next action should be, it'll just have to wait. I-cycles do not suffer from waitstates.
+ともかく、N サイクルと S サイクルはメモリからの取得に関係しています。現在の（機能）サイクルの転送が前のサイクルと関係なければ非シーケンシャルで、そうでなければシーケンシャルです。ほとんどの命令は（命令の取得から）シーケンシャルになりますが、分岐と読み込み/書き込みは別のアドレスを参照しなければならないので、非シーケンシャルを含むことがあります。シーケンシャルと非シーケンシャルのサイクルは、どちらも領域のウェイトステートの影響を受けます。内部サイクルは、CPU がすでに何か別のことをしていて、次の動作がはっきりしていても待たなければならないサイクルです。I サイクルはウェイトステートの影響を受けません。
 
 <div class="cblock">
   <table width=80% align="center">
@@ -1405,14 +1405,14 @@ Anyway, the N- and S-cycles have to do with memory fetches: if the transfer of t
       <td style="border: 1px solid var(--bg);">
         <table id="tbl:cycles" class="table-data">
           <caption align="bottom">
-            <b>{*@tbl:cycles}</b>: Cycle times for the most important instructions.
+            <b>{*@tbl:cycles}</b>: 最も重要な命令のサイクル数。
           </caption>
           <tr> 
-            <th>Instruction</th> 
-            <th>Cycles</th> 
+            <th>命令</th> 
+            <th>サイクル</th> 
           </tr>
           <tr>
-            <td>Data</td>
+            <td>データ</td>
             <td>1S</td>
           </tr>
           <tr>
@@ -1456,16 +1456,16 @@ Anyway, the N- and S-cycles have to do with memory fetches: if the transfer of t
       <td style="border: 1px solid var(--bg);">
         <table id="tbl:waits"class="table-data">
           <caption align="bottom">
-            <b>{*@tbl:waits}</b>: Section default timing details. See also <a href="https://problemkaputt.de/gbatek.htm#gbamemorymap">GBATEK memory map</a>.
+            <b>{*@tbl:waits}</b>: 領域のデフォルトのタイミングの詳細。<a href="https://problemkaputt.de/gbatek.htm#gbamemorymap">GBATEK のメモリマップ</a>も見てください。
           </caption>
           <col>
             <col span=3 align="center">
               <tbody align="center">
                 <tr>
-                  <th>Section</th>
-                  <th>Bus</th>
-                  <th>Wait (N/S)</th>
-                  <th>Access 8/16/32</th>
+                  <th>領域</th>
+                  <th>バス</th>
+                  <th>ウェイト（N/S）</th>
+                  <th>アクセス 8/16/32</th>
                 </tr>
                 <tr>
                   <th>BIOS </th>
@@ -1524,35 +1524,35 @@ Anyway, the N- and S-cycles have to do with memory fetches: if the transfer of t
   </table>
 </div>
 
-{_@tbl:cycles} shows how much the instructions cost in terms of N/S/I cycles. How one can arrive to these cycle times is explained below. {_@tbl:waits} lists the buswidths, the waitstates and the access times in clock cycles for each section. Note that these are the default wait states, which can be altered in [REG_WAITCNT](https://problemkaputt.de/gbatek.htm#gbasystemcontrol).
+{_@tbl:cycles} は、命令が N/S/I サイクルでどれだけかかるかを示しています。これらのサイクル数にどうたどり着くかは下で説明します。{_@tbl:waits} は、各領域のバス幅、ウェイトステート、クロックサイクルでのアクセス時間を挙げています。これらはデフォルトのウェイトステートで、[REG_WAITCNT](https://problemkaputt.de/gbatek.htm#gbasystemcontrol) で変更できることに注意してください。
 
-The data presented here is just an overview of the most important items, for all the gory details you should look them up in GBATEK or the official documents.
+ここで示したデータは最も重要な項目の概要にすぎません。細かいことをすべて知りたければ、GBATEK や公式の文書で調べてください。
 
-- The cost of an instruction begins with fetching it from memory, which is a 1S operation. For most instructions, it ends there as well.
+- 命令のコストは、それをメモリから取得することから始まります。これは 1S の操作です。ほとんどの命令では、それで終わりでもあります。
 
-- Memory instructions also have to get data from memory, which will cost 1N<sub>d</sub>; I've added a subscript _d_ here because this is an access to the section where the _data_ is kept, whereas other waitstates are taken from the section where the code resides. This is an important distinction. Also, because the address of the next instruction won't be related to the current address, its timing will begin as a 1N instead of a 1S. This difference is encompassed in the transfer timing. Note however that most documentation list `ldr` as 1S+1N+1I, but this is false! If you actually test it, you'll see that it is really 1N+1N<sub>d</sub>+1I.
+- メモリの命令はメモリからデータも取得しなければならず、それに 1N<sub>d</sub> かかります。ここで添字 _d_ を付けたのは、これが_データ_が置かれている領域へのアクセスだからで、ほかのウェイトステートはコードがある領域のものです。これは重要な区別です。また、次の命令のアドレスは現在のアドレスと関係がないので、そのタイミングは 1S ではなく 1N から始まります。この違いは転送のタイミングに含まれています。ただし、ほとんどの文書は `ldr` を 1S+1N+1I としていますが、これは間違いです！ 実際に試してみれば、本当は 1N+1N<sub>d</sub>+1I であることがわかるでしょう。
 
-- Block transfer behave like normal transfers, except that all accesses after the first are S<sub>d</sub>-cycles.
+- ブロック転送は普通の転送と同じようにふるまいますが、最初のあとのアクセスはすべて S<sub>d</sub> サイクルになります。
 
-- Branches need an extra 1N+1S for jumping to the new address and fetching the resetting the pipeline (I think). Anything that changes `pc` can be considered a branch. The Thumb `bl` is actually two instructions (or, rather, one instruction and an address), which is why that has an additional 1S.
+- 分岐では、新しいアドレスへジャンプしてパイプラインをリセットして取得し直すために、さらに 1N+1S が必要です（と思います）。`pc` を変えるものは何でも分岐とみなせます。Thumb の `bl` は実は 2 つの命令（というより、1 つの命令とアドレス）なので、追加の 1S があります。
 
-- Register-shifted operations add 1I to the base cost because the value has to be read from the register before it can be applied.
+- レジスタでシフトする演算は、値を適用する前にレジスタから読む必要があるので、基本のコストに 1I が加わります。
 
-- Multiplies are 1S operations, plus 1I for every significant byte of the _second_ operand. Yes, this does mean that the cost is asymmetric in the operands. If you can estimate the ranges of values for the operands, try to put the lower one in the second operand. Another 1I is required for the add of `mla`, and one more for long multiplications.
+- 乗算は 1S の操作に、_2 つ目_のオペランドの有効なバイトごとに 1I が加わります。そう、つまりコストはオペランドについて非対称です。オペランドの値の範囲を見積もれるなら、小さいほうを 2 つ目のオペランドに置くようにしてください。`mla` の加算にはさらに 1I が必要で、長い乗算ではもう 1 つ必要です。
 
-:::warning There is no 1S in loads!
+:::warning 読み込みに 1S はない！
 
-Official documentation gives 1S+1N<sub>d</sub>+1I as the timing of `ldr`, but this is not entirely accurate. It is actually 1**N**+1N<sub>d</sub>+1I. The difference is small and only visible for ROM instructions, but could be annoying if you're wondering why what you predicted and what you measured for your routine doesn't match exactly. This applies to `ldm` and perhaps `swp` too.
+公式の文書は `ldr` のタイミングを 1S+1N<sub>d</sub>+1I としていますが、これは完全に正確ではありません。実際には 1**N**+1N<sub>d</sub>+1I です。違いは小さく、ROM の命令でしか見えませんが、自分のルーチンで予測した値と測った値がなぜぴったり合わないのかと悩んでいるなら、腹立たしいかもしれません。これは `ldm` と、おそらく `swp` にも当てはまります。
 
-See [forum:9602](https://gbadev.net/forum-archive/thread/8/9602.html) for a little more on the subject.
+この話題についてもう少し知りたければ、[forum:9602](https://gbadev.net/forum-archive/thread/8/9602.html) を見てください。
 
 :::
 
-### Anatomy of an addition {#ssec-arm-add}
+### 加算の解剖 {#ssec-arm-add}
 
-As an example of how instructions are actually formatted, I invite you to an in-depth look at the `add` instruction. This will be the absolute rock bottom in terms of GBA programming, the lowest level of them all. Understanding this will go a long way in understanding the hows and whys (and why-nots!) of ARM assembly.
+命令が実際にどんな形式になっているかの例として、`add` 命令を詳しく見てみましょう。これは GBA のプログラミングの絶対的などん底、すべての中で最も低い水準になります。これを理解すれば、ARM アセンブリの仕組みと理由（そして、できない理由！）の理解に大きく近づきます。
 
-Before I show the bits, I should point out that `add` (and in fact all data instructions) come in three forms, depending on the second operand. This can be an immediate field (numeric value), an immediate-shifted register or a register-shifted register. Bits 4 and 19h indicate the type of `add`, the lower 12 bits describe the second operand; the rest are the same for all `add` forms.
+ビットを示す前に、`add`（そして実はすべてのデータの命令）には、2 つ目のオペランドによって 3 つの形があることを指摘しておくべきでしょう。即値のフィールド（数値）、即値でシフトしたレジスタ、レジスタでシフトしたレジスタのどれかです。ビット 4 と 19h が `add` の種類を示し、下位の 12 ビットが 2 つ目のオペランドを表します。残りはすべての `add` の形で同じです。
 
 <style>
   #tbl\:arm-add {
@@ -1569,7 +1569,7 @@ Before I show the bits, I should point out that `add` (and in fact all data inst
 <div class="reg">
   <table class="table-reg" id="tbl:arm-add" border=1 frame=void cellpadding=2 cellspacing=0>
     <caption class="reg">
-      <b>{*@tbl:arm-add}</b>: The add instruction(s)
+      <b>{*@tbl:arm-add}</b>: add 命令（たち）
     </caption>
     <colgroup>
       <col style="width: 30%;">
@@ -1619,58 +1619,58 @@ Before I show the bits, I should point out that `add` (and in fact all data inst
   <br>
   <table class="table-reg-vert">
     <caption>
-      Top 20 bits for <code>add</code>; denote instruction type, status/conditional flags and destination and first operand registers.
+      <code>add</code> の上位 20 ビット。命令の種類、ステータス/条件のフラグ、書き込み先と最初のオペランドのレジスタを表します。
     </caption>
     <colgroup>
       <col class="bits" width=40>
       <col class="bf" width="8%">
     </colgroup>
     <tr align="left">
-      <th>bits</th>
-      <th>name</th>
-      <th>description</th>
+      <th>ビット</th>
+      <th>名前</th>
+      <th>説明</th>
     </tr>
     <tbody valign="top">
       <tr class="bg0">	
         <td>C&nbsp;-&nbsp;F</td>
         <td class="rclr4">Rd</td>
-        <td><b>Destination register</b>.</td>
+        <td><b>書き込み先のレジスタ</b>。</td>
       </tr>
       <tr class="bg1">	
         <td>10&nbsp;-&nbsp;13</td>
         <td class="rclr3">Rn</td>
-        <td><b>First operand register</b>.</td>
+        <td><b>最初のオペランドのレジスタ</b>。</td>
       </tr>
       <tr class="bg0">	
         <td>14</td>
         <td class="rclr2">S</td>
-        <td>Set <b>Status</b> bits (the <code>-s</code> affix).</td>
+        <td><b>ステータス</b>のビットを設定する（<code>-s</code> の接尾辞）。</td>
       </tr>
       <tr class="bg1">	
         <td>15-18</td>
         <td class="rclr1">TB</td>
-        <td><b>Instruction-type</b> field. Must be 4 for <code>add</code>.</td>
+        <td><b>命令の種類</b>のフィールド。<code>add</code> では 4 でなければなりません。</td>
       <tr class="bg0">	
         <td>19</td>
         <td class="rclr2">IF</td>
-        <td><b>Immediate flag</b>. The second operand is an immediate value if set, and a (shifted) register if clear.</td>
+        <td><b>即値のフラグ</b>。設定されていれば 2 つ目のオペランドは即値で、クリアされていれば（シフトした）レジスタです。</td>
       </tr>
       <tr class="bg1">	
         <td>1A&nbsp;-&nbsp;1C</td>
         <td class="rclr1">TA</td>
-        <td>Another <b>instruction-type</b> field. Is zero for all data instructions.</td>
+        <td>もう 1 つの<b>命令の種類</b>のフィールド。すべてのデータの命令でゼロです。</td>
       </tr>
       <tr class="bg0">	
         <td>1D&nbsp;-&nbsp;1F</td>
         <td class="rclr0">cnd</td>
-        <td><b>Condition</b> field.</td>
+        <td><b>条件</b>のフィールド。</td>
       </tr>
     </tbody>
   </table>
   <br>
   <table class="table-reg-vert">
     <caption>
-      Lower 12 bits for <code>add</code>; these form the second operand.
+      <code>add</code> の下位 12 ビット。これらが 2 つ目のオペランドを作ります。
     </caption>
     <colgroup>
       <col class="bits" width=40>
@@ -1678,53 +1678,53 @@ Before I show the bits, I should point out that `add` (and in fact all data inst
     </colgroup>
     <tbody valign="top">
       <tr align="left">
-        <th>bits</th>
-        <th>name</th>
-        <th>description</th>
+        <th>ビット</th>
+        <th>名前</th>
+        <th>説明</th>
       <tr class="bg0">	
         <td>0&nbsp;-&nbsp;7</td>
         <td class="rclr6">IN</td>
-        <td><b>Immediate Number</b> field. The second operand is <code>IN ror 2*IR</code>.</td>
+        <td><b>即値の数</b>（Immediate Number）のフィールド。2 つ目のオペランドは <code>IN ror 2*IR</code> です。</td>
       </tr>
       <tr class="bg1">	
         <td>8&nbsp;-&nbsp;B</td>
         <td class="rclr5">IR</td>
-        <td><b>Immediate Rotate</b> field. This denotes the rotate-right amount applied to <i>IN</i>.</td>
+        <td><b>即値の回転</b>（Immediate Rotate）のフィールド。<i>IN</i> にかける右回転の量を表します。</td>
       </tr>
       <tr class="bg0">	
         <td>0&nbsp;-&nbsp;3</td>
         <td class="rclr6">Rm</td>
-        <td><b>Second operand</b> register.</td>
+        <td><b>2 つ目のオペランド</b>のレジスタ。</td>
       </tr>
       <tr class="bg1">	
         <td>4</td>
         <td class="rclr7">SF</td>
-        <td><b>Shift-operand flag</b>. If set, the shift is the immediate value in <i>IS</i>; if clear, the shift comes from register <i>Rs</i>.</td>
+        <td><b>シフトのオペランドのフラグ</b>。設定されていればシフト量は <i>IS</i> の即値で、クリアされていればシフト量はレジスタ <i>Rs</i> から来ます（訳注: GBATEK などでは、ビット 4 がクリアのときが即値によるシフトです）。</td>
       </tr>
       <tr class="bg0">	
         <td>5&nbsp;-&nbsp;6</td>
         <td class="rclr8">ST</td>
-        <td> <b>Shift type</b>. <b>0</b>: <code>lsl</code>, <b>1</b>: <code>lsr</code> <b>2</b>: <code>asr</code>, <b>3</b>: <code>ror</code></td>
+        <td> <b>シフトの種類</b>。<b>0</b>: <code>lsl</code>、<b>1</b>: <code>lsr</code> <b>2</b>: <code>asr</code>、<b>3</b>: <code>ror</code></td>
       </tr>
       <tr class="bg1">	
         <td>7&nbsp;-&nbsp;B</td>
         <td class="rclr5">IS</td>
-        <td><b>Immediate Shift</b> value. Second operand is <code>Rm Op IS</code>.</td>
+        <td><b>即値のシフト</b>（Immediate Shift）の値。2 つ目のオペランドは <code>Rm Op IS</code> です。</td>
       </tr>
       <tr class="bg0">	
         <td>8&nbsp;-&nbsp;B</td>
         <td class="rclr5">Rs</td>
-        <td><b>Shift Register</b>. Second operand is <code>Rm Op Rs</code>.</td>
+        <td><b>シフトのレジスタ</b>（Shift Register）。2 つ目のオペランドは <code>Rm Op Rs</code> です。</td>
       </tr>
     </tbody>
   </table>
 </div>
 
-These kinds of tables should feel familiar: yes, I've also used them for IO-registers throughout Tonc. The fact of the matter is that the instructions are coded in a very similar way. In this case, you have a 32bit value, with different bitfields describing the type of instruction (`TA`=0 and `TB`=4 indicate is an `add` instruction), the registers to use (`Rd`, `Rd` and maybe `Rm` and `Rs` too) and a few others. We have seen this thing a number of times by now, so there should be no real difficulty in understanding here. The assembly instructions are little more than the [BUILD macros](regobj.html#cd-oe-build) I've used a couple of times, only this time it's the assembler that turn them into raw numbers instead of the preprocessor. Having said that, it _is_ possible to construct the instructions manually, even at run-time, but whether you really want to do such a thing is another matter.
+この種の表はおなじみのはずです。そう、Tonc のあちこちで IO レジスタにも使ってきました。実のところ、命令はとてもよく似た方法でコード化されているのです。この場合は 32 ビットの値があり、いろいろなビットフィールドが、命令の種類（`TA`=0 と `TB`=4 は `add` 命令であることを示します）、使うレジスタ（`Rd`、`Rd`、そして場合によっては `Rm` と `Rs` も）、そのほかいくつかのものを表します。これはもう何度も見てきたので、理解するのに本当に難しいことはないはずです。アセンブリの命令は、私が何度か使った [BUILD マクロ](regobj.html#cd-oe-build)とたいして変わりません。ただ今回は、それらを生の数値に変えるのがプリプロセッサではなくアセンブラだというだけです。とはいえ、実行時にさえ命令を手で組み立てることは_できます_が、本当にそんなことをしたいかどうかは別の問題です。
 
-Now, the top 20 bits indicate the kind of instruction it is and which registers it uses. The bottom 12 are for _Op2_. If this involves a shifted register the bottom 4 bits indicate `Rm`. Bits 5 and 6 describe the type of shift-operation (shift-left, shift-right or rotate-right) and depending on bit 4, bits 7 to 11 form either the register to shift by (`Rs`) or a shift-value (5 bits for 0 to 31). And then there's the immediate operand …
+さて、上位の 20 ビットは、それがどんな種類の命令で、どのレジスタを使うかを示します。下位の 12 ビットは _Op2_ のためのものです。これがシフトしたレジスタを含む場合、下位の 4 ビットが `Rm` を示します。ビット 5 と 6 はシフトの演算の種類（左シフト、右シフト、右回転）を表し、ビット 4 に応じて、ビット 7 から 11 は、シフト量にするレジスタ（`Rs`）か、シフトの値（0 から 31 のための 5 ビット）になります。そして、即値のオペランドがあります……
 
-Sigh. Yes, here are the mere twelve bits you can use for an immediate operand, divided into a 4bit rotate part and 8bit immediate part. The allowable immediate values are given by `IN ror 2*IR`. This seems like a small range, but interestingly enough you can get quite far with just these. It does mean that you can never load variable addresses into a register in one go; you have to get the address first with a PC-relative load and then load its value.
+はあ。そう、即値のオペランドに使えるのはここにあるたった 12 ビットで、4 ビットの回転の部分と 8 ビットの即値の部分に分かれています。許される即値は `IN ror 2*IR` で与えられます。これは狭い範囲に思えますが、面白いことに、これだけでもかなり遠くまで行けます。ただ、変数のアドレスを一度にレジスタに読み込むことは決してできないということです。まず PC 相対の読み込みでアドレスを得て、それからその値を読み込まなければなりません。
 
 <pre><code class="language-armasm hljs">@ Forming 511(0x101)
     <span class="rem">mov     r0, #511    @ <b>Illegal instruction! D:</b></span>
@@ -1742,37 +1742,37 @@ Sigh. Yes, here are the mere twelve bits you can use for an immediate operand, d
     .word   511
 </code></pre>
 
-Anyway, the bit patterns of {@tbl:arm-add} is what the processor actually sees when you use an `add` instruction. You can see what the other instructions look like in the references I gave earlier, especially the quick references. The orthogonality of the whole instruction set shows itself in very similar formatting of a given class of instructions. For example, the data instructions only differ by the `TB` field: 4 for `add`, 2 for `sub`, et cetera.
+ともかく、`add` 命令を使ったときにプロセッサが実際に見ているのは、{@tbl:arm-add} のビットのパターンです。ほかの命令がどんな形をしているかは、先ほど挙げたリファレンス、特にクイックリファレンスで見られます。命令セット全体の直交性は、ある種類の命令がとてもよく似た形式になっていることに表れています。たとえば、データの命令は `TB` のフィールドだけが違います。`add` なら 4、`sub` なら 2、という具合です。
 
-## Thumb assembly {#sec-thumb}
+## Thumb アセンブリ {#sec-thumb}
 
-The Thumb instruction set is a subset of the full list of ARM instructions. The defining feature of Thumb instructions is that they're only 16 bits long. As a result a function in Thumb can be much shorter than in ARM, which can be beneficial if you don't have a lot of room to work with. Another point is that 16bit instructions will pass through a 16bit databus in one go and be executed immediately, whereas execution of 32bit instructions would have to wait for the second chunk to be fetched, effectively halving the instruction speed. Remember that ROM and EWRAM, the two main areas for code have 16bit buses, which is why Thumb instructions are advised for GBA programming.
+Thumb の命令セットは、ARM の命令の完全な一覧の一部です。Thumb の命令の決定的な特徴は、16 ビットの長さしかないことです。その結果、Thumb の関数は ARM のものよりずっと短くでき、使える領域があまりない場合には有利になりえます。もう 1 つの点は、16 ビットの命令は 16 ビットのデータバスを一度に通ってすぐに実行されるのに対し、32 ビットの命令の実行は 2 つ目の塊が取得されるのを待たなければならず、実質的に命令の速さが半分になることです。コードを置く 2 つの主な領域である ROM と EWRAM は 16 ビットのバスを持っていることを思い出してください。GBA のプログラミングで Thumb の命令がすすめられるのはこのためです。
 
-There are downsides, of course; you can't just cut the size of an instruction in half and expect to get away with it. Even though Thumb code uses many of the same mnemonics as ARM, functionality has been severely reduced. For example, the only instruction that can be conditional is the branch, `b`; instructions can no longer make use of shifts and rotates (these are separate instructions now), and most instructions can only use the lower 8 registers (`r0-r7`); the higher ones are still available, but you have to move things to the lower ones because you can use them.
+もちろん欠点もあります。命令の大きさを半分に切って、それで済むと期待することはできません。Thumb のコードは ARM と同じニーモニックを多く使いますが、機能は大幅に削られています。たとえば、条件付きにできる命令は分岐 `b` だけです。命令はもうシフトや回転を利用できません（それらは今では別の命令です）。そしてほとんどの命令は下位の 8 つのレジスタ（`r0-r7`）しか使えません。上位のものもまだ使えますが、使えるようにするには下位のものに移さなければなりません。
 
-In short, writing efficient Thumb code is much more challenging. It's not exactly bondage-and-disciple programming, but if you're used to the full ARM set you might be in for a surprise now and then. Thumb uses most of ARM's mnemonics, but a lot of them are restricted in some way so learning how to code in Thumb basically comes down to what you _can't_ do anymore. With that in mind, this section will cover the differences between ARM and Thumb, rather than the Thumb set itself.
+要するに、効率の良い Thumb のコードを書くのはずっと難しいのです。縛りプレイのプログラミングとまでは言いませんが、ARM の命令セット全体に慣れていると、ときどき驚くかもしれません。Thumb は ARM のニーモニックのほとんどを使いますが、その多くは何らかの形で制限されているので、Thumb でコードを書くことを学ぶのは、基本的にもう何が_できない_かを知ることになります。それを踏まえて、この節では Thumb の命令セットそのものではなく、ARM と Thumb の違いを扱います。
 
-- **Removed instructions**. A few instructions have been cut altogether. Of the various multiplication instructions only `mul` remains, reverse subtractions (`rsb`, `rsc`) are gone, as are the swapping and coprocessor instructions, but those are rare anyway.
+- **削除された命令**。いくつかの命令は完全に削られています。いろいろな乗算の命令のうち残っているのは `mul` だけで、逆の減算（`rsb`、`rsc`）もなくなり、交換とコプロセッサの命令もなくなりましたが、それらはどのみちまれです。
 
-- **‘New’ instructions**. The mnemonics are new, but really, they're just special cases of conventional ARM instructions. Thumb has separate shift/rotate opcodes: `lsl`, `lsr`, `asr` and `ror` codes, which are functionally equivalent to ‘`mov Rd, Rm, Op2`’. There is also a ‘`neg Rd,Rm`’ for _Rd_= 0−*Rm*, essentially an `rsb`. And I suppose you could call `push` and `pop` new, as they don't appear as ARM opcodes in some devkits.
+- **「新しい」命令**。ニーモニックは新しいのですが、実際には従来の ARM の命令の特殊な場合にすぎません。Thumb には独立したシフト/回転のオペコード `lsl`、`lsr`、`asr`、`ror` があり、これらは機能的に「`mov Rd, Rm, Op2`」と同じです。_Rd_= 0−*Rm* のための「`neg Rd,Rm`」もあり、これは基本的に `rsb` です。それから、一部の開発キットでは ARM のオペコードとして現れないので、`push` と `pop` も新しいと言えるかもしれません。
 
-- **No conditionals**. Except on branch. Hello, gratuitous labelling <kbd>:\\</kbd>.
+- **条件がない**。分岐を除いて。こんにちは、無駄なラベルの山 <kbd>:\\</kbd>。
 
-- The **Set Status** flag is always on. So in Thumb `sub` will always work as a `subs`, etc.
+- **ステータスの設定**のフラグは常にオン。ですから Thumb では、`sub` は常に `subs` として働く、という具合です。
 
-- **No barrel shifter**. Well, it still exist, of course; you just can't use it in conjunction with the instructions anymore. This is why there are separate bitshift/-rotate opcodes.
+- **バレルシフタがない**。まあ、もちろんまだ存在はしています。ただ、もう命令と組み合わせて使えないのです。独立したビットシフト/回転のオペコードがあるのはこのためです。
 
-- **Restricted register availability**. Unless explicitly stated otherwise, the instructions can only use `r0-r7`. The exceptions here are `add`, `mov` and `cmp`, which can at times use high-regs as operands. This restriction also applies to memory operations, with small exceptions: `ldr/str` can still use PC-or SP-relative stuff; `push` allows `lr` in its register list and `pop` allows `pc`. With these, you could return from functions quickly, but you should use `bx` for that anyway. Fortunately, `bx` also allows use of every register so you can still do ‘`bx lr`’.
+- **使えるレジスタの制限**。明示的に別のことが書かれていない限り、命令は `r0-r7` しか使えません。ここでの例外は `add`、`mov`、`cmp` で、これらはときどき上位のレジスタをオペランドに使えます。この制限はメモリの演算にも当てはまりますが、小さな例外があります。`ldr/str` は PC 相対や SP 相対のものをまだ使え、`push` はレジスタのリストに `lr` を、`pop` は `pc` を入れられます。これらを使えば関数からすばやく戻れますが、どのみちそれには `bx` を使うべきです。幸い、`bx` はどのレジスタも使えるので、「`bx lr`」はまだ使えます。
 
-- **Little to no immediate or second operand support**. In ARM-code, most instructions allowed for a second operand _Op2_, which was either an immediate value or a (shifted) register. Most Thumb data instructions are of the form ‘_`ins`_` Rd, Rm`’ and correspond to the C assignment operators like `+=` and `|=`. Note that `Rm` is a register, not an immediate. The only instructions that break this pattern are the shift-codes, `add`, `sub`, `mov` and `cmp`, which can have both immediate values and second operands. See the reference docs for more details.
+- **即値や 2 つ目のオペランドへの対応がほとんどない**。ARM のコードでは、ほとんどの命令が 2 つ目のオペランド _Op2_ を使え、それは即値か（シフトした）レジスタでした。Thumb のデータの命令のほとんどは「_`ins`_` Rd, Rm`」の形で、`+=` や `|=` のような C の代入演算子に対応します。`Rm` は即値ではなくレジスタであることに注意してください。この形から外れる命令は、シフトのコード、`add`、`sub`、`mov`、`cmp` だけで、これらは即値と 2 つ目のオペランドの両方を使えます。詳しくはリファレンスの文書を見てください。
 
-- **No write-back in memory instructions**. That means you will have to use at least one extra register and extra instructions when traversing arrays. There is one exception to this, namely block-transfers. The only surviving versions are `ldmia` and `stmia`, and in both versions the write-back is actually required.
+- **メモリの命令にライトバックがない**。つまり、配列をたどるときには、少なくとも 1 つ余分なレジスタと余分な命令を使わなければなりません。1 つ例外があり、ブロック転送です。残っている版は `ldmia` と `stmia` だけで、どちらの版でもライトバックが実は必須です。
 
-- **Memory operations are tricky**. Well, they are! ARM memory opcodes were identical in what they could do, but here you have to be on your toes. Some features are completely gone (write-back and shifted register offsets), and the others aren't always available to all types. Register-offset addressing is always available, but immediate offsets do not work for the signed loads (`ldrsh`, `ldrsb`). Remember that the registers can only be `r0-r7`, except for `ldr/str`: there you can also use PC and SP-relative stuff (with immediate offsets). {\*@tbl:thumb-mem} gives an overview.
+- **メモリの演算はやっかい**。いや、本当にそうなんです！ ARM のメモリのオペコードはできることが同じでしたが、ここでは気を張っていなければなりません。完全になくなった機能もあります（ライトバックとシフトしたレジスタのオフセット）し、ほかの機能もすべての型で使えるとは限りません。レジスタのオフセットのアドレッシングは常に使えますが、即値のオフセットは符号付きの読み込み（`ldrsh`、`ldrsb`）では使えません。`ldr/str` を除いて、レジスタは `r0-r7` しか使えないことを思い出してください。そこでは PC 相対や SP 相対のもの（即値のオフセット付き）も使えます。{\*@tbl:thumb-mem} に概要を示します。
   <div style="margin:0.5em;">
     <table id="tbl:thumb-mem" class="table-data">
       <caption align="bottom">
-        <b>{*@tbl:thumb-mem}</b>. Thumb addressing mode availability.
+        <b>{*@tbl:thumb-mem}</b>。Thumb で使えるアドレッシングモード。
       </caption>
       <colgroup>
         <col align="right" />
@@ -1812,31 +1812,31 @@ In short, writing efficient Thumb code is much more challenging. It's not exactl
       </tbody>
     </table>
   </div>
-  Actually, ‘`ldrh Rd,=X`’ also seem to work, but these are actually converted into ‘`ldr Rd,=X`’ internally.
+  実は「`ldrh Rd,=X`」も動くようですが、これらは内部で「`ldr Rd,=X`」に変換されています。
 
-Is that it? Well no, but it's enough. Remember, Thumb is essentially ARM Lite: it looks similar, but it has lost a lot of substance. I'd suggest learning Thumb code in that way too: start with ARM then learn what you can't do anymore. This list gives most of the things you need to know; for the rest, just read at the assembler messages you will get from time to time and learn from the experience.
+これで全部でしょうか？ いいえ、でも十分です。Thumb は基本的に ARM Lite だということを思い出してください。見た目は似ていますが、多くの中身を失っています。Thumb のコードもそうやって学ぶことをおすすめします。ARM から始めて、それからもう何ができないかを学ぶのです。このリストには知っておくべきことのほとんどが入っています。残りについては、ときどき出てくるアセンブラのメッセージを読んで、経験から学んでください。
 
-## GAS: the GNU assembler {#sec-gas}
+## GAS: GNU アセンブラ {#sec-gas}
 
-The instructions are only part of functional assembly, you also need <dfn>directives</dfn> to tie code together, control sections and alignment, create data, etc. Somewhat fittingly, directives seem to be as unportable as assembly itself: directives for one assembler might not work under others.
+命令は動くアセンブリの一部にすぎません。コードをまとめ、領域とアラインメントを制御し、データを作るなどのために、<dfn>ディレクティブ</dfn>も必要です。いかにもふさわしいことに、ディレクティブはアセンブリそのものと同じくらい移植性がないようです。あるアセンブラのディレクティブは、ほかのアセンブラでは動かないかもしれません。
 
-This section covers the main directives of the GNU assembler, GAS. Since we're already working with the GNU toolchain, the choice for this assembler is rather obvious. GAS is already part of the normal build sequence, so there is no real loss of functionality, and you can work together with C files just as easily as with other assembly; it's all the same to GCC. Another nice feature is that you can use the preprocessor so if you have header files with just preprocessor stuff (#include and #define only), you can use those here as well. Of course, you could do that anyway because `cpp` is a standalone tool, but you don't have to resort to trickery here.
+この節では、GNU アセンブラ GAS の主なディレクティブを扱います。私たちはすでに GNU のツールチェーンで作業しているので、このアセンブラを選ぶのはかなり当然です。GAS はすでに普通のビルドの手順の一部なので、機能が失われることは実際にはなく、C のファイルとも、ほかのアセンブリと同じくらい簡単に一緒に使えます。GCC にとってはどれも同じなのです。もう 1 つの素敵な特徴は、プリプロセッサを使えることです。プリプロセッサのものだけ（#include と #define だけ）が入ったヘッダファイルがあれば、ここでもそれを使えます。もちろん、`cpp` は独立したツールなので、どのみちそうすることはできますが、ここでは小細工に頼る必要がありません。
 
-But back to directives. In this section you'll see some of the most basic directives. This includes creating symbols for functions (both ARM and Thumb) and variables. With out these you wouldn't be able to do anything. I'll also cover basic datatypes and placing things in specific sections. There are many other directives as well, but these should be the most useful. For the full list, go to the [GAS manual](https://sourceware.org/binutils/docs-2.22/as/index.html) at www.gnu.org.
+さて、ディレクティブに戻りましょう。この節では、最も基本的なディレクティブのいくつかを見ていきます。関数（ARM と Thumb の両方）や変数のシンボルを作ることも含まれます。これらがなければ何もできません。基本的なデータ型や、ものを特定の領域に置くことも扱います。ほかにもたくさんのディレクティブがありますが、これらが最も役に立つはずです。完全な一覧は、www.gnu.org の [GAS のマニュアル](https://sourceware.org/binutils/docs-2.22/as/index.html)を見てください。
 
-### Symbols {#ssec-gas-sym}
+### シンボル {#ssec-gas-sym}
 
-Data (variable and constant) and functions are collectively known as <dfn>symbols</dfn> and, just like in C, these have declarations and definitions. Any label (a valid identifier on a separate line ending with a colon) is potentially a symbol definition, but it's better to distinguish between global and local labels. Simply put, a label is global if there is a ‘`.global `_`lname`_’ directive attached to it that makes it visible to the outside world. Local labels are everything else, and conventionally start with ‘`.L`’, though this is not required. If you want to use symbols from outside, you have to use ‘`.extern `_`lname`_’.
+データ（変数と定数）と関数は、まとめて<dfn>シンボル</dfn>と呼ばれ、C と同じように宣言と定義があります。ラベル（コロンで終わる独立した行にある有効な識別子）は、どれもシンボルの定義になりえますが、グローバルなラベルとローカルなラベルを区別したほうがよいでしょう。簡単に言うと、ラベルに外の世界から見えるようにする「`.global `_`lname`_」ディレクティブが付いていれば、それはグローバルです。ローカルなラベルはそれ以外のすべてで、慣習的に「`.L`」で始まりますが、これは必須ではありません。外のシンボルを使いたければ、「`.extern `_`lname`_」を使う必要があります。
 
-Now, unless you're using some notational device, a label tells you nothing about what it actually stands for: it gives you no information on whether it's data or a function, nor the number of arguments for the latter. There is ‘`.type, `_str_’ directive that lets you indicate if it's a function (_str_ = `%function`) or some form of data (_str_ = `%object`), but that's about it. Since you can tell that difference by looking at what's after the label anyway, I tend to leave this out. For other information, please comment on what the symbols mean.
+さて、何らかの表記上の工夫をしていない限り、ラベルはそれが実際に何を表しているかについて何も教えてくれません。データなのか関数なのか、関数なら引数がいくつあるのか、何の情報もありません。それが関数（_str_ = `%function`）か何らかのデータ（_str_ = `%object`）かを示せる「`.type, `_str_」ディレクティブがありますが、それくらいです。どのみちラベルの後ろにあるものを見れば違いはわかるので、私はこれを省きがちです。ほかの情報については、シンボルが何を意味するのかをコメントに書いてください。
 
-The directives you'd use for data will generally tell you what the datatypes are, but that's something for a later subsection. Right now, I'll discuss a few directives for functions. The most important one is ‘`.code `_`n`_’, where _n_ is 32 or 16 for ARM or Thumb code respectively. You can also use the more descriptive `.arm` and `thumb` directives, which do the same thing. These are global settings, remaining active until you change them. Another important directive is `.thumb_func`, which is **required** for interworking Thumb functions. This directive applies to the next symbol label. Actually, `.thumb_func` already implies `.thumb`, so adding the latter explicitly isn't necessary.
+データに使うディレクティブはたいていデータ型を教えてくれますが、それはあとの小節で扱います。今は、関数のためのディレクティブをいくつか説明します。最も重要なのは「`.code `_`n`_」で、_n_ は ARM なら 32、Thumb なら 16 です。もっとわかりやすい `.arm` と `thumb` のディレクティブも使え、同じことをします（訳注: 後者は正しくは .thumb です）。これらはグローバルな設定で、変えるまで有効なままです。もう 1 つの重要なディレクティブは `.thumb_func` で、相互呼び出しする Thumb の関数には**必須**です。このディレクティブは次のシンボルのラベルに効きます。実は `.thumb_func` はすでに `.thumb` を意味するので、後者を明示的に加える必要はありません。
 
-A very important and sneaky issue is alignment. **You** are responsible for aligning code and data, not the assembler. In C, the compiler did this for you and the only times you might have had problems was with [alignment mismatches](bitmaps.html#ssec-data-align) when casting, but here both code _and_ data can be misaligned; in assembly, the assembler just strings your code and data together as it finds it, so as soon as you start using anything other than words you have the possibility of mis-alignments.
+とても重要でずる賢い問題がアラインメントです。コードとデータを揃えるのは、アセンブラではなく**あなた**の責任です。C ではコンパイラがこれをしてくれて、問題が起きうるのはキャストするときの[アラインメントの不一致](bitmaps.html#ssec-data-align)くらいでしたが、ここではコード_と_データの両方がずれる可能性があります。アセンブリでは、アセンブラはコードとデータを見つけたとおりにつなげるだけなので、ワード以外のものを使い始めたとたんに、ずれる可能性が出てきます。
 
-Fortunately, alignment is very easy to do: ‘`.align `_`n`_’ aligns to the next 2<sup>n</sup> byte boundary and if you don't like the fact that _n_ is a power here, you can also use ‘`.balign `_`m`_’, which aligns to _m_ bytes. These will update the current location so that the next item of business is properly aligned. Yes, it applies to the _next_ item of code/data; it is not a global setting, so if you intend to have mixed data-sizes, be prepared to align things often.
+幸い、アラインメントはとても簡単にできます。「`.align `_`n`_」は次の 2<sup>n</sup> バイトの境界に揃えます。ここで _n_ が累乗の指数なのが気に入らなければ、_m_ バイトに揃える「`.balign `_`m`_」も使えます。これらは現在の位置を更新して、次のものが正しく揃うようにします。そう、これは_次の_コードやデータに効くもので、グローバルな設定ではないので、いろいろな大きさのデータを混ぜるつもりなら、頻繁に揃える覚悟をしてください。
 
-Here are a few examples of how these things would work in practice. Consider it standard boilerplate material for the creation and use of symbols.
+これらが実際にどう働くかの例をいくつか示します。シンボルを作って使うための、標準のお決まりの書き方と考えてください。
 
 ```armasm
 @ ARM and Thumb versions of m5_plot
@@ -1881,39 +1881,39 @@ m5_plot_thumb:                  @ Start of function definition
     bx      lr
 ```
 
-The functions above show the basic template for functions: three lines of directives, and a label for the function. Note that there is no required order for the four directives, so you may see others as well. In fact, the `.global` directive can be separated completely from the rest of the function's code if you want. Also note the use of `.extern` to allow access to `vid_page`, which in libtonc always points to the current back buffer. To be honest, it isn't even necessary because GAS assumes that all unknown identifiers come from other files; nevertheless, I'd suggest you use it anyway, just for maintenance sake.
+上の関数は、関数の基本のひな形を示しています。3 行のディレクティブと、関数のラベルです。4 つのディレクティブに決まった順序はないので、ほかの順序も見かけるかもしれないことに注意してください。実際、望むなら、`.global` ディレクティブを関数のコードの残りから完全に離すこともできます。また、`vid_page` にアクセスできるようにするための `.extern` の使い方にも注意してください。これは libtonc では常に現在の裏のバッファを指しています。正直に言うと、GAS は未知の識別子はすべてほかのファイルから来るとみなすので、これは必要すらありません。それでも、保守のために使っておくことをおすすめします。
 
-And yes, these two functions do actually form functional mode 5 pixel plotters. As an exercise, try to figure out how they work and why they're coded the way they are. Also, notice that the Thumb function is only two instructions longer than the ARM version; if this were ROM-code, the Thumb version would be a whole lot faster due to the buswidth, which is exactly why Thumb code is recommended there.
+そして、ええ、この 2 つの関数は実際にちゃんと動くモード 5 のピクセルの描画関数です。演習として、これらがどう動くのか、なぜこのように書かれているのかを考えてみてください。また、Thumb の関数が ARM 版より 2 命令長いだけであることに注目してください。これが ROM のコードなら、バス幅のおかげで Thumb 版のほうがずっと速くなります。まさにそれが、ROM で Thumb のコードがすすめられる理由です。
 
-:::warning GCC 4.7 note: symbol-type for functions now required
+:::warning GCC 4.7 についての注意: 関数のシンボルの型が必須に
 
-As of GCC 4.7, the `.type` directive is pretty much required for functions. Or, rather, it is required if you want ARM and Thumb interworking to work. Just add the following line to each function definition:
+GCC 4.7 から、関数には `.type` ディレクティブがほぼ必須になりました。というより、ARM と Thumb の相互呼び出しを動かしたいなら必須です。各関数の定義に次の行を加えるだけです。
 
 ```armasm
     .type [function-name] STT_FUNC
 ```
 
-`STT_FUNC` is an internal macro that expands to the correct attribute (presumably `%function`). Replace `[function-name]` with the real function name.
+`STT_FUNC` は、正しい属性（おそらく `%function`）に展開される内部のマクロです。`[function-name]` を本当の関数名に置き換えてください。
 
 :::
 
-:::danger Implicit extern considered harmful
+:::danger 暗黙の extern は有害とみなされる
 
-The `.extern` directive for external symbols is actually not required: GAS assumes that unknown identifiers are external. While I can see the benefits of implicit declarations/definitions, I still think that it is a _bad_ idea. If you've ever misspelled an identifier in languages that have implicit definitions, you'll know why.
+外部のシンボルのための `.extern` ディレクティブは、実は必須ではありません。GAS は未知の識別子を外部のものとみなします。暗黙の宣言/定義の利点もわかりますが、それでも私は_悪い_考えだと思います。暗黙の定義がある言語で識別子のつづりを間違えたことがあれば、その理由がわかるでしょう。
 
-And yes, I know this is actually a non-issue because it'll get caught by the linker anyway, but explicitly mentioning externals is probably still a good idea. <kbd>:P</kbd>
+そして、ええ、どのみちリンカに捕まるので実際には問題にならないことはわかっていますが、外部のものを明示的に書いておくのは、やはり良い考えでしょう。<kbd>:P</kbd>
 
 :::
 
-### Definition of variables {#ssec-gas-data}
+### 変数の定義 {#ssec-gas-data}
 
-Of course, you can also have data in assembly, but before we go there a word about acceptable number formats and number uses. GAS uses the same number representations as C: plain numbers for decimals, ‘`0`’ for octal and ‘`0x`’ for hexadecimal. There is also a binary representation, using the ‘`0b`’ prefix: for example, `0b1100` is 12. I've already used numbers a couple of times now, and you should have noticed that they're sometimes prepended by ‘`#`’. The symbol is not actually part of the number, but is the indicator for an immediate value.
+もちろん、アセンブリでデータを持つこともできますが、その前に、使える数の形式と数の使い方について少し説明します。GAS は C と同じ数の表現を使います。10 進数にはそのままの数、8 進数には「`0`」、16 進数には「`0x`」です。「`0b`」の接頭辞を使う 2 進数の表現もあります。たとえば、`0b1100` は 12 です。もう何度か数を使いましたが、ときどき「`#`」が前に付いていることに気づいたはずです。この記号は実は数の一部ではなく、即値であることを示すものです。
 
-It is also possible to perform arithmetic on numbers in assembly. That is to say, you can have something like ‘`mov r0, #1+2+3+4`’ to load 10 into `r0`. Not only arithmetic, but bit operations will work too, which can be handy if you want to construct masks or colors. Note, this only works for constants.
+アセンブリでは数の算術演算もできます。つまり、`r0` に 10 を読み込むのに「`mov r0, #1+2+3+4`」のようなものを書けるということです。算術演算だけでなくビット演算も使えるので、マスクや色を組み立てたいときに便利です。これは定数でしか使えないことに注意してください。
 
-And now for adding data to your code. The main data directives are `.byte`, `.hword`, and `.word`, which create bytes, halfwords and words, respectively. If you want you can count `.float` among them as well, but you don't want to because floats are evil on the GBA. Their use is simple: put the directive on a line and add a number after it, or even a comma-separated list for an array. If you add a label in front of the data, you have yourself a variable. There are also a few directives for strings, namely `.ascii`, `.asciz` and `.string`. `.asciz` and `.string` differ from `.ascii` in that they add the terminating '`\0`' to the string, which is how strings usually work. Just like the other data directives, you can make an array of strings by separating them with commas.
+さて、次はコードにデータを加えます。主なデータのディレクティブは `.byte`、`.hword`、`.word` で、それぞれバイト、ハーフワード、ワードを作ります。お望みなら `.float` も数に入れられますが、GBA では浮動小数点数は悪なので、入れたくはないでしょう。使い方は簡単です。行にディレクティブを置き、その後ろに数を書きます。配列ならカンマ区切りのリストでもかまいません。データの前にラベルを付ければ、変数のできあがりです。文字列のためのディレクティブもいくつかあり、`.ascii`、`.asciz`、`.string` です。`.asciz` と `.string` は、文字列に終端の '`\0`' を加える点で `.ascii` と違います。文字列は普通そういうものです。ほかのデータのディレクティブと同じく、カンマで区切れば文字列の配列も作れます。
 
-You can see some examples below; note that what should have been the `hword_var` will definitely be misaligned and hence useless.
+下にいくつかの例を示します。`hword_var` になるはずだったものは間違いなくずれていて、そのため役に立たないことに注意してください。
 
 <pre><code class="language-armasm hljs">    .align 2
 word_var:               @ int word_var= 0xCAFEBABE
@@ -1928,13 +1928,13 @@ str_array:                 @ Array of NULL-terminated strings:
     .string &quot;Hello&quot;, &quot;Nurse!&quot;
 </code></pre>
 
-### Data sections {#ssec-gas-dsec}
+### データの領域 {#ssec-gas-dsec}
 
-So now you know how to make code and variables, you have to put them into the proper sections. A <dfn>section</dfn> is a contained area where code and data are stored; the linker uses a linkscript to see where the different sections are and then adds all your symbols and links accordingly. The format for sections is ‘`.section `_`secname`_’, with optional ‘`, "`_`flags`_`", %`_`type`_’ information I'll get to in a minute.
+コードと変数の作り方がわかったので、次はそれらを適切な領域に置かなければなりません。<dfn>セクション</dfn>（領域）とは、コードとデータが格納される区切られた区域です。リンカはリンカスクリプトを使っていろいろなセクションがどこにあるかを調べ、それからすべてのシンボルを加えて、それに応じてリンクします。セクションの形式は「`.section `_`secname`_」で、すぐあとで説明する任意の「`, "`_`flags`_`", %`_`type`_」の情報が付きます。
 
-Traditionally, the section for code is called `.text` and that for data is called `.data`, but there are a few more to consider: the general sections `.bss` and `.rodata`, and the GBA-specific `.ewram` and `.iwram`. In principle, these four are data sections, but they can be used for code by setting the correct section flags. As you might have guessed, `.ewram` stands for the EWRAM section (0200:0000h), `.iwram` is IWRAM (0300:0000h) and `.rodata` is ROM (0800:0000). The `.bss` section is a section intended for variables that are either uninitialized or filled with zero. The nice thing about this section is that it requires no ROM space, as it doesn't have data to store there. The section will be placed in IWRAM, just like the `.data`. You may also sometimes see `.sbss` which stands for ‘small bss’ and has a similar function as the standard `.bss`, but happens to be placed in EWRAM.
+伝統的に、コードのセクションは `.text`、データのセクションは `.data` と呼ばれますが、ほかにも考えるべきものがいくつかあります。汎用のセクション `.bss` と `.rodata`、そして GBA 固有の `.ewram` と `.iwram` です。原理的にはこの 4 つはデータのセクションですが、正しいセクションのフラグを設定すればコードにも使えます。察しがついているかもしれませんが、`.ewram` は EWRAM の領域（0200:0000h）、`.iwram` は IWRAM（0300:0000h）、`.rodata` は ROM（0800:0000）を表します。`.bss` セクションは、初期化されていないか、ゼロで埋められた変数のためのセクションです。このセクションの良いところは、格納するデータがないので、ROM の領域を必要としないことです。このセクションは `.data` と同じく IWRAM に置かれます。ときどき `.sbss` も見かけるかもしれません。これは「small bss」の略で、標準の `.bss` と同じような機能を持っていますが、EWRAM に置かれます。
 
-These data sections can be used to indicate different kinds of data symbols. For example, constants (C keyword `const`) should go into `.rodata`. Non-zero (and non-const, obviously) initialised data goes into `.data`, and zero or uninitialized data is to be placed into `.bss`. Now, you still have to indicate the amount of storage you need for each bss-variable. This can be done with ‘`.space `_`n`_’, which indicates _n_ zero bytes (see also `.fill` and `.skip`), or ‘`.comm `_`name`_`, `_`n`_`, `_`m`_’, which creates a bss symbol called _name_, allocates _n_ bytes for it and aligns it to _m_ bytes too. GCC likes to use this for uninitialized variables.
+これらのデータのセクションは、いろいろな種類のデータのシンボルを示すのに使えます。たとえば、定数（C のキーワード `const`）は `.rodata` に入れるべきです。ゼロでない（そしてもちろん const でない）初期化済みのデータは `.data` に入れ、ゼロか初期化されていないデータは `.bss` に置きます。さて、それでも各 bss の変数に必要な領域の量を示さなければなりません。これは、_n_ 個のゼロのバイトを示す「`.space `_`n`_」（`.fill` と `.skip` も見てください）か、_name_ という名前の bss のシンボルを作り、_n_ バイトを確保して _m_ バイトに揃える「`.comm `_`name`_`, `_`n`_`, `_`m`_」でできます。GCC は初期化されていない変数にこれを使いたがります。
 
 ```c
 // C symbols and their asm equivalents
@@ -1977,9 +1977,9 @@ charlut:
     .space 256
 ```
 
-:::tip Assembly for data exporters
+:::tip データの書き出しツールにはアセンブリを
 
-Assembly is a good format for exporting data to. Assembling arrays is faster than compilation, the files can be bigger and you can control alignment more easily. Oh, any you can't be tempted to #include the data, because that simply will not work.
+アセンブリは、データを書き出す先の形式として優れています。配列のアセンブルはコンパイルより速く、ファイルを大きくでき、アラインメントも簡単に制御できます。ああ、それに、データを #include したくなる誘惑にも駆られません。それは単に動かないからです。
 
 ```armasm
     .section .rodata    @ in ROM, please
@@ -1995,15 +1995,15 @@ foo:
     ...
 ```
 
-You need a const section, word alignment, a symbol declaration and definition and the data in soe form of array. To make use of it, make a suitable declaration of the array in C and you're all set.
+必要なのは、const のセクション、ワード境界への整列、シンボルの宣言と定義、そして何らかの配列の形のデータです。使うには、C で配列の適切な宣言をすれば準備完了です。
 
 :::
 
-### Code sections {#ssec-gas-csec}
+### コードの領域 {#ssec-gas-csec}
 
-That was data in different sections, now for code. The normal section for code is `.text`, which will equate to ROM or EWRAM depending on the linker specs. At times, you will want to have code in IWRAM because it's a lot faster than ROM and EWRAM. You might think that ‘`.section .iwram` does the trick, but unfortunately this does not seem generally true. Because IWRAM is actually a data section, you have to add section-type information here as well. The full section declaration needs to be ‘`.section .iwram, "ax", %progbits`’, which marks the section as allocatable and executable (`"ax"`), and that the section contains data as well (`%progbits`), although this last bit doesn't seem to be required.
+ここまではいろいろなセクションのデータの話でした。次はコードです。コードの普通のセクションは `.text` で、リンカの指定によって ROM か EWRAM になります。ときには、ROM や EWRAM よりずっと速いので、IWRAM にコードを置きたくなるでしょう。「`.section .iwram` でうまくいくと思うかもしれませんが、残念ながら、これは一般には正しくないようです。IWRAM は実はデータのセクションなので、ここではセクションの種類の情報も加えなければなりません。完全なセクションの宣言は「`.section .iwram, "ax", %progbits`」にする必要があります。これはセクションを確保可能かつ実行可能（`"ax"`）とし、セクションにデータも含まれる（`%progbits`）ことを示しますが、この最後の部分は必須ではないようです。
 
-Another interesting point is how to call the function once you have it in IWRAM. The problem is that IWRAM is too far away from ROM to jump to in one go, so to make it work you have to load the address of your function in a register and then jump to it using `bx`. And set `lr` to the correct return address, of course. The usual practice is to load the function's address into a register and branch to a dummy function that just consists of a `bx` using that register. GCC has these support functions under the name `_call_via_`_`rx`_, where _rx_ is the register you want to use. These names follow the GCC naming scheme as given in {@tbl:regnames}.
+もう 1 つ面白いのは、関数を IWRAM に置いたあとで、それをどう呼ぶかです。問題は、IWRAM は ROM から遠すぎて一度にはジャンプできないことです。うまくいかせるには、関数のアドレスをレジスタに読み込み、`bx` を使ってそこへジャンプしなければなりません。もちろん、`lr` を正しい戻りアドレスに設定することも。普通のやり方は、関数のアドレスをレジスタに読み込み、そのレジスタを使う `bx` だけでできたダミーの関数に分岐することです。GCC には `_call_via_`_`rx`_ という名前でこれらの支援関数があり、_rx_ は使いたいレジスタです。これらの名前は {@tbl:regnames} に示した GCC の命名規則に従っています。
 
 ```armasm
 @ --- ARM function in IWRAM: ---
@@ -2027,29 +2027,29 @@ _call_via_r3:
                 @ No bl means the original lr is still valid
 ```
 
-The `_call_by_`_`rx`_ indirect branching is how function calling works when you use the `-mlong-calls` compiler flag. It's a little slower than straight branching, but generally safer. Incidentally, this is also how interworking is implemented.
+`_call_by_`_`rx`_ による間接分岐は、`-mlong-calls` コンパイラフラグを使ったときの関数呼び出しの仕組みです（訳注: 名前は正しくは _call_via_rx です）。直接の分岐より少し遅いですが、一般により安全です。ちなみに、相互呼び出しもこうやって実装されています。
 
-:::note Standard and special sections
+:::note 標準のセクションと特別なセクション
 
-Sections `.text`, `.data` and `.bss` are standard GAS sections and do not need explicit mention of the `.section` directive. Sections `.ewram`, `.iwram`, `.rodata` and `.sbss` and more GBA specific, and do need `.section` in front of them.
+セクション `.text`、`.data`、`.bss` は GAS の標準のセクションで、`.section` ディレクティブを明示的に書く必要はありません。セクション `.ewram`、`.iwram`、`.rodata`、`.sbss` などは GBA 固有のもので、前に `.section` が必要です。
 
 :::
 
-With this information, you should be able to create functions, variables and even place them into the right sections. This is probably 90% of whay you might want to do with directives already. For the remaining few, read the manual or browse through GCC generated asm. Both should point you in the right direction.
+この情報があれば、関数や変数を作り、それらを正しいセクションに置くことさえできるはずです。これで、ディレクティブでしたいことのおそらく 90% はもうできます。残りのいくつかについては、マニュアルを読むか、GCC が生成したアセンブリを眺めてください。どちらも正しい方向を示してくれるはずです。
 
-## A real world example: fast 16/32-bit copiers {#sec-cpy}
+## 実際の例: 速い 16/32 ビットのコピー処理 {#sec-cpy}
 
-In the last section, I will present two assembly functions – one ARM and one Thumb – intended for copying data quickly and with safety checks for alignment. They are called `memcpy16()` and `memcpy32()` and I have already used these a number of times throughout Tonc. `memcpy32()` does what `CpuFastSet()` does, but without requiring that the word-count is a multiple of 8. Because this is a primary function, it's put in IWRAM as ARM code. `memcpy16()` is intended for use with 16bit data and calls `memcpy32()` if alignments of the source and destination allow it and the number of copies warrant it. Because its main job is deciding whether to use `memcpy32`, this function can stay in ROM as Thumb code.
+最後の節では、データをすばやく、しかもアラインメントの安全確認付きでコピーするための 2 つのアセンブリの関数（ARM と Thumb が 1 つずつ）を示します。それらは `memcpy16()` と `memcpy32()` という名前で、Tonc のあちこちですでに何度か使ってきました。`memcpy32()` は `CpuFastSet()` と同じことをしますが、ワード数が 8 の倍数である必要がありません。これは主要な関数なので、ARM のコードとして IWRAM に置きます。`memcpy16()` は 16 ビットのデータ用で、読み込み元と書き込み先のアラインメントがそれを許し、コピーの数がそれに見合う場合は `memcpy32()` を呼びます。その主な仕事は `memcpy32` を使うかどうかを決めることなので、この関数は Thumb のコードとして ROM に置いたままにできます。
 
-This is not merely an exercise; these functions are there to be used. They are optimized and take advantage of most of the features of ARM/Thumb assembly. Nearly everything covered in this chapter can be found here, so I hope you've managed to keep up. To make things a little easier, I've added the C equivalent code here too, so you can compare the two.
+これは単なる演習ではありません。これらの関数は使うためにあります。最適化されていて、ARM/Thumb アセンブリの機能のほとんどを活用しています。この章で扱ったことのほぼすべてがここにあるので、ついてこられていることを願います。少し楽になるように、対応する C のコードもここに付けたので、2 つを比べられます。
 
-Also, these functions are not just for pure assembly projects, but can also be used in conjunction with C code, and I'll show you how to do this too. As you've already seen demos using these functions without any hint that they were assembly functions (apart from me saying so), this part isn't actually to hard. So that's the program for this section. Ready? Here we go.
+また、これらの関数は純粋なアセンブリのプロジェクトのためだけのものではなく、C のコードと一緒にも使えます。その方法も示します。これらの関数を使ったデモを、（私がそう言った以外には）アセンブリの関数だという手がかりもなく、すでに見てきたので、この部分は実はそれほど難しくありません。というわけで、これがこの節の予定です。準備はいいですか？ 行きますよ。
 
 ### memcpy32() {#ssec-cpy-32}
 
-This function will copy words. _Fast_. The idea is to use 8-fold block-transfers where possible (just like `CpuFastSet()`), and then copy the remaining 0 to 7 words of the word count with simple transfers. Yes, one could make an elaborate structure of tests and block-transfers to do these residuals in one go as well, but I really don't think that's worth it.
+この関数はワードをコピーします。_速く_。考え方は、可能なところでは 8 ワードずつのブロック転送を使い（`CpuFastSet()` とまったく同じように）、それからワード数の残りの 0 から 7 ワードを単純な転送でコピーするというものです。たしかに、判定とブロック転送の凝った構造を作って、これらの残りも一度に処理することもできますが、本当にその価値はないと思います。
 
-One could write a function for this in C, which is done below. However, even though GCC does use block-transfers for the BLOCK struct-copies, I've only seen it go up to 4-fold `ldm/stm`s. Furthermore, it tends to use more registers than strictly necessary. You could say that GCC doesn't do its job properly, but it's hard to understand what humans mean, alright? If you want it done as efficient as possible, do it your damn self. Which is exactly what we're here to do, of course.
+これのための関数を C で書くこともでき、下にそれを示します。しかし、GCC は BLOCK 構造体のコピーにブロック転送を使いますが、4 ワードずつの `ldm/stm` までしか見たことがありません。さらに、厳密に必要な数より多くのレジスタを使いがちです。GCC がちゃんと仕事をしていないと言うこともできますが、人間の意図を理解するのは難しいのですよ、いいですか？ できるだけ効率よくしたいなら、自分でやってください。そしてもちろん、それこそがここでやろうとしていることです。
 
 ```c
 // C equivalent of memcpy32
@@ -2073,19 +2073,19 @@ void memcpy32(void *dst, const void *src, uint wdcount) IWRAM_CODE
 }
 ```
 
-The C version should be easy enough to follow. The number of words, `wdcount` is split into a block count and residual word count. If there are full block to copy, then we do so and adjust the pointers so that the residuals copy correctly. Note that `wdcount` is the number of words to copy, not the number of bytes, and that `src` and `dst` are assumed to be word-aligned.
+C の版は十分に追いやすいはずです。ワード数 `wdcount` をブロック数と残りのワード数に分けます。コピーする完全なブロックがあればそうし、残りが正しくコピーされるようにポインタを調整します。`wdcount` はバイト数ではなくコピーするワード数であること、そして `src` と `dst` はワード境界に揃っていると仮定していることに注意してください。
 
-The assembly version –surprise, surprise– does exactly the same thing, only much more efficient than GCC will make it. There is little I can add about what it does because all things have been covered already, but there are a few things about _how_ it does them that deserve a little more attention.
+アセンブリ版は、驚くなかれ、まったく同じことをしますが、GCC が作るものよりずっと効率的です。何をしているかについては、すべてすでに扱ったので付け加えることはほとんどありませんが、それを_どう_しているかについては、もう少し注目に値することがいくつかあります。
 
-First, note the general program flow. The `movs` gives the number of blocks to copy, and if that's zero then we jump immediately to the residuals, `.Lres_cpy32`. What happens there also interesting: the three instructions after decrementing the word-count (in `r12`) all carry the `cs` flag. This means that if `r12` is (unsigned) lower than one, (i.e., `r12`==0) these instructions are ignored. This is exactly what we want, but usually there is a separate check for zero-ness before the body of the loop and these extra instructions cost space and time. With clever use of conditionals, we can spare those.
+まず、プログラムの全体の流れに注目してください。`movs` がコピーするブロック数を求め、それがゼロなら、すぐに残りの処理 `.Lres_cpy32` にジャンプします。そこで起きることも面白いです。ワード数（`r12` にあります）を減らしたあとの 3 つの命令には、すべて `cs` のフラグが付いています。つまり、`r12` が（符号なしで）1 より小さい（つまり `r12`==0）なら、これらの命令は無視されます。これはまさに望むものですが、普通はループの本体の前にゼロかどうかの確認が別にあり、その余分な命令が領域と時間を食います。条件を巧みに使えば、それを省けます。
 
-The main loop doesn't use these conditionals, nor, it would seem, a zero-check. The check here is actually done at that `movs` lines as well: if it doesn't jump, we can be sure there are blocks to copy, so another check is unnecessary. Also note that the non-scratch registers `r4-r10` are only stacked when we're sure they'll actually be used. GCC normally stacks at the beginning and end of functions, but there is no reason not to delay it until it's actually necessary.
+メインのループはこれらの条件を使っておらず、ゼロの確認もないように見えます。実はここでの確認も、あの `movs` の行で行っています。ジャンプしなければ、コピーするブロックがあることは確実なので、もう一度確認する必要はないのです。また、スクラッチでないレジスタ `r4-r10` は、実際に使われることが確実なときにだけスタックに積んでいることにも注目してください。GCC は普通、関数の最初と最後で積みますが、本当に必要になるまで遅らせない理由はありません。
 
-Lastly, a few words on non-assembly matters. First, the general layout: I use one indent for everything except labels, and sometimes more for what in higher languages would be loops or if-blocks. Neither is required, but I find that it makes reading easier. I also make sure that the instruction parameters are all in line, which works best if you reserve 8 spaces for the mnemonic itself. How you set the indents is a matter of personal preference and a subject of many holy wars, so I'm not touching that one here <kbd>:P</kbd>
+最後に、アセンブリ以外のことについて少し。まず、全体の配置です。私はラベル以外のすべてに 1 段のインデントを使い、高水準の言語ならループや if ブロックになるところには、ときどきもっと使います。どちらも必須ではありませんが、読みやすくなると思います。また、命令のパラメータがすべて揃うようにしています。これはニーモニックそのもののために 8 文字ぶん空けておくと一番うまくいきます。インデントをどうするかは個人の好みの問題で、多くの宗教戦争の種なので、ここでは触れません <kbd>:P</kbd>
 
-Another point is comments. Comments are even more important in assembly than in C, but don't overdo it! Overcommenting just drowns out the comments that are actually useful and maybe even the code as well. Comment on blocks and what each register is and maybe on important tests/branches, but do you really have to say that ‘`subs r2, r2, #1`’ decrements a loop variable? No, I didn't think so either. It might also help to give the intended declaration of the function if you want to use it in C.
+もう 1 つの点はコメントです。コメントは C よりアセンブリでさらに重要ですが、やりすぎないでください！ コメントが多すぎると、本当に役立つコメントが埋もれてしまい、コードまで埋もれるかもしれません。ブロックや各レジスタが何なのか、そしておそらく重要な判定や分岐についてコメントしてください。でも、「`subs r2, r2, #1`」がループの変数を減らしていると本当に書く必要がありますか？ いいえ、私もそうは思いませんでした。C で使いたいなら、意図している関数の宣言を書いておくのも役立つかもしれません。
 
-Also, it's a good idea to always add section, alignment and code-set before a function-label. Yes, these things aren't strictly necessary, but what if some yutz decides to add a function in the middle of the file which screws up these things for functions that follow it? Lastly, try to distinguish between symbol-labels and branch-labels. GCC's take on this is starting the latter with ‘`.L`’, which is as good of a convention as any.
+また、関数のラベルの前には常にセクション、アラインメント、コードの命令セットを加えておくのが良い考えです。そう、これらは厳密には必要ありませんが、どこかの間抜けがファイルの途中に関数を加えて、そのあとに続く関数のこれらの設定をめちゃくちゃにしたらどうしますか？ 最後に、シンボルのラベルと分岐のラベルを区別するようにしてください。GCC のやり方は後者を「`.L`」で始めることで、慣習としてはほかのどれにも負けないくらい良いものです。
 
 ```armasm
 @ === void memcpy32(void *dst, const void *src, uint wdcount) IWRAM_CODE; =============
@@ -2122,11 +2122,11 @@ memcpy32:
 
 ### memcpy16() {#ssec-cpy-16}
 
-The job of the halfword copier `memcpy16()` isn't really copying halfwords. If possible, it'll use `memcpy32()` for addresses that can use it, and do the remaining halfword parts (if any) itself. Because it doesn't do much copying on its own we don't have to waste IWRAM with it; the routine can stay as a normal Thumb function in ROM.
+ハーフワードのコピー処理 `memcpy16()` の仕事は、実はハーフワードをコピーすることではありません。可能なら、使えるアドレスには `memcpy32()` を使い、残りのハーフワードの部分（あれば）を自分で処理します。自分ではあまりコピーしないので、IWRAM を無駄にする必要はありません。このルーチンは ROM の普通の Thumb の関数のままにしておけます。
 
-Two factors decide whether or not jumping to `memcpy32()` is beneficial. First is the number of halfwords (`hwcount`) to copy. I've ran a number of checks and it seems that the break-even point is about 6 halfwords. At that point, the power of word copies in IWRAM already beats out the cost of function-call overhead and Thumb/ROM code.
+`memcpy32()` にジャンプするのが得かどうかは、2 つの要因で決まります。1 つ目はコピーするハーフワードの数（`hwcount`）です。何度か確かめてみたところ、損益分岐点は約 6 ハーフワードのようです。その時点で、IWRAM でのワードのコピーの力が、関数呼び出しのオーバーヘッドと Thumb/ROM のコードのコストにもう勝ちます。
 
-The second is whether the incoming source and destination addresses can be resolved to word addresses. This is true if bit 1 of the source and destinations are equal (bit 0 is zero because these are valid halfword addresses), in other words: `(src^dst)&2` should not be zero. If it resolvable, do one halfword copy to word-align the addresses if necessary, then call `memcpy32()` for all the word copies. After than, adjust the original halfword stuff and if there is anything left (or if `memcpy32()` couldn't be used) copy by halfword.
+2 つ目は、入ってくる読み込み元と書き込み先のアドレスをワードのアドレスに揃えられるかどうかです。これは、読み込み元と書き込み先のビット 1 が等しい（有効なハーフワードのアドレスなのでビット 0 はゼロです）場合、言い換えると `(src^dst)&2` がゼロでなければ（訳注: ビット 1 が等しいならこの値はゼロになるはずで、文意からは「ゼロになるべき」と思われます）成り立ちます。揃えられるなら、必要に応じてハーフワードを 1 つコピーしてアドレスをワード境界に揃え、それから `memcpy32()` を呼んでワードのコピーをすべて行います。そのあとで、元のハーフワードのものを調整し、何か残っていれば（あるいは `memcpy32()` が使えなかったなら）ハーフワード単位でコピーします。
 
 ```c
 // C equivalent of memcpy16
@@ -2156,17 +2156,17 @@ void memcpy16(void *dst, const void *src, uint hwcount)
 }
 ```
 
-The C version isn't exactly pretty due to all the casting and masking, but it works well enough. If you were to compile it and compare it to the assembly below you should see many similarities, but it won't be exactly equal because the assembly programmer is allowed greater freedoms than GCC, and doesn't have to contend with the syntax of C.
+C の版はキャストとマスクだらけで、きれいとは言えませんが、十分うまく動きます。これをコンパイルして下のアセンブリと比べれば、多くの類似点が見られるはずですが、まったく同じにはなりません。アセンブリのプログラマには GCC より大きな自由があり、C の構文と格闘する必要もないからです。
 
-Anyway, before the function actually starts I state the declaration, the use of the registers, and the standard boilerplate for functions. As I need more than 4 registers and I'm calling a function, I need to stack `r4` and `lr`. This time I am doing this at the start and end of the function because it's just too much of a hassle not to. One thing that may seem strange is why I pop `r4` and then `r3` separately, especially as it's `lr` that I need and not `r3`. Remember the register restrictions: `lr` is actually `r14`, which can be reached by `push`, but not `pop`. So I'm using `r3` here instead. I'm also doing this separately from the `r4`-pop because ‘`pop {r4,r3}`’ pops the registers in the wrong order (lower regs are loaded first).
+ともかく、関数が実際に始まる前に、宣言、レジスタの使い方、関数のお決まりの書き方を示しています。4 つより多くのレジスタが必要で、関数も呼ぶので、`r4` と `lr` をスタックに積む必要があります。今回は、そうしないとあまりに面倒なので、関数の最初と最後でこれを行っています。変に思えるかもしれないのは、なぜ `r4` と `r3` を別々にポップしているのか、特に必要なのは `r3` ではなく `lr` なのに、ということでしょう。レジスタの制限を思い出してください。`lr` は実際には `r14` で、`push` では使えますが `pop` では使えません。そこでここでは代わりに `r3` を使っています。`r4` のポップと別にしているのは、「`pop {r4,r3}`」だとレジスタが間違った順序でポップされる（下位のレジスタが先に読み込まれる）からです。
 
-The rest of the code follows the structure of the C code; I've added numbered points to indicate where we are. Point 1 checks the size, and point 2 checks the relative alignment of source and destination. Note that what I actually do here is not AND with 2, but shift by 31, which pushes bit 1 into the carry bit; Thumb code can only AND between registers and rather than putting 2 in a register and ANDing, I just check the carry bit. You can also use the sign bit to shift to, of course, which is what GCC would do. I do something similar to check whether the pointers are already word-aligned or if I have to do that myself.
+コードの残りは C のコードの構造に従っています。今どこにいるかを示す番号付きのポイントを加えておきました。ポイント 1 は大きさを確認し、ポイント 2 は読み込み元と書き込み先の相対的なアラインメントを確認します。ここで実際にしているのは 2 との AND ではなく 31 のシフトで、これでビット 1 をキャリービットに押し出していることに注意してください。Thumb のコードはレジスタどうしの AND しかできないので、2 をレジスタに入れて AND する代わりに、キャリービットを確認しているのです。もちろん符号ビットにシフトすることもでき、GCC ならそうするでしょう。ポインタがすでにワード境界に揃っているか、自分で揃えなければならないかを確認するのにも、同じようなことをしています。
 
-At point 4 I set up and call `memcpy32()`. Or, rather, I call `_call_via_r3`, which calls `memcpy32()`. I can't use ‘`bl memcpy32`’ directly because its in IWRAM and `memcpy16()` is in ROM and the distance is simply too big. The `_call_via_r3` is an intermediary (in ROM) consisting only of ‘`bx r3`’ and since `memcpy32()`'s address was in `r3` we got where we wanted to go. Returning from `memcpy32()` will work fine, as that was set by the call to `_call_via_r3`.
+ポイント 4 では、`memcpy32()` を準備して呼んでいます。というより、`memcpy32()` を呼ぶ `_call_via_r3` を呼んでいます。それは IWRAM にあり、`memcpy16()` は ROM にあって、距離が単純に大きすぎるので、「`bl memcpy32`」を直接使うことはできません。`_call_via_r3` は「`bx r3`」だけでできた（ROM にある）仲介役で、`memcpy32()` のアドレスは `r3` に入っていたので、行きたいところにたどり着けます。`memcpy32()` からの戻りは、`_call_via_r3` の呼び出しで設定されたので問題なく動きます。
 
-The C code's point 5 consisted of adjusting the source and destination pointers to account for the work done by `memcpy32()`; in the assembly code, I'm being a very sneaky bastard by not doing any of that. The thing is, after `memcpy32()` is done `r0` and `r1` would _already_ be where I want them; while the rules say that `r0-r3` are clobbered by calling functions and should therefore be stacked, if I _know_ that they'll only end up the way I want them, do I really have to do the extra work? I think not. Fair enough, it's not recommended procedure, but where's the fun in asm programming if you can't cheat a little once in a while? Anyway, the right-shift from `r4` counters the left-shift into `r4` that I had before, corresponding to a `r2&1`; the test after it checks whether the result is zero, signifying that I'm done and I can get out now.
+C のコードのポイント 5 は、`memcpy32()` がした仕事を考慮して、読み込み元と書き込み先のポインタを調整するものでした。アセンブリのコードでは、とてもずる賢く、そのどれもしていません。実は、`memcpy32()` が終わったあとでは、`r0` と `r1` は_すでに_望む場所にあるのです。規則では、`r0-r3` は関数を呼ぶと壊されるのでスタックに積むべきだとされていますが、望む状態にしかならないと_わかっている_なら、本当に余分な作業をする必要があるでしょうか？ ないと思います。たしかに推奨される手順ではありませんが、たまに少しずるができないなら、アセンブリのプログラミングのどこに楽しみがあるでしょうか？ ともかく、`r4` からの右シフトは、前に `r4` に入れた左シフトを打ち消すもので、`r2&1` に相当します。その後ろの判定は結果がゼロかどうかを確認していて、ゼロなら終わりで、もう抜けられるということです。
 
-Lastly, point 6 covers the halfword copying loop. I wouldn't have mentioned it here except for one little detail: the array is copied back to front! If this were ARM code I'd have used post-indexing, but this is Thumb code where no such critter exists and I'm restricted to using offsets. I could have used another register for an ascending offset (one extra instruction/loop), or incrementing the `r0` and `r1` (two extra per loop), or I could copy backwards which works just as well. Also note that I use `bcs` at the end of the loop and not `bne`; `bcs` is essential here because `r2` could already be 0 on the first count, which `bne` would miss.
+最後に、ポイント 6 はハーフワードをコピーするループです。1 つの小さな細部がなければ、ここで触れることはなかったでしょう。配列を後ろから前へコピーしているのです！ これが ARM のコードならポストインデックスを使っていたでしょうが、これは Thumb のコードで、そんな生き物はおらず、オフセットを使うしかありません。昇順のオフセットに別のレジスタを使う（ループあたり 1 命令余分）か、`r0` と `r1` を増やす（ループあたり 2 命令余分）こともできましたし、後ろからコピーすることもでき、それでも同じようにうまくいきます。また、ループの最後で `bne` ではなく `bcs` を使っていることにも注意してください。`r2` は最初のカウントですでに 0 かもしれず、`bne` ではそれを見逃してしまうので、ここでは `bcs` が欠かせません。
 
 ```armasm
 @ === void memcpy16(void *dst, const void *src, uint hwcount); =============
@@ -2226,9 +2226,9 @@ memcpy16:
     bx  r3
 ```
 
-### Using memcpy32() and memcpy16() in C {#ssec-cpy-c}
+### C で memcpy32() と memcpy16() を使う {#ssec-cpy-c}
 
-While you're working on uncrossing your eyes, a little story on how you can call these functions from C. It's ridiculously simple actually: all you need is a declaration. Yup, that's it. GCC does really care about the language the functions are in, all it asks is that they have a consistent memory interface, as covered in the AAPCS. As I've kept myself to this standard (well, mostly), there is no problem here.
+寄り目を直している間に、これらの関数を C から呼ぶ方法について少し話しておきます。実はばかばかしいほど簡単で、必要なのは宣言だけです。そう、それだけです。GCC は関数がどの言語で書かれているかを本当に気にしません（訳注: 原文は "does really care" ですが、文脈から "doesn't" の意味と解釈しました）。求めるのは、AAPCS で扱った一貫したメモリのインターフェースを持っていることだけです。私はこの標準を（まあ、ほぼ）守っているので、ここでは問題ありません。
 
 ```c
 // Declarations of memcpy32() and memcpy16()
@@ -2246,19 +2246,19 @@ void memcpy32(void *dst, const void *src, uint wdcount) IWRAM_CODE;
 }
 ```
 
-See? They can be called just as any other C function. Of course, you have to assemble and link the assembly files instead of #include them, but that's how you're supposed to build projects anyway.
+ね？ ほかの C の関数とまったく同じように呼べます。もちろん、アセンブリのファイルは #include するのではなく、アセンブルしてリンクしなければなりませんが、プロジェクトはどのみちそうやってビルドするものです。
 
-You do need to take care to provide the **correct** declaration, though. The declaration tells the compiler how a function expects to be called, in this case destination and source pointers (in that order), and the number of (half)words to transfer. It is legal to change the order of the parameters or to add or remove some – the function won't _work_ anymore, but the compiler does allow it. This is true of C functions too and should be an obvious point, but assembly functions don't provide an easy check to determine if you've used the correct declaration, so please be careful.
+ただし、**正しい**宣言を用意するように気をつける必要があります。宣言は、関数がどう呼ばれることを期待しているかをコンパイラに伝えます。この場合は、書き込み先と読み込み元のポインタ（この順序で）と、転送する（ハーフ）ワードの数です。パラメータの順序を変えたり、いくつか加えたり取り除いたりしても文法上は問題ありません。関数はもう_動き_ませんが、コンパイラはそれを許します。これは C の関数でも同じで、明らかな点のはずですが、アセンブリの関数には、正しい宣言を使ったかどうかを判断する簡単な確認の手段がないので、どうか気をつけてください。
 
-:::tip Make the declaration fit the function
+:::tip 宣言を関数に合わせよう
 
-This is a very important point. Every function has expectations on how it's called. The section, return-type and arguments of the declaration must match the function's, lest chaos ensues. The best way would be not explicitly mention the full declaration near the function definition, so that the user just has to copy-paste it.
+これはとても重要な点です。どの関数にも、どう呼ばれるかについての期待があります。宣言のセクション、戻り値の型、引数は関数のものと一致しなければならず、さもないと混乱が起きます。一番良いのは、関数の定義の近くに完全な宣言を明示的に書いておき、使う人がそれをコピー＆ペーストするだけで済むようにすることです。
 
 :::
 
-:::tip Use 'extern "C"' for C++
+:::tip C++ では 'extern "C"' を使おう
 
-Declarations for C++ work a little different, due to the [name mangling](https://en.wikipedia.org/wiki/Name_mangling) it expects. To indicate that the function name is _not_ mangled, add ‘`extern "C"`’ to the declaration.
+C++ の宣言は、C++ が期待する[名前修飾](https://en.wikipedia.org/wiki/Name_mangling)のせいで、少し違う働き方をします。関数名が修飾され_ない_ことを示すには、宣言に「`extern "C"`」を加えます。
 
 ```c++
 // C++ declarations of memcpy32() and memcpy16()
@@ -2268,6 +2268,6 @@ extern "C" void memcpy32(void *dst, const void *src, uint wdcount) IWRAM_CODE;
 
 :::
 
-And that all folks. As far as this chapter goes anyway. Like all languages, it takes time to fully learn its ins and outs, but with this information and a couple of (quick)reference documents, you should be able to produce some nice ARM assembly, or at least be able to read it well enough. Just keep your wits about you when writing assembly, please. Not just in trying to avoid bugs, but also in keeping the assembly maintainable. Not paying attention in C is bad enough, but here it can be absolutely disastrous. Think of what you want to do first, _then_ start writing the instructions.
+というわけで、皆さん、これで全部です。少なくともこの章については。どんな言語もそうですが、隅々まで完全に学ぶには時間がかかります。でも、この情報と（クイック）リファレンスの文書がいくつかあれば、素敵な ARM アセンブリを書けるか、少なくとも十分に読めるようにはなるはずです。アセンブリを書くときは、どうか冷静さを保ってください。バグを避けようとすることだけでなく、アセンブリを保守しやすく保つことについてもです。C で注意を怠るのも十分まずいことですが、ここではまったくの大惨事になりかねません。まず何をしたいのかを考え、_それから_命令を書き始めてください。
 
-Also remember: yes, assembly can be fun. Think of it as one of those shuffle-puzzles: you have a handful of pieces (the registers) and ways of manipulating them. The goal is to get to the final picture in then least amount of moves. For example, take a look at what an [optimized palette blend routine](https://gbadev.net/forum-archive/thread/8/6721.html#53322) would look like. Now it's your turn <kbd>:P</kbd>. <!-- note: Forum archive doesn't have anchors or syntax highlighting... we should fix that! -->
+それから、覚えておいてください。そう、アセンブリは楽しくなりえます。スライドパズルのようなものだと考えてください。一握りのピース（レジスタ）と、それらを操作する方法があります。目標は、できるだけ少ない手数で最終的な絵にたどり着くことです。たとえば、[最適化したパレットのブレンドのルーチン](https://gbadev.net/forum-archive/thread/8/6721.html#53322)がどんなものになるか見てみてください。さあ、あなたの番です <kbd>:P</kbd>。 <!-- note: Forum archive doesn't have anchors or syntax highlighting... we should fix that! -->

@@ -1,18 +1,18 @@
-# 21. Mode 7 Part 2
+# 21. モード 7 その 2
 
 <!-- toc -->
 
-## Introduction {#sec-intro}
+## はじめに {#sec-intro}
 
-[Mode 7: part 1](mode7.html) covered the basics of how to get an affine background to look like a 3D plane, and discussed some of the trickier parts of the fixed point arithmetic involved. Getting the basic look of a 3D plane is only the first step.
+[モード 7: その 1](mode7.html) では、アフィン背景を 3D の平面のように見せる方法の基本を扱い、そこに含まれる固定小数点の計算のやっかいな部分をいくつか説明しました。3D の平面の基本的な見た目を得るのは、最初の一歩にすぎません。
 
-In this chapter, we'll look into the general math involved of creating a 3D world and translate it back to a form we can use for mode 7. This includes translations in all directions and looking around (yaw) like before, but also a pitch angle for looking up and down. We'll also see how to deal with the horizon and use a background for the backdrop above the horizon. I'll even throw in a bit of fogging to occlude the distant parts of the ground.
+この章では、3D の世界を作るのに必要な一般的な数学を見て、それをモード 7 で使える形に戻します。これには、前と同じあらゆる方向への平行移動と見回し（ヨー）に加えて、上下を見るためのピッチの角度も含まれます。地平線の扱い方と、地平線より上の背景（バックドロップ）に背景レイヤーを使う方法も見ていきます。地面の遠くの部分を覆い隠すための、ちょっとしたフォグまでおまけに付けます。
 
-I'll discuss also working with sprites in 3D space. Not just the transformation from 3D space to 2D screen, but also culling, scaling for distance (which is not as simple as one might think), animation and sorting. Note that this part of the chapter is basic 3D sprite theory, and can be applied to 3D games that use sprites in some way.
+3D 空間でのスプライトの扱いについても説明します。3D 空間から 2D の画面への変換だけでなく、カリング、距離に応じた拡大縮小（思ったほど単純ではありません）、アニメーション、ソートもです。この章のこの部分は、3D のスプライトの基本的な理論で、何らかの形でスプライトを使う 3D のゲームに応用できることに注意してください。
 
-The theory part of the chapter is going to be very math-heavy, as 3D theory always is. Knowing a little bit about [linear algebra](matrix.html) certainly wouldn't hurt. The full story about geometry is beyond the scope of Tonc, but this stuff is quite general; most books on 3D programming will have a chapter on geometric transformations, so you can look at those if you get a little lost here.
+この章の理論の部分は、3D の理論がいつもそうであるように、とても数学が多くなります。[線形代数](matrix.html)について少し知っていると、きっと役に立つでしょう。幾何学の話を全部するのは Tonc の範囲を超えますが、ここの内容はかなり一般的なものです。3D プログラミングの本のほとんどには幾何学的な変換の章があるので、ここで少し迷ったらそれらを見るとよいでしょう。
 
-This chapter touches on almost all of the topics covered so far. It uses [affine objects](affobj.html), backgrounds (both [regular](regbg.html) and [affine](affbg.html)), [interrupts](interrupts.html), [color effects](gfx.html#blend) and a few more. If your understanding of any of these is lacking, you could be in for a rough time here.
+この章は、これまでに扱ったほとんどすべての話題に触れます。[アフィンオブジェクト](affobj.html)、背景（[通常](regbg.html)と[アフィン](affbg.html)の両方）、[割り込み](interrupts.html)、[色の効果](gfx.html#blend)などを使います。どれかの理解が足りないと、ここでは苦労するかもしれません。
 
 <div class="cblock">
     <table id="fig:img-m7-ex">
@@ -23,43 +23,43 @@ This chapter touches on almost all of the topics covered so far. It uses [affine
         </tr>
         <tr>
           <td colspan=2>
-            <b>*@fig:img-m7-ex</b>: <tt>m7_ex</tt>; with horizon, sprites, variable pitch angle and distance fogging.
+            <b>*@fig:img-m7-ex</b>: <tt>m7_ex</tt>。地平線、スプライト、可変のピッチの角度、距離に応じたフォグ付き。
           </td>
         </tr>
       </tbody>
     </table>
 </div>
 
-What we're going to try to do is re-create a scene from the SNES Mario Kart (see {@fig:img-m7-ex}; apologies to Nintendo for using the graphics, but I don't have a lot of options here <kbd>:\\</kbd>). This is just a freeze-frame of the game, not actual game play is involved, but this should present a nice target to aim for. The code is distributed over a number of files: `mode7.c` for the simple mode 7 functions and `mode7.iwram.c` for the less simple mode 7 functions and interrupt routines. The code of demo-specific code can be found in `m7_ex.c`, which does the set-up, interaction and main loop. The basic controls are as follows:
+これからやろうとしているのは、スーパーファミコンのマリオカートの一場面を再現することです（{@fig:img-m7-ex} を見てください。グラフィックを使ってしまって任天堂さんごめんなさい、でもここではあまり選択肢がないのです <kbd>:\\</kbd>）。これはゲームの一場面を止めたもので、実際のゲームプレイはありませんが、目指す目標としてはちょうどよいでしょう。コードはいくつかのファイルに分かれています。単純なモード 7 の関数は `mode7.c` に、それほど単純ではないモード 7 の関数と割り込みルーチンは `mode7.iwram.c` にあります。デモ固有のコードは `m7_ex.c` にあり、準備、操作、メインループを行います。基本の操作は次のとおりです。
 
 <div class="lblock">
   <table cellpadding=2 cellspacing=0>
     <col span=2 align="left" valign="top">
-      <tr><th>D-pad	<td>Looking
-      <tr><th>A/B		<td>Back/forward
-      <tr><th>L/R		<td>Strafing
-      <tr><th>Select+A/B	<td>Float up/down
-      <tr><th>Start	<td>Menu
+      <tr><th>D-pad	<td>見回す
+      <tr><th>A/B		<td>後退/前進
+      <tr><th>L/R		<td>横移動（ストレイフ）
+      <tr><th>Select+A/B	<td>上昇/下降
+      <tr><th>Start	<td>メニュー
   </table>
 </div>
 
-Movement and looking follows FPS/aircraft motion, or at least as well as could be expected with the number of buttons available. There are several extra options which have been put in a menu. First is _motion control_ which sets difference methods of movement. Option ‘local’ follows the camera axis for flight-controls, ‘level’ gives movement parallel to the ground, like FPSs usually do, and ‘global’ uses world axis for movement. Other options include toggling fog on or off and resetting the demo.
+移動と見回しは FPS や飛行機の動きに従っています。少なくとも、使えるボタンの数で期待できる程度にはです。いくつかの追加のオプションはメニューに入れてあります。1 つ目は_移動の制御_で、移動の方法を切り替えます。「local」はフライトの操作のようにカメラの軸に従い、「level」は FPS がたいていそうであるように地面と平行に移動し、「global」は移動にワールドの軸を使います。ほかに、フォグのオンオフの切り替えと、デモのリセットがあります。
 
-## Basic mode 7 theory {#sec-theory}
+## モード 7 の基本の理論 {#sec-theory}
 
-{\*@fig:img-crd-overview} shows what we're up against: we have a camera located at **a**<sub>cw</sub>, which has some orientation with respect to the world coordinate system. What we have to do is find the transformation that links screen point **x**<sub>s</sub> to world point **x**<sub>w</sub>. There are a number of ways to do this. You already saw one in the [first mode 7 chapter](mode7.html), where we I had the GBA hardware in mind from the start. You could extend this to the general mode 7 case (with a non-zero pitch) with some effort. You could also use pure trigonometry, which is a minefield of minus signs and potential sine-cosine mix-ups. Still, it is possible. What I'll use here, though, is [linear algebra](matrix.html). There are several reasons for this choice. Firstly, linear algebra has a very concise notation, so you can write down the final solution in just a few lines (in fact, once you get through the definitions, the solution that covers all cases can be written down in 2 lines). Furthermore, the equations are well structured and uniform in appearance, making debugging easier. Then there's the fact that inverting the whole thing is very easy. And lastly, it's what true 3D systems use too, so the theory can be applied outside the mode 7 arena as well. Conversely, if you know basic 3D theory, you'll feel right at home here.
+{\*@fig:img-crd-overview} は、私たちが立ち向かう相手を示しています。**a**<sub>cw</sub> にあるカメラがあり、それはワールドの座標系に対して何らかの向きを持っています。すべきことは、画面の点 **x**<sub>s</sub> とワールドの点 **x**<sub>w</sub> を結びつける変換を見つけることです。これにはいくつかの方法があります。1 つは[モード 7 の最初の章](mode7.html)ですでに見ました。そこでは最初から GBA のハードウェアを念頭に置いていました。少し手間をかければ、これを一般のモード 7 の場合（ゼロでないピッチ）に拡張することもできます。純粋に三角法を使うこともできますが、それはマイナスの符号の地雷原で、サインとコサインを取り違える危険もあります。それでも可能ではあります。ただ、ここで使うのは[線形代数](matrix.html)です。これを選んだ理由はいくつかあります。まず、線形代数はとても簡潔な表記を持つので、最終的な解をほんの数行で書き表せます（実際、定義さえ済めば、すべての場合を網羅する解は 2 行で書けます）。さらに、式がよく整理されていて見た目も統一されているので、デバッグが楽になります。それから、全体の逆を求めるのがとても簡単だということもあります。そして最後に、本物の 3D システムも線形代数を使っているので、この理論はモード 7 の外でも応用できます。逆に、3D の基本の理論を知っていれば、ここではすっかりくつろげるでしょう。
 
 <div class="lblock">
   <div class="cpt" style="width:378px;">
     <img src="img/mode7/crd_overview.png" id="fig:img-crd-overview" alt="overview">
     <br>
-    <b>*@fig:img-crd-overview</b>: The basic 3D situation. The trick is to relate screen point <b>x</b><sub>s</sub> to world point <b>x</b><sub>w</sub>, taking the camera position <b>a</b><sub>cw</sub> and its orientation into account.
+    <b>*@fig:img-crd-overview</b>: 3D の基本の状況。コツは、カメラの位置 <b>a</b><sub>cw</sub> とその向きを考慮に入れて、画面の点 <b>x</b><sub>s</sub> をワールドの点 <b>x</b><sub>w</sub> に結びつけることです。
   </div>
 </div>
 
-### Definitions {#ssec-try-defs}
+### 定義 {#ssec-try-defs}
 
-Before you can do anything, though, you need to know _exactly_ what we're going to use. The first thing to note is that we have two main coordinate systems: the <dfn>world</dfn> system _S_<sub>w</sub> and the <dfn>camera</dfn> system _S_<sub>c</sub>. Inside the camera system we have two minor coordinate systems, namely the <dfn>projection</dfn> space _S_<sub>p</sub> and <dfn>screen</dfn> space _S_<sub>s</sub>. Now, for every transformation between systems _S_<sub>i</sub> and _S_<sub>j</sub> the following relation holds:
+ただし、何かをする前に、何を使うのかを_正確に_知っておく必要があります。最初に注意すべきなのは、主な座標系が 2 つあることです。<dfn>ワールド</dfn>座標系 _S_<sub>w</sub> と<dfn>カメラ</dfn>座標系 _S_<sub>c</sub> です。カメラ座標系の中には、さらに 2 つの小さな座標系があります。<dfn>投影</dfn>空間 _S_<sub>p</sub> と<dfn>画面</dfn>空間 _S_<sub>s</sub> です。さて、座標系 _S_<sub>i</sub> と _S_<sub>j</sub> の間のすべての変換について、次の関係が成り立ちます。
 
 <table id="eq:crd-transf">
   <tr>
@@ -110,42 +110,42 @@ Before you can do anything, though, you need to know _exactly_ what we're going 
       </math>
 </table>
 
-where
+ここで
 
 <div class="lblock">
   <table cellpadding=0>
     <tr>
       <td><b>x</b><sub>i</sub>
-      <td>the coordinate vector in system <i>S</i><sub>i</sub>;
+      <td>座標系 <i>S</i><sub>i</sub> での座標ベクトル。
     <tr>
       <td><b>x</b><sub>j</sub>
-      <td>the coordinate vector in system <i>S</i><sub>j</sub>;
+      <td>座標系 <i>S</i><sub>j</sub> での座標ベクトル。
     <tr>
       <td><b>a</b><sub>ji</sub>
-      <td>the origin of system <i>S</i><sub>j</sub>, expressed in coordinates of system <i>S</i><sub>i</sub>;
+      <td>座標系 <i>S</i><sub>j</sub> の原点を、座標系 <i>S</i><sub>i</sub> の座標で表したもの。
     <tr>
       <td><b>M</b><sub>ij</sub>
-      <td>the transformation matrix, which is basically the matrix formed by the principle vectors of <i>S</i><sub>j</sub>, in terms of <i>S</i><sub>i</sub>.
+      <td>変換行列。基本的には、<i>S</i><sub>j</sub> の主軸のベクトルを <i>S</i><sub>i</sub> で表して並べた行列。
   </table>
 </div>
 
-Once you get over the initial shock of the many indices (meh, in general relativity you have something called the Riemann tensor, which has _four_ indices), you'll see that this equation makes sense. If you don't get it right away, think of them as arrays and matrices. An observant reader will also recognise the structure in the [screen↔map transformation](affbg.html#sec-aff-ofs) we had for affine maps: **P·q** = **p − dx**. {\*@eq:crd-transf} is a very general equation, by the way, it holds for every kind of linear coordinate transformation. In fact, systems _S_<sub>i</sub> and _S_<sub>j</sub> don't even have to have the same number of dimensions!
+たくさんの添字に最初はぎょっとするかもしれませんが（まあ、一般相対性理論にはリーマンテンソルというものがあって、添字が _4 つ_もあるんですよ）、それを乗り越えれば、この式が筋の通ったものだとわかるでしょう。すぐにはわからなければ、配列と行列だと考えてください。目ざとい読者なら、アフィンのマップのところで見た[画面↔マップの変換](affbg.html#sec-aff-ofs) **P·q** = **p − dx** と同じ構造に気づくでしょう。ちなみに {\*@eq:crd-transf} はとても一般的な式で、あらゆる種類の線形の座標変換で成り立ちます。実際、座標系 _S_<sub>i</sub> と _S_<sub>j</sub> の次元の数が同じである必要すらありません！
 
-As said, we have 4 systems in total, so we have 4 subscripts for <dfn>w</dfn>(orld), <dfn>c</dfn>(amera), <dfn>p</dfn>(rojection), <dfn>s</dfn>(creen). Remember these, for they will appear on a very regular basis. The final forms of the matrices and origins depend very much on the exact definitions of these systems, so make sure you know exactly what each means.
+先ほど言ったように、全部で 4 つの座標系があるので、<dfn>w</dfn>(orld、ワールド)、<dfn>c</dfn>(amera、カメラ)、<dfn>p</dfn>(rojection、投影)、<dfn>s</dfn>(creen、画面) の 4 つの添字があります。これらは本当にしょっちゅう出てくるので、覚えておいてください。行列と原点の最終的な形は、これらの座標系の正確な定義にとても強く依存するので、それぞれが何を意味するのかを正確に把握しておいてください。
 
-### World system {#ssec-try-world}
+### ワールド座標系 {#ssec-try-world}
 
-The first of these, the world system _S_<sub>w</sub>, is easy to deal with. This is simply a right-handed Cartesian system with principle axes **i**, **j**, and **k**, which are its x-, y- and z-axes, respectively. In the right-handed system that is used in computer graphics, the x-axis (**i**) points to the right, the y-axis (**j**) points up and the z-axis (**k**) points _backward_! This means that you're looking in the negative _z_ direction, which may seem weird at first. If you absolutely must have a forward pointing **k**, you could use a left-handed system. While this utterly destroys my 3d intuition, if you want it be my guest. Before you do that, though, remember that the map marks the floor of world space and in a right-handed system, the texture coordinates will match up neatly to world coordinates.
+1 つ目のワールド座標系 _S_<sub>w</sub> は簡単に扱えます。これは単に、主軸 **i**、**j**、**k** を持つ右手系のデカルト座標系で、それぞれが x 軸、y 軸、z 軸です。コンピュータグラフィックスで使われる右手系では、x 軸（**i**）は右を、y 軸（**j**）は上を、そして z 軸（**k**）は_後ろ_を指します！ つまり負の _z_ 方向を見ていることになり、最初は変に思えるかもしれません。どうしても前を向いた **k** が欲しければ、左手系を使うこともできます。私の 3D の直感は完全に崩壊しますが、そうしたければどうぞ。ただしその前に、マップはワールド空間の床を表していて、右手系ならテクスチャの座標がワールドの座標ときれいに一致することを思い出してください。
 
-### The camera frame {#ssec-try-cam}
+### カメラの座標系 {#ssec-try-cam}
 
 <div class="cpt_fr" style="width:260px;">
   <img src="img/mode7/crd_w2c.png" id="fig:img-w2c" alt="word to camera transformation">
   <br>
-  <b>{*@fig:img-w2c}</b>: Camera orientation {<b>u, v, w</b>} in world space {<b>i, j, k</b>}, given by angles &theta; and &phi;
+  <b>{*@fig:img-w2c}</b>: ワールド空間 {<b>i, j, k</b>} でのカメラの向き {<b>u, v, w</b>}。角度 &theta; と &phi; で与えられます
 </div>
 
-The transformation to the camera system is probably the major hurdle in the whole thing. At least it would be if it wasn't for matrices. Rewriting @eq:crd-transf, the transformation between camera and world space is given by
+カメラ座標系への変換は、おそらく全体の中で一番の難関です。少なくとも、行列がなければそうだったでしょう。@eq:crd-transf を書き直すと、カメラ空間とワールド空間の間の変換は次のようになります。
 
 <table id="eq:w2c">
 <tr>
@@ -190,9 +190,9 @@ The transformation to the camera system is probably the major hurdle in the whol
     </math>
 </table>
 
-As you can expect, the origin of camera space is the camera position, **a**<sub>cw</sub>. The camera matrix **C** is formed by the principle axes of camera space, which are **u, v** and **w** for the local x-, y- and z-axes, respectively. This means that the camera matrix is **C** = \[**u v w**\].
+予想どおり、カメラ空間の原点はカメラの位置 **a**<sub>cw</sub> です。カメラ行列 **C** はカメラ空間の主軸でできていて、それはそれぞれローカルの x 軸、y 軸、z 軸である **u、v**、**w** です。つまり、カメラ行列は **C** = \[**u v w**\] です。
 
-The orientation of the camera with respect to world space is defined by 3 angles: <dfn>pitch</dfn> (rotation around the x-axis), <dfn>yaw</dfn> (rotation around the y-axis) and <dfn>roll</dfn> (around z-axis). The combination of these give **C**. Traditionally, the rotation direction of these is such that if you look down one of these axes, a positive angle turns the system counter-clockwise. However, I'll do the exact opposite, because it makes a number of things easier. Additionally, I will only be using two angles: pitch and yaw. For mode 7 it is impossible to incorporate roll into the picture. Why? Look at it this way: if you're rolled on your side, the ground would be on the right or left of the screen, which would require a vertical perspective division, which is impossible to achieve since we can only change the affine parameters at HBlank. Therefore, only pitch (θ) and yaw (φ) are allowed. I want my positive θ and φ to the view down and right, respectively, meaning I need the following rotation matrices:
+ワールド空間に対するカメラの向きは、3 つの角度で定義されます。<dfn>ピッチ</dfn>（x 軸周りの回転）、<dfn>ヨー</dfn>（y 軸周りの回転）、<dfn>ロール</dfn>（z 軸周り）です。これらを組み合わせると **C** になります。伝統的には、これらの回転の向きは、その軸を見下ろしたときに正の角度で座標系が反時計回りに回るように決められています。しかし私はまったく逆にします。そのほうがいくつかのことが楽になるからです。さらに、使う角度はピッチとヨーの 2 つだけです。モード 7 にロールを組み込むのは不可能です。なぜでしょうか？ こう考えてみてください。横に傾いていたら、地面は画面の右か左に来ることになり、縦方向の透視除算が必要になります。HBlank でしかアフィンパラメータを変えられないので、それは実現不可能です。そのため、ピッチ（θ）とヨー（φ）しか使えません。正の θ と φ で、それぞれ下と右を向くようにしたいので、次の回転行列が必要です。
 
 <table id="eq:mat-rot">
   <tr>
@@ -379,7 +379,7 @@ The orientation of the camera with respect to world space is defined by 3 angles
   </tr>
 </table>
 
-But now the next problem arises: do we do pitch first, or yaw? That really depends on what kind of effect you want to have _and_ in relation to what system you do your rotation. There is actually only one order that is possible for the same reason that roll wasn't allowed: you cannot have a vertical perspective. What this boils down to is that **u** (the x-axis of the camera frame) _must_ be parallel to the ground plane, i.e., _u_<sub>y</sub> must be zero. In order to do that, you must do pitch first, then yaw. This is depicted in {@fig:img-w2c}. To get a feel for this: stand up, tilt your head down (pitch θ\>0), then turn to your right (yaw φ\>0). The full camera matrix then becomes:
+ところが、ここで次の問題が出てきます。ピッチとヨーのどちらを先にするのか？ それは、どんな効果を出したいのか、_そして_どの座標系に対して回転を行うのかに本当によります。実は、ロールが使えなかったのと同じ理由で、可能な順序は 1 つしかありません。縦方向の遠近法は使えないのです。結局のところ、**u**（カメラの座標系の x 軸）は地面と平行で_なければならない_、つまり _u_<sub>y</sub> はゼロでなければならないということです。そうするには、ピッチを先にして、それからヨーをする必要があります。これを {@fig:img-w2c} に示します。感覚をつかむために、立ち上がって、頭を下に傾け（ピッチ θ\>0）、それから右を向いて（ヨー φ\>0）みてください。カメラ行列全体は次のようになります。
 
 <table id="eq:rotxy">
   <tr>
@@ -549,29 +549,29 @@ But now the next problem arises: do we do pitch first, or yaw? That really depen
     </td>
 </table>
 
-Aside from being correct, this matrix has two nice properties. Firstly, the column vectors are of unit length. Secondly, the component vectors are perpendicular. This means that **C** is an <dfn>orthogonal matrix</dfn>, which has the very nice feature that **C**<sup>−1</sup> = **C**<sup>T</sup>. This makes the world→camera transformation a relatively simple operation.
+正しいことに加えて、この行列には 2 つの素敵な性質があります。1 つ目は、列ベクトルの長さが 1 であること。2 つ目は、成分のベクトルが互いに垂直であることです。つまり **C** は<dfn>直交行列</dfn>で、**C**<sup>−1</sup> = **C**<sup>T</sup> というとても素敵な特徴を持っています。おかげで、ワールド→カメラの変換は比較的単純な操作になります。
 
-One last thing here: if you were to rotate the camera system by 180° around **i**, this would give you a forward pointing **w** and a downward pointing **v**, both of which decrease the number of awkward minus signs in later calculations, at the expense of an awkward camera frame. Whether you want to do this is up to you.
+ここで最後に 1 つ。カメラ座標系を **i** の周りに 180° 回転させると、**w** は前を、**v** は下を向くことになります。どちらもあとの計算での厄介なマイナスの符号を減らしますが、その代わりにカメラの座標系が厄介なものになります。そうするかどうかはお任せします。
 
-:::note Matrix transforms and the system they occur in.
+:::note 行列の変換と、それが行われる座標系
 
-I said that to mimic the rotations of **C** you to tilt your head first (θ), then rotate your body (φ). You might think that you can get the same effect by doing it the other way: turn first, then look down. However, this is incorrect.
+**C** の回転をまねるには、まず頭を傾け（θ）、それから体を回す（φ）と言いました。逆の順序、つまり先に向きを変えてから見下ろしても同じ効果が得られると思うかもしれません。しかし、それは間違いです。
 
-It may _feel_ the same, but in the second case you'd not actually be using the **R**<sub>x</sub>(θ) to invoke the tilt. A matrix isn't a thing in itself, it ‘lives’ in a space. In this case, both **R**<sub>x</sub>(θ) and **R**<sub>y</sub>(φ) are defined in terms of the _world_ coordinate system, and when applying them the directions follow the world's axes. The turn-then-tilt order would use **R**<sub>x</sub>(θ) in a local frame, which is a legal operation, but not the one that the math requires.
+同じように_感じる_かもしれませんが、2 つ目の場合は、傾けるのに実際には **R**<sub>x</sub>(θ) を使っていないことになります。行列はそれ自体で存在するものではなく、ある空間の中に「住んで」います。この場合、**R**<sub>x</sub>(θ) と **R**<sub>y</sub>(φ) はどちらも_ワールド_座標系で定義されていて、それらをかけるとき、方向はワールドの軸に従います。向きを変えてから傾ける順序では、**R**<sub>x</sub>(θ) をローカルの座標系で使うことになります。それは正当な操作ですが、数学が必要としている操作ではありません。
 
-I know it's a subtle point, but there really is an important difference. Try visualizing it with a 90° rotation in both orders, maybe that'd help.
+微妙な点なのはわかっていますが、本当に重要な違いがあるのです。両方の順序で 90° 回転させるところを思い描いてみてください。それで助けになるかもしれません。
 
 :::
 
-### The projection plane {#ssec-try-proj}
+### 投影面 {#ssec-try-proj}
 
 <div class="cpt_fr" style="width:256px;">
   <img src="img/mode7/crd_c2p.png" id="fig:img-c2p" alt="">
   <br>
-  <b>{*@fig:img-c2p}</b>: perspective projection.
+  <b>{*@fig:img-c2p}</b>: 透視投影。
 </div>
 
-To create the illusion of depth we need a <dfn>perspective view</dfn>. For this, you need a <dfn>center of projection</dfn> (COP) and a <dfn>projection plane</dfn>. Naturally, both need to be in camera space. While you're free to choose these any way you want, you can simplify matters by placing the center of projection at the origin of camera space and the projection plane at a distance _D_ in front of the camera, so that the plane is given by **x**<sub>p</sub> = (_x_<sub>p</sub>, *y*<sub>p</sub>, −*D*). Yes, that's a negative _z_<sub>p</sub>, because we're looking in the negative z-direction. The projected coordinates are the intersections of the line between COP and **x**<sub>c</sub>, and the projection plane. Since the COP is at the origin, the relation between **x**<sub>c</sub> and **x**<sub>p</sub> is
+奥行きの錯覚を作るには、<dfn>透視図</dfn>が必要です。そのためには、<dfn>投影の中心</dfn>（COP）と<dfn>投影面</dfn>が必要です。当然、どちらもカメラ空間にある必要があります。これらは好きなように選んでかまいませんが、投影の中心をカメラ空間の原点に置き、投影面をカメラの前方の距離 _D_ に置けば、話が簡単になります。そうすると平面は **x**<sub>p</sub> = (_x_<sub>p</sub>, *y*<sub>p</sub>, −*D*) で表されます。そう、負の _z_<sub>p</sub> です。負の z 方向を見ているからです。投影された座標は、COP と **x**<sub>c</sub> を結ぶ直線と投影面との交点です。COP は原点にあるので、**x**<sub>c</sub> と **x**<sub>p</sub> の関係は次のようになります。
 
 <table id="eq:c2p">
 <tr>
@@ -605,23 +605,23 @@ To create the illusion of depth we need a <dfn>perspective view</dfn>. For this,
     </td>
 </table>
 
-Here λ is a simple scaling factor, the value of which can be determined in a variety of ways, depending of the information available at the point in your derivations. For example, since _z_<sub>p</sub> = −*D*, by definition, we have λ = −*z*<sub>c</sub> / _D_. Later we'll see another expression. The interesting thing about this expression is that λ is proportional to the distance in camera space, which in turn tells you how much the camera position is to be scaled _down_, or zoomed. This is useful, since the scaling parameters of the affine matrix scales down as well. Also, the distance _D_ attenuates the scaling, which means that it acts as a <dfn>focus length</dfn>. Note that when _z_<sub>c</sub> = −*D*, the scale is one, meaning that the objects at this distance appear in their normal size.
+ここで λ は単純なスケール係数で、その値は、導出のその時点で使える情報に応じて、いろいろな方法で求められます。たとえば、定義により _z_<sub>p</sub> = −*D* なので、λ = −*z*<sub>c</sub> / _D_ です。あとで別の式も見ます。この式の面白いところは、λ がカメラ空間での距離に比例していて、それがカメラの位置をどれだけ_縮小_、つまりズームすればいいかを教えてくれることです。アフィン行列の拡大縮小のパラメータも縮小する方向に効くので、これは便利です。また、距離 _D_ は拡大縮小を弱めるので、<dfn>焦点距離</dfn>として働きます。_z_<sub>c</sub> = −*D* のときスケールが 1 になる、つまりこの距離にある物体は普通の大きさに見えることに注意してください。
 
-### Viewport and viewing volume {#ssec-try-view}
+### ビューポートと視野の空間 {#ssec-try-view}
 
 <div class="cpt_fr" style="width:308px;">
   <img src="img/mode7/viewport.png" id="fig:img-viewport" alt="">
   <br>
-  <b>{*@fig:img-viewport}</b>: Viewing frustum in camera space. The green rectangle is the visible part of the projection plane (i.e., the screen).
+  <b>{*@fig:img-viewport}</b>: カメラ空間での視錐台。緑の長方形が投影面の見える部分（つまり画面）です。
 </div>
 
-Before I give the last step of the transformation to the screen, I have to say a few words about the viewport and the viewing volume. As you can imagine, you can only see a certain portion of the world. You see the world through a region called the <dfn>viewport</dfn>. This is an area on the projection plane, usually rectangular, that defines the horizontal and vertical boundaries of what you can see. In particular, you have a left side (_L_), right side (_R_), top (_T_) and bottom (_B_). With the axes defined as they are and the origin is usually centered (see @fig:img-viewport, inset), we have _R\>0\>L_ and _T\>0\>B_. Yup, in this particular case _L_ is negative, and _T_ is positive!
+画面への変換の最後の段階を示す前に、ビューポートと視野の空間について少し話しておかなければなりません。想像がつくでしょうが、見えるのは世界のある部分だけです。<dfn>ビューポート</dfn>と呼ばれる領域を通して世界を見ます。これは投影面上の領域で、普通は長方形をしていて、見えるものの左右と上下の境界を決めます。具体的には、左辺（_L_）、右辺（_R_）、上辺（_T_）、下辺（_B_）があります。軸がこのように定義されていて、原点が普通は中央にある（@fig:img-viewport の差し込み図を見てください）ので、_R\>0\>L_ と _T\>0\>B_ になります。そう、この場合は _L_ が負で、_T_ が正です！
 
-The width and height of the viewport are *W* = \|_R−L_\| and *H* = \|_B−T_\|, respectively. Together with the center of projection, the viewport defines the <dfn>viewing volume</dfn> (see @fig:img-viewport). For a rectangular viewport this will be a pyramid.
+ビューポートの幅と高さは、それぞれ *W* = \|_R−L_\| と *H* = \|_B−T_\| です。投影の中心と合わせて、ビューポートが<dfn>視野の空間</dfn>を決めます（@fig:img-viewport を見てください）。長方形のビューポートなら、これは角錐になります。
 
-Most of the time you will want boundaries in depth as well, because things too near will obstruct everything else from view (besides, dividing by 0 is never good), and very distant objects will become so small that they are barely noticeable, and why waste so many calculations on a handful of pixels? These boundaries in depth are called the <dfn>near</dfn> (_N_) and <dfn>far</dfn> (_F_) planes, and will turn the viewing volume in a frustum. The numbers for these distances are a matter of taste. Whatever you use, be aware that the z-values are actually negative. I would prefer to have the values of _N_ and _F_ positive, so that the order or distance is 0\>−*N*\>−*F*.
+たいていは奥行きの境界も欲しくなります。近すぎるものはほかのすべてを視界から遮ってしまいます（それに、0 で割るのは決して良いことではありません）し、とても遠くの物体は小さくなりすぎてほとんど気づかないので、ほんの一握りのピクセルのためにたくさんの計算を無駄にすることはありません。これらの奥行きの境界は<dfn>ニア</dfn>（_N_）面と<dfn>ファー</dfn>（_F_）面と呼ばれ、視野の空間を錐台に変えます。これらの距離の数値は好みの問題です。何を使うにせよ、z の値は実際には負であることに気をつけてください。私は _N_ と _F_ の値を正にしておき、距離の順序が 0\>−*N*\>−*F* になるようにするのが好みです。
 
-Another point is the notion of the <dfn>field of view</dfn> (FOV). This is the horizontal angle α that you can see, meaning that
+もう 1 つは<dfn>視野角</dfn>（FOV）という考え方です。これは見ることのできる横方向の角度 α で、次のようになります。
 
 <table id="eq:fov-cam">
   <tr>
@@ -653,17 +653,17 @@ Another point is the notion of the <dfn>field of view</dfn> (FOV). This is the h
       </math>
 </table>
 
-I am told that a commonly used FOV is about 90°, which would require *D* = ½*W*. With *D* = 128 you get close enough to this requirement, with the added benefit that it's a power of 2, but that, of course, is an implementation detail. _However_, it seems that *D* = 256 is more common, so we'll use that instead.
+よく使われる FOV は約 90° だと聞いています。それには *D* = ½*W* が必要です。*D* = 128 なら、この条件に十分近く、しかも 2 の累乗だという利点もありますが、もちろんそれは実装の細部です。_しかし_、*D* = 256 のほうが一般的なようなので、代わりにそれを使います。
 
-### The screen {#ssec-try-scr}
+### 画面 {#ssec-try-scr}
 
 <div class="cpt_fr" style="width:192px;">
   <img src="img/mode7/crd_p2s.png" id="fig:img-p2s" alt="">
   <br>
-  <b>{*@fig:img-p2s}</b>: screen space vs camera space
+  <b>{*@fig:img-p2s}</b>: 画面空間とカメラ空間
 </div>
 
-The last step is the one from the projection plane onto the screen. This step is almost trivial, but the almost can cause you a lot of trouble if you're not careful. The situation is shown in @fig:img-p2s, where you are looking through the camera. The axes **u** and **v** are the up and right axes of the camera system, while the green arrows denote the x- and y-axes of screen space. And if you have paid attention to any of the tutorials, you should know that the screen's y-axis points _down_. This is bugfest number 1. Also, the origins of camera and screen space differ. Since the screen corresponds to the viewport, the origin of the screen in camera/projection space is **a**<sub>sp</sub> = (_L, T, −D_). Be careful not to reverse the signs here; that would be bugfest number 2. Also remember that since this is in camera space, _L_ is negative and _T_ is positive. Taking both the inverted vertical axis and the origin of screen-space in mind, we have
+最後の段階は、投影面から画面への変換です。この段階はほとんど自明ですが、その「ほとんど」が、注意していないと大きな問題の原因になりかねません。状況を @fig:img-p2s に示します。カメラを通して見ているところです。軸 **u** と **v** はカメラ座標系の上と右の軸（訳注: 順序どおりなら **u** が右、**v** が上です）で、緑の矢印は画面空間の x 軸と y 軸を表しています。そして、どれかのチュートリアルに注意を払っていれば、画面の y 軸は_下_を向いていることを知っているはずです。これがバグ祭りその 1 です。また、カメラ空間と画面空間の原点は違います。画面はビューポートに対応するので、カメラ/投影空間での画面の原点は **a**<sub>sp</sub> = (_L, T, −D_) です。ここで符号を逆にしないように気をつけてください。それがバグ祭りその 2 になります。また、これはカメラ空間でのことなので、_L_ は負で _T_ は正であることも忘れないでください。縦の軸が反転していることと、画面空間の原点の両方を考慮に入れると、次のようになります。
 
 <table id="eq:p2s">
   <tr>
@@ -712,11 +712,11 @@ The last step is the one from the projection plane onto the screen. This step is
       </math>
 </table>
 
-The scaling matrix reverses the sign of the y-axis. We could have avoided the extra matrix if we had rotated the camera frame by another 180°, in which case **v** would have pointed down and **w** would have pointed forward. But I didn't, so we'll have to live with it here. Also, since the origin of the screen in camera space, is **a**<sub>sp</sub> = (_L, T, −D_), the screen position is **x**<sub>s</sub> = (_x_<sub>s</sub>, *y*<sub>s</sub>, 0), in other words _z_<sub>s</sub> is always zero. If you want to check whether everything is OK, see if the corners of the viewport give the right screen coordinates.
+拡大縮小の行列は y 軸の符号を反転させます。カメラの座標系をさらに 180° 回転させていれば、この余分な行列は避けられました。その場合、**v** は下を、**w** は前を向いていたはずです。でもそうしなかったので、ここではこれで我慢しなければなりません。また、カメラ空間での画面の原点は **a**<sub>sp</sub> = (_L, T, −D_) なので、画面の位置は **x**<sub>s</sub> = (_x_<sub>s</sub>, *y*<sub>s</sub>, 0)、言い換えると _z_<sub>s</sub> は常にゼロです。すべてが正しいかどうかを確かめたければ、ビューポートの角が正しい画面の座標になるかを見てみてください。
 
-### Theory summary {#ssec-try-sum}
+### 理論のまとめ {#ssec-try-sum}
 
-And that's basically it, phew. Since it took three pages to get here, I'll repeat the most important things. First, the main equations we need are:
+そして、基本的にはこれで全部です。ふう。ここまで来るのに 3 ページかかったので、最も重要なことを繰り返しておきます。まず、必要な主な式は次のとおりです。
 
 <table id="eq:m7-main">
 <col span=2 align="right">
@@ -806,50 +806,50 @@ And that's basically it, phew. Since it took three pages to get here, I'll repea
   </td>
 </table>
 
-where
+ここで
 
 <div class="lblock">
   <table cellpadding=0>
     <tr>
       <td width="8%"><b>x</b><sub>w</sub>
-      <td>coordinates in world space;
+      <td>ワールド空間での座標。
     <tr>
       <td><b>x</b><sub>p</sub>
-      <td> coordinates on the projection plane, <b>x</b><sub>p</sub>=
-      (<i>x</i><sub>p</sub>, <i>y</i><sub>p</sub>, &minus;<i>D</i>);
+      <td> 投影面上の座標。<b>x</b><sub>p</sub>=
+      (<i>x</i><sub>p</sub>, <i>y</i><sub>p</sub>, &minus;<i>D</i>)。
     <tr>
       <td><b>x</b><sub>s</sub>
-      <td>coordinates on the screen, <b>x</b><sub>s</sub>=
-      (<i>x</i><sub>s</sub>, <i>y</i><sub>s</sub>, 0);
+      <td>画面上の座標。<b>x</b><sub>s</sub>=
+      (<i>x</i><sub>s</sub>, <i>y</i><sub>s</sub>, 0)。
     <tr>
       <td><b>a</b><sub>cw</sub>
-      <td>the location of the camera in world space;
+      <td>ワールド空間でのカメラの位置。
     <tr>
       <td><b>a</b><sub>sp</sub>
-      <td>the location of the screen origin in camera space space,
-      <b>a</b><sub>sp</sub>&nbsp;=&nbsp;(<i>L, T, &minus;D</i>);
+      <td>カメラ空間での画面の原点の位置。
+      <b>a</b><sub>sp</sub>&nbsp;=&nbsp;(<i>L, T, &minus;D</i>)。
     <tr>
       <td><b>C</b>
-      <td>the camera matrix, as function of pitch &theta; and yaw &phi;:
+      <td>ピッチ &theta; とヨー &phi; の関数としてのカメラ行列。
       <b>C</b> =
-      <b>R</b><sub>y</sub>(&phi;)· <b>R</b><sub>x</sub>(&theta;);
+      <b>R</b><sub>y</sub>(&phi;)· <b>R</b><sub>x</sub>(&theta;)。
     <tr>
       <td>&lambda;
-      <td>the scaling factor. Its value can be determined by the
-      boundary conditions.
+      <td>スケール係数。その値は
+      境界条件で決まります。
   </table>
 </div>
 
-Remember these equations and terms, for I will refer to them often. The break between {@eq:m7-main}a and {@eq:m7-main}b is by design: all the real information is in {@eq:m7-main}a; {@eq:m7-main}b is just a final step that needs to be taken to complete the transformation. In the remainder of the text, I will make frequent use of {@eq:m7-main}a and leave out {@eq:m7-main}b unless necessary. Other interesting things to know:
+これらの式と用語はしょっちゅう参照するので、覚えておいてください。{@eq:m7-main}a と {@eq:m7-main}b を分けているのは意図的なものです。本当の情報はすべて {@eq:m7-main}a にあり、{@eq:m7-main}b は変換を完了させるために必要な最後の段階にすぎません。本文の残りでは、{@eq:m7-main}a を頻繁に使い、必要でない限り {@eq:m7-main}b は省きます。ほかに知っておくと面白いこと:
 
-- World system _S_<sub>w</sub> = {**i**,**j**,**k**} and camera system _S_<sub>c</sub> = {**u**, **v**, **w**} are right-handed Cartesian coordinate systems. As expected, the columns of camera matrix **C** are the principle axes of _S_<sub>c</sub>: **C** = \[**u v w**\];
-- The viewport and viewing frustum are in camera space, meaning that their boundaries are too. This means that
+- ワールド座標系 _S_<sub>w</sub> = {**i**,**j**,**k**} とカメラ座標系 _S_<sub>c</sub> = {**u**, **v**, **w**} は右手系のデカルト座標系です。予想どおり、カメラ行列 **C** の列は _S_<sub>c</sub> の主軸です。**C** = \[**u v w**\]。
+- ビューポートと視錐台はカメラ空間にあり、その境界もそうです。つまり次のようになります。
   <table>
-    <tr><td><i>R</i> &gt; 0 &gt; <i>L</i> <td>(horizontal)
-    <tr><td><i>T</i> &gt; 0 &gt; <i>B</i> <td>(vertical)
-    <tr><td>0 &gt; &minus;<i>N</i> &gt; &minus;<i>F</i> <td>(depth)
+    <tr><td><i>R</i> &gt; 0 &gt; <i>L</i> <td>（横方向）
+    <tr><td><i>T</i> &gt; 0 &gt; <i>B</i> <td>（縦方向）
+    <tr><td>0 &gt; &minus;<i>N</i> &gt; &minus;<i>F</i> <td>（奥行き）
   </table>
-- If we use the GBA screen size as a basis (*W* = 240, *H* = 160), and *D* = 256, reasonable values for the viewing frustum boundaries are the following, but you can pick others if you want.
+- GBA の画面の大きさ（*W* = 240、*H* = 160）と *D* = 256 を基準にするなら、視錐台の境界の妥当な値は次のとおりですが、望むならほかの値を選んでもかまいません（訳注: 表の R は 120 の誤りと思われます）。
   <table>
     <col span=1>
       <tr><td><i>L</i> = &minus;120  <td><i>R</i> = &minus;120
@@ -857,13 +857,13 @@ Remember these equations and terms, for I will refer to them often. The break be
       <tr><td><i>N</i> =  24   <td><i>F</i> = 1024
   </table>
 
-## Horizon and backdrop {#sec-horz}
+## 地平線とバックドロップ {#sec-horz}
 
-Take the essential mode 7 case: a floor in perspective. Due to the perspective division, the distant parts of the floor will approach a single line: the <dfn>horizon</dfn>. Since the map really is just a floor, the horizon really will be just that: one horizontal line. The space above that is usually empty, but to make it a little less bland, we will use a <dfn>backdrop</dfn>: a panorama view of the distant environment that moves along with the camera's rotation.
+モード 7 の本質的な場合、つまり遠近法の床を考えてください。透視除算のせいで、床の遠くの部分は 1 本の線に近づいていきます。<dfn>地平線</dfn>です。マップは本当に床にすぎないので、地平線も本当にそれだけ、つまり 1 本の水平な線になります。その上の空間は普通は空っぽですが、少しでも味気なさを減らすために、<dfn>バックドロップ</dfn>を使います。遠くの環境のパノラマの眺めで、カメラの回転に合わせて動くものです。
 
-### Finding the horizon {#sec-horz-find}
+### 地平線を求める {#sec-horz-find}
 
-Roughly put, the horizon is where z = −∞. If you have lines on the floor, the horizon is where all parallel lines seem to meet: the vanishing line. Naturally, if you only have a floor, then you should only draw it below the horizon and the graphics above it should be part of a skybox. I'm sure you've seen this in the original Mario Kart and other mode 7 racers. Since we're limited to a roll-less camera, the horizon will always be a horizontal line: one scanline _y_<sub>s,h</sub>. To find it, all we have to do is take the _y_-component of {@eq:m7-main}a and rearrange the terms to get
+大まかに言えば、地平線は z = −∞ のところです。床に線が引いてあれば、地平線はすべての平行線が交わるように見えるところ、つまり消失線です。当然、床しかないなら、床は地平線より下にだけ描くべきで、その上のグラフィックはスカイボックスの一部にするべきです。初代のマリオカートやほかのモード 7 のレースゲームで、これを見たことがあるはずです。ロールのないカメラに限っているので、地平線は常に水平な線、つまり 1 本のスキャンライン _y_<sub>s,h</sub> になります。それを求めるには、{@eq:m7-main}a の _y_ 成分を取り出して項を並べ替えるだけです。
 
 <table id="eq:horz-line">
 <tr>
@@ -970,7 +970,7 @@ Roughly put, the horizon is where z = −∞. If you have lines on the floor, 
     </math>
 </table>
 
-And if we were to take our horizon at infinity, them λ = −∞, which would reduce @eq:horz-line to
+そして、地平線を無限遠に取るなら λ = −∞ となり、@eq:horz-line は次のように簡単になります。
 
 <table>
 <tr>
@@ -1021,7 +1021,7 @@ And if we were to take our horizon at infinity, them λ = −∞, which would 
     </math>
 </table>
 
-However, you need to think about whether you want to use this simplified equation. At very large λ, the gaps in displayed map points are so large that you're effectively showing noise, which can be very ugly indeed. A better way would be making use of the far clipping plane at _z_<sub>c</sub> = −*F*. In that case, λ = *F/D* and we can use @eq:horz-line to calculate the horizon, which will be something like
+しかし、この簡単にした式を使いたいかどうかはよく考える必要があります。λ がとても大きいと、表示されるマップの点の隙間が大きくなりすぎて、実質的にノイズを表示していることになり、それは本当にとても見苦しくなりえます。もっと良い方法は、_z_<sub>c</sub> = −*F* にあるファーのクリッピング面を使うことです。その場合は λ = *F/D* となり、@eq:horz-line を使って地平線を計算できます。それは次のようなものになります。
 
 <table>
 <tr>
@@ -1084,37 +1084,37 @@ However, you need to think about whether you want to use this simplified equatio
     </math>
 </table>
 
-As expected, if *F* = −∞ then {@eq:horz-line}c reduces to {@eq:horz-line}b. Regardless of whether you chose a finite of infinite _z_<sub>c</sub>, the horizon will be at scanline _y_<sub>s,h</sub> = *T − y*<sub>p,h</sub>.
+予想どおり、*F* = −∞ なら {@eq:horz-line}c は {@eq:horz-line}b になります。_z_<sub>c</sub> を有限と無限のどちらにしても、地平線はスキャンライン _y_<sub>s,h</sub> = *T − y*<sub>p,h</sub> にあります。
 
-### Using the horizon {#ssec-horz-use}
+### 地平線を使う {#ssec-horz-use}
 
-The horizon marks the line between the map and ‘far far away’: between the floor and the backdrop. The floor should be an affine background, obviously; for the backdrop, we will use a regular background, although that's not required. What we need to a way to switch between the two at the horizon scanline. The simplest way is by HBlank interrupt: once the horizon scanline is reached, make the switch between floor and backdrop settings in the BG control registers and perhaps initiate HDMA for the affine parameter transfers if you chose to use DMA for that.
+地平線は、マップと「はるか遠く」の境目、つまり床とバックドロップの境目を示します。床は当然アフィン背景にするべきです。バックドロップには通常の背景を使いますが、それは必須ではありません。必要なのは、地平線のスキャンラインで 2 つを切り替える方法です。一番簡単なのは HBlank の割り込みです。地平線のスキャンラインに達したら、背景の制御レジスタで床とバックドロップの設定を切り替え、アフィンパラメータの転送に DMA を使うことにしたなら、HDMA を開始します。
 
-Switching between the backdrop and floor backgrounds is actually trickier than it sounds. You could, for example, have a separate background for each and enable/disable them depending on your needs. The problem is that it seems to take about 3 scanlines before a background is fully set up in hardware (see [forum:1303](https://gbadev.net/forum-archive/thread/4/1303.html)), so you'll see crap during that time. In other words, this solution is no good.
+バックドロップと床の背景を切り替えるのは、実は思ったよりやっかいです。たとえば、それぞれに別の背景を用意して、必要に応じて有効、無効にすることもできます。問題は、背景がハードウェアで完全に準備されるまでに約 3 スキャンラインかかるらしい（[forum:1303](https://gbadev.net/forum-archive/thread/4/1303.html) を見てください）ことで、その間はゴミが表示されてしまいます。つまり、この解決策はだめです。
 
-An other way would be to have one background for both and switch the video-mode from 0 to 1 or 2. This won't give you 3 lines of garbage, but now another problem arises: chances are very high that the backdrop and floor have very different tiles and map attributes. This is easy to solve though: simply change the screen (and char) base blocks in `REG_BGxCNT`.
+別の方法は、両方に 1 つの背景を使い、ビデオモードを 0 から 1 か 2 に切り替えることです。これなら 3 ラインのゴミは出ませんが、今度は別の問題が出てきます。バックドロップと床とでは、タイルやマップの属性がまったく違う可能性がとても高いのです。でも、これは簡単に解決できます。`REG_BGxCNT` のスクリーン（とキャラ）のベースブロックを変えるだけです。
 
 <div class="lblock">
   <div class="cpt" style="width:336px;">
     <img src="img/mode7/bg_switch.png" id="fig:img-bg-switch" alt="bg-switch">
     <br>
-    <b>{*@fig:img-bg-switch}</b>: Switch video-mode and background parameters at the horizon.
+    <b>{*@fig:img-bg-switch}</b>: 地平線でビデオモードと背景のパラメータを切り替える。
   </div>
 
   <div class="cpt" style="width:450px;">
     <img src="img/mode7/panorama.png" id="fig:img-pan" alt="panorama" width=450>
     <br>
-    <b>{*@fig:img-pan}</b>: peeling a panoramic view from a cylinder.
+    <b>{*@fig:img-pan}</b>: 円筒からパノラマの眺めをはがす。
   </div>
 </div>
 
-### Making and placing the backdrop {#ssec-horz-backdrop}
+### バックドロップを作って配置する {#ssec-horz-backdrop}
 
-The space directly above the horizon is for the backdrop. You probably want a nice image of a distant town or tree line over there, not just a boring empty sky. The backdrop offers a panoramic view, which can be considered a map painted on the inside of a cylinder and then peeled off to a normal 2D surface (see @fig:img-pan). The idea is to put that surface on a background and the scroll around.
+地平線のすぐ上の空間はバックドロップのためのものです。おそらく、ただの退屈な空っぽの空ではなく、遠くの町や並木の素敵な絵をそこに置きたいでしょう。バックドロップはパノラマの眺めを提供します。これは、円筒の内側に描いたマップを、普通の 2D の面にはがしたものと考えられます（@fig:img-pan を見てください）。考え方は、その面を背景に置いてスクロールさせるというものです。
 
-Vertically, the bottom of the background should connect to the horizon. Because regular backgrounds use wrap-around coordinates this is actually quite easy: place the ground-level of the backdrop at the bottom of a screen-block and set the vertical offset to −*y*<sub>s,h</sub>.
+縦方向では、背景の下端が地平線につながるようにするべきです。通常の背景は回り込む座標を使うので、これは実はとても簡単です。バックドロップの地面の高さをスクリーンブロックの一番下に置き、縦のオフセットを −*y*<sub>s,h</sub> にするだけです。
 
-Horizontally, there are several issues to be aware of. The first is the width of the map, which is simply the perimeter _P_ of the cylinder. As we should have a scrolled a full map's width for a 360° rotation, the correct scroll ratio per unit angle is simply _P_/2π = *R*, the radius. In principle, _R_ is arbitrary, but the best result can be had when the field of view formed by the angle of the panorama (α<sub>p</sub> = *W*/_R_), is equal to the camera field-of-view angle α<sub>c</sub> from @eq:fov-cam. If all is right we should have α<sub>p</sub> = α<sub>c</sub> = α.
+横方向では、気をつけるべき問題がいくつかあります。1 つ目はマップの幅で、これは単に円筒の周の長さ _P_ です。360° 回転したらマップの幅全体をスクロールしているはずなので、単位角度あたりの正しいスクロールの比率は、単に _P_/2π = *R*、つまり半径です。原理的には _R_ は任意ですが、パノラマの角度で作られる視野（α<sub>p</sub> = *W*/_R_）が、@eq:fov-cam のカメラの視野角 α<sub>c</sub> と等しいときに最良の結果が得られます。すべてが正しければ、α<sub>p</sub> = α<sub>c</sub> = α となるはずです。
 
 <table id="eq:fov">
 <tr>
@@ -1231,11 +1231,11 @@ Horizontally, there are several issues to be aware of. The first is the width of
     </math>
 </table>
 
-That last approximation stems from the first couple of terms of the [Taylor series](https://en.wikipedia.org/wiki/Taylor's_theorem) of the arctangent. Interestingly enough, even _R_ ≈ _D_ seems somewhat adequate. Anyway, filling in *W* = 240 and *D* = 256 gives *P* = 1720, which isn't a very convenient map size, is it? Now, it is possible to create a map of any size and update VRAM if we go outside the screenblock's boundaries (commercial games do it all the time), but doing so would distract for the subject at hand, so you know what? We're going to bend the rules a bit and just force *P* = 1024.
+最後の近似は、アークタンジェントの[テイラー級数](https://en.wikipedia.org/wiki/Taylor's_theorem)の最初の数項から来ています。面白いことに、_R_ ≈ _D_ でもまずまず十分なようです。ともかく、*W* = 240 と *D* = 256 を入れると *P* = 1720 になりますが、これはあまり都合の良いマップの大きさではありませんね。さて、どんな大きさのマップでも作れて、スクリーンブロックの境界の外に出たら VRAM を更新することもできます（市販のゲームはいつもそうしています）が、そうすると今の話題から気がそれてしまうので、どうするかって？ 規則を少し曲げて、*P* = 1024 に決めてしまいます。
 
-“Wait a sec ... you can't do that!” Well, yes I can actually. I'm not _supposed_ to do it, but that's another issue. The fact of the matter is that, I don't think there is a _single_ mode 7 game that scrolls the backdrop properly! For example, the Mario Kart's often use multiple backgrounds with different scrolling speeds in their backdrops, which is absolutely ridiculous, mathematically speaking, because looking around doesn't change relative lines of sight. But I guess nobody noticed or at least nobody cares. What I'm trying to say is: we're in good company <kbd>:P</kbd>
+「ちょっと待って……そんなことしちゃだめでしょ！」 いや、実はできるのです。そうする_べき_ではないのですが、それは別の問題です。実際のところ、バックドロップを正しくスクロールしているモード 7 のゲームは_ひとつも_ないと思います！ たとえばマリオカートのシリーズは、バックドロップにスクロールの速さの違う複数の背景をよく使っていますが、見回しても相対的な視線は変わらないので、数学的に言えばまったくばかげています。でも、誰も気づかなかったか、少なくとも誰も気にしていないのでしょう。私が言いたいのは、私たちは良い仲間に囲まれているということです <kbd>:P</kbd>
 
-So, we just define a perimeter value and with it backdrop map-width ourselves. In this case I'm going to use *P* = 1024, which is a nice round number and for which we can use a 512 px wide tile-map will effectively end up as a panorama with 180° rotational symmetry. Taking into account the circle partitioning of 2π ⇔ 10000h, the scrolling value is simply φ\*_P_/10000h = φ/64. We'll have to offset this by _L_ as well because I want to map φ = 0 to due north. The final position of the backdrop is given in {!@eq:bd-pos}.
+そこで、周の長さの値と、それによってバックドロップのマップの幅を自分で決めてしまいます。この場合は *P* = 1024 を使います。これはきりのいい数で、幅 512 px のタイルマップを使えば、実質的に 180° の回転対称性を持つパノラマになります。円の分割 2π ⇔ 10000h を考慮に入れると、スクロールの値は単に φ\*_P_/10000h = φ/64 です。φ = 0 を真北に対応させたいので、これを _L_ だけずらす必要もあります。バックドロップの最終的な位置は {!@eq:bd-pos} で与えられます。
 
 <table id="eq:bd-pos">
 <tr>
@@ -1293,11 +1293,11 @@ So, we just define a perimeter value and with it backdrop map-width ourselves. I
     </math>
 </table>
 
-## The floor {#sec-flr}
+## 床 {#sec-flr}
 
-### Affine parameters for the floor {#ssec-flr-parms}
+### 床のアフィンパラメータ {#ssec-flr-parms}
 
-{\*@eq:m7-main} describes the world↔screen transformation but that information uses 3D vectors, while the GBA only has a 2×2 affine matrix **P** and a 2D displacement vector **dx** at its disposal. So we have some rewriting to do. Now, I could give you the full derivation, 2d↔3d conversions and all, but something tells me you really don't want to see that. So instead, I'll give you the set of equations you need to solve, and hints on how to do that.
+{\*@eq:m7-main} はワールド↔画面の変換を表していますが、その情報は 3D のベクトルを使っています。一方 GBA で使えるのは、2×2 のアフィン行列 **P** と 2D の変位ベクトル **dx** だけです。ですから、少し書き直す必要があります。さて、2D↔3D の変換なども含めて完全な導出を示すこともできますが、本当は見たくないだろうという気がします。そこで代わりに、解く必要のある連立方程式と、その解き方のヒントを示します。
 
 <table id="eq:m7-set">
 <tr>
@@ -1403,7 +1403,7 @@ So, we just define a perimeter value and with it backdrop map-width ourselves. I
     </math>
 </table>
 
-The first two equations are just {@eq:m7-main} again, I just them list for completeness. The last equation is the relation between screen point **q** and map point **p** for an affine map, an equation that should be familiar by now. Now, remember that our map lies on the floor, in other words **p** = (_x_<sub>w</sub>, *z*<sub>w</sub>). The 2D screen point **q** is, of course, similar to the 3D screen vector of **x**<sub>s</sub>. The only thing that you have to remember is that when writing to `REG_BGxY`, the left of the current scanline is taken as the origin, so that effectively **q** = (_x_<sub>s</sub>, 0), which in turn means that _p_<sub>b</sub> and _p_<sub>d</sub> are of no consequence. The values of the other elements of **P** are simply the _x_- and _z_-components of the scaled camera x-axis, λ**u**. If you use these values, you will see that eventually you will end up with an expression that can best be summed up by:
+最初の 2 つの式は {@eq:m7-main} をもう一度書いたもので、完全を期して挙げているだけです。最後の式は、アフィンのマップでの画面の点 **q** とマップの点 **p** の関係で、もうおなじみの式のはずです。さて、マップは床にあること、言い換えると **p** = (_x_<sub>w</sub>, *z*<sub>w</sub>) であることを思い出してください。2D の画面の点 **q** は、もちろん 3D の画面のベクトル **x**<sub>s</sub> に似たものです。覚えておく必要があるのは、`REG_BGxY` に書き込むとき、現在のスキャンラインの左端が原点として扱われるので、実質的に **q** = (_x_<sub>s</sub>, 0) となり、そのため _p_<sub>b</sub> と _p_<sub>d</sub> は何の影響も持たないということだけです。**P** のほかの要素の値は、単にスケールしたカメラの x 軸 λ**u** の _x_ 成分と _z_ 成分です。これらの値を使うと、最終的には次のようにまとめるのが一番よい式にたどり着くことがわかるでしょう。
 
 <table id="eq:m7-ofs">
 <tr>
@@ -1449,7 +1449,7 @@ The first two equations are just {@eq:m7-main} again, I just them list for compl
     </math>
 </table>
 
-where
+ここで
 
 <div class="lblock">
   <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
@@ -1520,9 +1520,9 @@ where
   </math>
 </div>
 
-Everything you need for the displacement is neatly packed into this one equation, now we need to disassemble it to construct the algorithm. First, we can use the _y_-component of **dx'** to calculate λ. Once we have that we can use it to calculate the other two elements, i.e., the actual affine offsets. The affine matrix was already given earlier.
+変位に必要なものはすべて、この 1 つの式にきれいに詰め込まれています。次はこれを分解して、アルゴリズムを組み立てる必要があります。まず、**dx'** の _y_ 成分を使って λ を計算できます。それが得られれば、それを使って残りの 2 つの要素、つまり実際のアフィンのオフセットを計算できます。アフィン行列はすでに先ほど示しました。
 
-{\*@eq:m7-sum} gives all the relations explicitly, though I hope you'll forgive me when I prefer the conciseness of {@eq:m7-ofs} myself.
+{\*@eq:m7-sum} はすべての関係を明示的に示しています。もっとも、私自身は {@eq:m7-ofs} の簡潔さのほうが好きなのを許してもらえるとうれしいです。
 
 <table id="eq:m7-sum">
 <col span=2 align="right">
@@ -1728,15 +1728,15 @@ Everything you need for the displacement is neatly packed into this one equation
     </math>
 </table>
 
-Note that if we take the top at 0 and no pitch (_T_=0 and θ=0) we have exactly the same result as in the first mode 7 chapter, and if we look straight down (θ=90°), the whole thing reduces to a simple scaling/rotation around point (−*L, T*), which is exactly it should be. {\*@eq:m7-sum} is the general equation for mode 7; for the implementation, you can often make a number of shortcuts that speed up calculation, but well get to that [later](#eq-aff-calc).
+上端を 0 にしてピッチをなくす（_T_=0 かつ θ=0）と、最初のモード 7 の章とまったく同じ結果になることに注意してください。また、真下を見る（θ=90°）と、全体が点 (−*L, T*) を中心とした単純な拡大縮小と回転になり、まさにそうなるべき形になります。{\*@eq:m7-sum} はモード 7 の一般の式です。実装では、計算を速くする近道がいくつも使えることがよくありますが、それは[あとで](#eq-aff-calc)扱います。
 
-### Distance fogging {#ssec-flr-fog}
+### 距離に応じたフォグ {#ssec-flr-fog}
 
-In the real world, light coming from far away objects has to travel through the atmosphere, which scatters the photons, attenuating the beam. What you'll end up seeing is partly the object itself and partly the ambient color, and the further the original object, the smaller its contribution is. Because such effect is most easily visible in fog conditions, I'll call this effect <dfn>fogging</dfn>.
+現実の世界では、遠くの物体から来る光は大気の中を通らなければならず、大気が光子を散乱させて光線を弱めます。最終的に見えるのは、一部は物体そのもの、一部は周囲の色で、元の物体が遠いほど、その寄与は小さくなります。この効果は霧の状態で一番見えやすいので、これを<dfn>フォグ</dfn>と呼ぶことにします。
 
-Fogging offers a hint of distance and including it can increase the sense of depth. Also, it can hide objects popping into view as they're loaded. GBA-wise, it can be implemented by using different alpha-blends at every scanline.
+フォグは距離の手がかりになり、これを入れると奥行きの感覚が増します。また、読み込まれて視界に急に現れる物体を隠すこともできます。GBA では、スキャンラインごとに違うアルファブレンドを使うことで実装できます。
 
-The fundamental equation for this is the following differential equation:
+その基本の式は、次の微分方程式です。
 
 <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
   <mstyle displaystyle="true" scriptlevel="0">
@@ -1772,9 +1772,9 @@ The fundamental equation for this is the following differential equation:
   </mstyle>
 </math>
 
-where _I_ is the intensity; _k_(ν) is the absorption coefficient of the medium, which depends on the frequency of the light, ν and possibly position; ρ is the density and _z_ is the distance. Solving this would lead to an exponential decay over distance. And I do mean real distance, with squares and roots and everything.
+ここで _I_ は強度、_k_(ν) は媒質の吸収係数で、光の周波数 ν と、場合によっては位置に依存します。ρ は密度、_z_ は距離です。これを解くと、距離に対する指数関数的な減衰になります。それも、2 乗やら平方根やらが全部そろった、本当の距離での話です。
 
-Fortunately, we don't have to use something that complicated; all we really need is some functional relation that gives 0 at infinity and 1 close up. Interestingly enough, we already have something like that, namely λ as function of the scanline (see {!@eq:m7-sum}). This is basically a hyperbola, all you have to do then is fiddle with scalers and offsets a bit to get something that looks nice. In my case, λ\*6/16 seems to work well enough.
+幸い、そんなに複雑なものを使う必要はありません。本当に必要なのは、無限遠で 0、近くで 1 になる何らかの関数の関係だけです。面白いことに、そういうものはすでにあります。スキャンラインの関数としての λ です（{!@eq:m7-sum} を見てください）。これは基本的に双曲線なので、あとはスケールやオフセットを少しいじって見栄えの良いものにするだけです。私の場合は、λ\*6/16 で十分うまくいくようです。
 
 <div class="cblock">
   <table class="bdr" id="fig:img-fog" border=0 cellpadding=2 cellspacing=2>
@@ -1784,29 +1784,29 @@ Fortunately, we don't have to use something that complicated; all we really need
     </tr>
     <tr>
       <td>
-        <b>{*@fig:img-fog}</b>: fog off (left) and on (right).
+        <b>{*@fig:img-fog}</b>: フォグなし（左）とあり（右）。
       </td>
     </tr>
   </table>
 </div>
 
-{\*@fig:img-fog} shows screenshots with and without the fogging effect as seen from a fairly high altitude. The distance to the floor is relatively small at the bottom of the screen, so those are still very visible. At the horizon, the floor is completely obscured by the orange fog; which is actually a good thing, as the lines near the horizon are usually not much to look at anyway.
+{\*@fig:img-fog} は、かなり高い高度から見た、フォグの効果ありとなしのスクリーンショットです。画面の下のほうでは床までの距離が比較的近いので、まだはっきり見えます。地平線では、床はオレンジ色のフォグに完全に覆われます。地平線の近くのラインはどのみちたいして見栄えのするものではないので、これは実は良いことです。
 
-By the way, note that I said _orange_ fog. If you'd paid attention in the [graphics effects](gfx.html#sec-blend) chapter will know that the GBA only has fading modes for white and black. Nevertheless, fades to an arbitrary color are very much possible, but I'll explain once we get to the implementation. While you ponder over how it can be done, I'll move on to 3D sprites.
+ところで、_オレンジ色の_フォグと言ったことに注意してください。[グラフィック効果](gfx.html#sec-blend)の章に注意を払っていたなら、GBA には白と黒へのフェードのモードしかないことを知っているはずです。それでも、任意の色へのフェードは十分に可能です。それについては実装のところで説明します。どうやってできるのか考えてもらっている間に、3D のスプライトに進みます。
 
-## Sprites {#sec-objs}
+## スプライト {#sec-objs}
 
-Sprites and 3D are a strange combination. By their very nature, sprites are 2D objects – like stickers stuck against the viewport (i.e., the screen). To make them appear part of the 3D world, you have to make them move over the screen in such a way that they appear to move with the world and scale them according to their distance. Once again, the basic of this is @eq:m7-main, but there is considerably more to it.
+スプライトと 3D は奇妙な組み合わせです。本来、スプライトは 2D の物体で、ビューポート（つまり画面）に貼り付けたステッカーのようなものです。それを 3D の世界の一部に見せるには、世界と一緒に動いているように見えるように画面上を動かし、距離に応じて拡大縮小しなければなりません。ここでもその基本は @eq:m7-main ですが、話はそれだけではありません。
 
-Four topics must be covered here. The first is sprite **positioning**. {\*@eq:m7-main} will work at point/pixel level, and a sprite is a simple rectangle. While it's possible to rewrite the sprite's pixels to work around that, it kind of defeats the purpose of using sprites in the first place. Instead, we'll link one point on the object to the world coordinate of the sprite and set the OAM position and matrix to accommodate this. This is basically the theory of [anchoring](affobj.html#sec-combo) discussed in the affine object chapter.
+ここでは 4 つの話題を扱う必要があります。1 つ目はスプライトの**位置合わせ**です。{\*@eq:m7-main} は点/ピクセルの単位で働きますが、スプライトは単純な長方形です。それを回避するようにスプライトのピクセルを書き換えることもできますが、それではそもそもスプライトを使う意味がなくなってしまいます。代わりに、物体の 1 つの点をスプライトのワールド座標に結びつけ、それに合わせて OAM の位置と行列を設定します。これは基本的に、アフィンオブジェクトの章で説明した[アンカリング](affobj.html#sec-combo)の理論です。
 
-Next up: sprite **culling**. Once you have the correct OAM positions you can't use them as is, you have to make sure the sprite is only active if it is actually visible inside the viewport. If not, it should be disabled.
+次は、スプライトの**カリング**です。正しい OAM の位置が得られても、それをそのまま使うことはできません。スプライトが実際にビューポートの中に見えている場合にだけ有効になるようにしなければなりません。見えていなければ、無効にするべきです。
 
-Then there's the matter of sprite **animation**. Consider Toad's kart in {@fig:img-m7-obj}, which has the correct anchored position, but no matter which angle you look at it, it'll always show the same side. To make it look as if you can actually move around the object, we'll use different frames of animation to show different sides.
+それから、スプライトの**アニメーション**の問題があります。{@fig:img-m7-obj} のキノピオのカートを考えてみてください。アンカーの位置は正しいのですが、どの角度から見ても、いつも同じ側が見えてしまいます。物体の周りを実際に動けるように見せるため、アニメーションの別々のフレームを使って違う側を見せます。
 
-Lastly, sprite **sorting**. By default, objects will be ordered according to the objects' numbers: obj 0 over obj 1, over obj 2, etc. Always linking a sprite to the same object means that the order would be wrong if you look at them from the other side, so we need to sort them by distance.
+最後に、スプライトの**ソート**です。デフォルトでは、オブジェクトはオブジェクトの番号の順に並びます。obj 0 が obj 1 の上に、obj 1 が obj 2 の上に、という具合です。スプライトを常に同じオブジェクトに結びつけていると、反対側から見たときに順序が間違ってしまうので、距離でソートする必要があります。
 
-Those are the main issues to deal with. There are a few others, like placing a shadow, and using pre-scaled objects to get around the hardware limitation of 32 affine matrices, but these are fairly easy if the other points are already taken care of. One thing I will discuss as well is what I call object **normalization**: applying an extra scaling for objects so that they don't grow too big for their clipping rectangle.
+以上が扱うべき主な問題です。ほかにも、影を置くことや、アフィン行列が 32 個までというハードウェアの制限を回避するために前もって拡大縮小したオブジェクトを使うことなどがありますが、ほかの点がすでに片づいていれば、これらはかなり簡単です。もう 1 つ説明するのは、私がオブジェクトの**正規化**と呼んでいるものです。オブジェクトがクリッピングの長方形に対して大きくなりすぎないように、追加の拡大縮小をかけることです。
 
 <table id="fig:img-m7-obj" class="bdr" style="width:512px; margin:10px auto;" border=0 cellpadding=2 cellspacing=0>
   <tr>
@@ -1816,16 +1816,16 @@ Those are the main issues to deal with. There are a few others, like placing a s
   </tr>
   <tr>
     <td colspan=3>
-      <b>{*@fig:img-m7-obj}</b>: anchored sprite. The position is good, but no matter how you turn, Toad always turns away. Maybe it's the hat.
+      <b>{*@fig:img-m7-obj}</b>: アンカーで固定したスプライト。位置は良いのですが、どう回り込んでも、キノピオはいつもそっぽを向いています。帽子のせいかもしれません。
     </td>
   </tr>
 </table>
 
-### Positioning and anchoring {#ssec-obj-pos}
+### 位置合わせとアンカリング {#ssec-obj-pos}
 
-Positioning sprites consists of two facets. The first is to transform the sprites world position **x**<sub>w</sub> to a position on the screen **x**<sub>s</sub>. After that, you need to use that point to determine the most appropriate OAM coordinates.
+スプライトの位置合わせには 2 つの側面があります。1 つ目は、スプライトのワールドでの位置 **x**<sub>w</sub> を画面上の位置 **x**<sub>s</sub> に変換することです。そのあとで、その点を使って最も適切な OAM の座標を決める必要があります。
 
-The first part is just another application of {@eq:m7-main} again, only in reverse. Normally, inverting 3D matrix is a particularly un-fun process, but the camera matrix happens to be an orthonormal matrix. An <dfn>orthonormal matrix</dfn> is a matrix of which the component vectors are orthogonal (perpendicular to each other) and have a length of 1. The neat thing about an orthonormal matrix is that its inverse is simply its transpose: **C**<sup>−1</sup> = **C**<sup>T</sup>. That leads us to the following equations:
+最初の部分は、{@eq:m7-main} のまた別の応用にすぎません。ただし逆向きです。普通、3D の行列の逆を求めるのは特に楽しくない作業ですが、カメラ行列はたまたま正規直交行列です。<dfn>正規直交行列</dfn>とは、成分のベクトルが直交していて（互いに垂直で）、長さが 1 の行列のことです。正規直交行列の素敵なところは、その逆行列が単に転置行列になることです。**C**<sup>−1</sup> = **C**<sup>T</sup> です。これで次の式が得られます。
 
 <table id="eq:obj-w2s">
   <tr>
@@ -1922,7 +1922,7 @@ The first part is just another application of {@eq:m7-main} again, only in rever
       </math>
 </table>
 
-The only real unknown here is λ, which we can calculate by using the fact that _z_<sub>p</sub> = −*D*. Now let the distance between camera and sprite be **r** = **x**<sub>w</sub> − **a**<sub>cw</sub>; using **C** = \[**u v w**\], we find
+ここで本当にわからないのは λ だけで、これは _z_<sub>p</sub> = −*D* という事実を使って計算できます。さて、カメラとスプライトの間の距離を **r** = **x**<sub>w</sub> − **a**<sub>cw</sub> とします。**C** = \[**u v w**\] を使うと、次のようになります。
 
 <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
   <mstyle displaystyle="true" scriptlevel="0">
@@ -1997,10 +1997,10 @@ The only real unknown here is λ, which we can calculate by using the fact that 
 <div class="cpt_fr" style="width:88px;">
   <img src="img/mode7/anchor.png" id="fig:img-anchor" alt="a sprite, with anchor">
   <br>
-  <b>{*@fig:img-anchor}</b>: a 32&times;32 sprite, with the anchor <b>p</b><sub>0</sub> relative to the top-left.
+  <b>{*@fig:img-anchor}</b>: 32&times;32 のスプライト。アンカー <b>p</b><sub>0</sub> は左上からの相対位置です。
 </div>
 
-Finding the screen position of **x**<sub>w</sub> is trivial after that. And now the anchoring part. Instead of stickers, think of objects as pieces of pater to be tacked onto a board (i.e., the screen). The tack goes through one spot of the object, and that spot is fixed to the board. That spot is the <dfn>anchor</dfn>. For affine objects it's not quite as simple as that, because we have to specify OAM coordinates rather than anchor coords, so there is some math involved in how to express the OAM coordinates **x** in terms of the texture anchor **p**<sub>0</sub> and the screen anchor **q**<sub>0</sub>. This theory was covered in the [affine object](affobj.html#sec-combo) chapter, which led to @eq:anchor. The other quantities there are size of the objects, **s** = (_w_, *h*), and _m_ which is ½ for normal affine objects and 1 for double-size affine objects.
+そのあとで **x**<sub>w</sub> の画面上の位置を求めるのは簡単です。そして、ここからがアンカリングの部分です。ステッカーの代わりに、物体をボード（つまり画面）に画鋲で留める紙切れだと考えてください。画鋲は物体の 1 か所を貫き、その場所がボードに固定されます。その場所が<dfn>アンカー</dfn>です。アフィンオブジェクトではそれほど単純ではありません。アンカーの座標ではなく OAM の座標を指定しなければならないので、OAM の座標 **x** をテクスチャのアンカー **p**<sub>0</sub> と画面のアンカー **q**<sub>0</sub> でどう表すかに、少し数学がからみます。この理論は[アフィンオブジェクト](affobj.html#sec-combo)の章で扱い、@eq:anchor にたどり着きました。そこにあるほかの量は、オブジェクトの大きさ **s** = (_w_, *h*) と、通常のアフィンオブジェクトでは ½、倍サイズのアフィンオブジェクトでは 1 になる _m_ です。
 
 <table id="eq:anchor">
   <tr>
@@ -2054,35 +2054,35 @@ Finding the screen position of **x**<sub>w</sub> is trivial after that. And now 
       </math>
 </table>
 
-Now the task is to link the data we have to this equation. The screen anchor **q**<sub>0</sub> is just **x**<sub>s</sub>. The texture anchor **p**<sub>0</sub> is the pixel in texture space you want to keep fixed and is yours to choose. For the kart-sprite, it makes sense to put it near the bottom of the kart, as is depicted in @fig:img-anchor. ‘Vector’ **s** is given by the size of the object, which in this case is (32, 32) and because I'm choosing to always use double-size objects here, _m_=1. The **P**-matrix is just a scaling by λ, unless you want to add other things as well. All that remains then is just to fill it in the numbers.
+さて、することは、手元のデータをこの式に結びつけることです。画面のアンカー **q**<sub>0</sub> は単に **x**<sub>s</sub> です。テクスチャのアンカー **p**<sub>0</sub> は、テクスチャ空間で固定しておきたいピクセルで、自分で選べます。カートのスプライトでは、@fig:img-anchor に描かれているように、カートの下のほうに置くのが理にかなっています。「ベクトル」**s** はオブジェクトの大きさで決まり、この場合は (32, 32) です。そして、ここでは常に倍サイズのオブジェクトを使うことにしているので、_m_=1 です。**P** 行列は、ほかのものも加えたいのでなければ、単なる λ による拡大縮小です。あとは数値を埋めるだけです。
 
-### Sprite culling {#ssec-obj-cull}
+### スプライトのカリング {#ssec-obj-cull}
 
 <div class="cpt_fr" style="width:308px;">
   <img src="img/mode7/viewport_obj.png" id="fig:img-vp-obj" alt="">
   <br>
-  <b>{*@fig:img-vp-obj}</b>: View-frustum with sprites <i>a</i>, <i>b</i> and <i>c</i>. <i>b</i> and <i>c</i> are visible, <i>a</i> is not.
+  <b>{*@fig:img-vp-obj}</b>: スプライト <i>a</i>、<i>b</i>、<i>c</i> がある視錐台。<i>b</i> と <i>c</i> は見え、<i>a</i> は見えません。
 </div>
 
-<dfn>Culling</dfn> is the process removing any part of the world that cannot be seen. In this case, it means removing those sprites that do not fall within the viewing volume. This is a very smart thing to do, and it makes even more sense for sprites, because not doing so would seriously screw things up because OAM couldn't cope with the possible range of **x**<sub>s</sub>.
+<dfn>カリング</dfn>とは、世界のうち見えない部分をすべて取り除く処理です。この場合は、視野の空間に入らないスプライトを取り除くことを意味します。これはとても賢いやり方で、スプライトではさらに理にかなっています。そうしないと、OAM は **x**<sub>s</sub> のありうる範囲に対応できないので、ひどくおかしなことになってしまうからです。
 
-The first thing to do would be a distance check: if the object is too far away, it should not be seen. It's also a good idea to have a near-plane distance check. Then you have to test it for intersections with the viewport. Each sprite is bounded by a certain rectangle on the projection plane and if this is completely outside the viewport, the object should not be rendered.
+最初にすべきことは距離の確認でしょう。物体が遠すぎれば、見えるべきではありません。ニア面の距離の確認もしておくのが良い考えです。それから、ビューポートとの交差を調べる必要があります。各スプライトは投影面上のある長方形で囲まれていて、それが完全にビューポートの外にあれば、その物体は描画するべきではありません。
 
-{\*@fig:img-vp-obj} shows a few examples of this. Objects _a_ and _b_ have already been projected onto the projection plane. Object _a_ is outside the viewport, and should be disabled. Object _b_ is partially visible and should be rendered. Object _c_ is not projected yet, but falls between the near and far plane and should at least be tested (and then found fully visible).
+{\*@fig:img-vp-obj} にいくつかの例を示します。物体 _a_ と _b_ はすでに投影面に投影されています。物体 _a_ はビューポートの外にあるので、無効にするべきです。物体 _b_ は一部が見えているので、描画するべきです。物体 _c_ はまだ投影されていませんが、ニア面とファー面の間にあるので、少なくとも調べるべきです（そして、完全に見えていることがわかります）。
 
-It's actually easier to do the view volume checks in 3D camera space instead of 2D projection space. The object rectangle can easily be calculated from **x**<sub>c</sub> = **C**<sup>T</sup>·**r**, the anchor **p**<sub>0</sub> and the size **s**. The viewport will have to be scaled by λ, and this gives us the following rests to perform:
+視野の空間の確認は、2D の投影空間よりも、3D のカメラ空間で行うほうが実は簡単です。物体の長方形は、**x**<sub>c</sub> = **C**<sup>T</sup>·**r**、アンカー **p**<sub>0</sub>、大きさ **s** から簡単に計算できます。ビューポートは λ で拡大縮小する必要があり、これで次の判定をすることになります。
 
 <div class="lblock">
   <table id="tbl:culltest" class="table-data">
     <caption align="bottom">
-      <b>{*@tbl:culltest}</b>: Object rect and culling tests in camera space. Note the signs!
+      <b>{*@tbl:culltest}</b>: カメラ空間での物体の長方形とカリングの判定。符号に注意！
     </caption>
     <tbody>
       <tr>
-        <th>&nbsp;</th><th>Object position</th><th>Visible if</th>
+        <th>&nbsp;</th><th>物体の位置</th><th>見える条件</th>
       </tr>
       <tr>
-        <th> Depth </th>
+        <th> 奥行き </th>
         <td> 
           <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
             <mstyle displaystyle="true" scriptlevel="0">
@@ -2146,7 +2146,7 @@ It's actually easier to do the view volume checks in 3D camera space instead of 
         </td>
       </tr>
       <tr>
-        <th> Horizontal </th>
+        <th> 横方向 </th>
         <td> 
           <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
             <mstyle displaystyle="true" scriptlevel="0">
@@ -2218,7 +2218,7 @@ It's actually easier to do the view volume checks in 3D camera space instead of 
         </td>
       </tr>
       <tr>
-        <th> Vertical </th>
+        <th> 縦方向 </th>
         <td>
           <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
             <mstyle displaystyle="true" scriptlevel="0">
@@ -2297,19 +2297,19 @@ It's actually easier to do the view volume checks in 3D camera space instead of 
   </table>
 </div>
 
-If all these conditions are true, then the object should be visible. Now, please note the _signs_ of the tests, particularly in the vertical checks.
+これらの条件がすべて真なら、その物体は見えるはずです。さて、判定の_符号_、特に縦方向の確認の符号に注意してください。
 
-### Animation {#ssec-obj-ani}
+### アニメーション {#ssec-obj-ani}
 
 <div class="cpt_fr" style="width:200px;">
   <img src="img/mode7/psi_def.png" id="fig:img-psi-def" alt="view angle">
   <br>
-  <b>{*@fig:img-psi-def}</b>: Finding the view-angle &psi;.
+  <b>{*@fig:img-psi-def}</b>: 視線の角度 &psi; を求める。
 </div>
 
-Rotation animation, to be precise. As we saw in {@fig:img-m7-obj}, the sprite will show the same side regardless of where you are looking from. This is only logical, as the sprite is not actually a 3D entity. To make it _look_ a little more 3D, we need to have images of the sprite taken from different camera angles, and then pick the one we need depending on which angle we're looking from.
+正確には、回転のアニメーションです。{@fig:img-m7-obj} で見たように、スプライトはどこから見ても同じ側を見せます。スプライトは実際には 3D の存在ではないので、これは当然のことです。もう少し 3D らしく_見せる_には、違うカメラの角度から撮ったスプライトの画像を用意して、どの角度から見ているかに応じて必要なものを選ぶ必要があります。
 
-First, finding the correct view angle, ψ. {\*@fig:img-psi-def} shows the general situation. The angle you need is the angle between the vector between the camera and the object (red, dashed) and the global looking direction of the object. In the figure, you can see the global direction angles for the camera and object: φ<sub>c</sub> and φ<sub>o</sub>, respectively. Also indicated is the angle between the camera direction and the sprite, α. If you look at these angles closely, you'll see that φ<sub>c</sub> + α + ψ = φ<sub>o</sub>. In other words:
+まず、正しい視線の角度 ψ を求めます。{\*@fig:img-psi-def} は一般的な状況を示しています。必要な角度は、カメラと物体を結ぶベクトル（赤い破線）と、物体のグローバルな向きの間の角度です。図には、カメラと物体のグローバルな向きの角度、それぞれ φ<sub>c</sub> と φ<sub>o</sub> が描かれています。カメラの向きとスプライトの間の角度 α も示されています。これらの角度をよく見ると、φ<sub>c</sub> + α + ψ = φ<sub>o</sub> であることがわかるでしょう。言い換えると次のようになります。
 
 <table id="eq:psi">
   <tr>
@@ -2396,13 +2396,13 @@ First, finding the correct view angle, ψ. {\*@fig:img-psi-def} shows the genera
   </tr>
 </table>
 
-Whether the minus-sign inside the arctan() is necessary depends on how you define the terms all the terms. {\*@eq:psi} is the fully correct version, but if the arctan doesn't appeal to you, you'll be glad to know that in most cases the α-term can be safely ignored without anyone noticing.
+arctan() の中のマイナスの符号が必要かどうかは、すべての項をどう定義するかによります。{\*@eq:psi} は完全に正しい版ですが、arctan が気に入らなければ、ほとんどの場合 α の項は誰にも気づかれずに安全に無視できると知ってうれしく思うでしょう。
 
-Now that we have our viewing angle, we need to use it somehow. Suppose you have _N_ frames of rotation, which divides the circle into equal parts each 2π/_N_ radians wide. To get the slice that ψ is in, we merely have to divide by the angle of each slice: *i* = ψ/(2π/_N_) = *N*·ψ/(2π). If you have defined your circle in power-of-two divisions (which we have) then this part is ridiculously easy: just use a right-shift. Once you have the frame-index, the rest should be easy. Mostly. There are some intricacies that that can fog things up, but those are implementation-dependent and will be saved for later.
+視線の角度が得られたので、それを何らかの形で使う必要があります。回転のフレームが _N_ 枚あるとすると、円は 2π/_N_ ラジアンずつの等しい部分に分けられます。ψ がどの切れ端に入るかを得るには、各切れ端の角度で割るだけです。*i* = ψ/(2π/_N_) = *N*·ψ/(2π) です。円を 2 の累乗で分割して定義している（私たちはそうしています）なら、この部分はばかばかしいほど簡単です。右シフトを使うだけです。フレームのインデックスが得られれば、残りは簡単なはずです。だいたいは。話をわかりにくくする込み入った点もいくつかありますが、それらは実装に依存するので、あとに取っておきます。
 
-### Sprite sorting {#ssec-obj-sort}
+### スプライトのソート {#ssec-obj-sort}
 
-Disregarding priority bits for the moment, the order of objects on-screen is determined by the object number: a lower number will be in front of higher numbers. In 2D games, you can often ignore this because sprites will be on the same layer; in 3D games, you really, really can't. Take {@fig:img-obj-sort}, for example. The four thwomps here have a specific object order. In the left picture, the closest thwomp happens to have the lowest object and the visual ordering is correct. When viewed from the other side, however, (middle picture) things are a little different. There are two visual cues for depth: scaling (more distance is smaller) and occlusion (distance objects are obscured by closer objects). In the middle picture, these two conflict because the closest object has the _highest_ number, making the overall picture a little disconcerting. In the picture on the right, everything looks okay again, because steps were taken to ensure the correct object order.
+優先順位のビットはひとまず置いておくと、画面上のオブジェクトの順序はオブジェクトの番号で決まります。小さい番号が大きい番号の手前に来ます。2D のゲームでは、スプライトは同じレイヤーにあるので、これはたいてい無視できます。3D のゲームでは、本当に、本当に無視できません。たとえば {@fig:img-obj-sort} を見てください。ここにいる 4 体のドッスンには決まったオブジェクトの順序があります。左の絵では、たまたま一番近いドッスンが一番小さいオブジェクトの番号を持っていて、見た目の順序は正しくなっています。しかし、反対側から見ると（真ん中の絵）、事情は少し違います。奥行きの視覚的な手がかりは 2 つあります。拡大縮小（遠いものほど小さい）と遮蔽（遠くの物体は近くの物体に隠される）です。真ん中の絵では、一番近い物体が_一番大きい_番号を持っているので、この 2 つが矛盾し、全体の絵が少し落ち着かないものになっています。右の絵では、正しいオブジェクトの順序になるように手を打ったので、すべてがまた正しく見えます。
 
 <table id="fig:img-obj-sort" class="bdr" style="width:512px; margin:10px auto;" border=0 cellpadding=2 cellspacing=2>
   <tr>
@@ -2412,14 +2412,14 @@ Disregarding priority bits for the moment, the order of objects on-screen is det
   </tr>
   <tr>
     <td colspan=3>
-      <b>{*@fig:img-obj-sort}</b>. Non-sorted objects look alright (left) from one angle, but not from the other way (middle). You need to sort them to get the correct order (right).
+      <b>{*@fig:img-obj-sort}</b>。ソートしていないオブジェクトは、ある角度からは問題なく見えます（左）が、反対から見るとそうではありません（真ん中）。正しい順序にするにはソートする必要があります（右）。
     </td>
   </tr>
 </table>
 
-What needs to be done is sort the objects in OAM according to depth; a kind of [Z-buffer](https://en.wikipedia.org/wiki/Z-buffering) for objects. The depth of a sprite is simply _z_<sub>c</sub>, and we need to fill OAM with the sprite's object attributes in order of ascending _z_<sub>c</sub>. For good measure, it's probably a good idea to give hidden objects the maximum depth-value possible or to leave them out of the sorting process entirely.
+必要なのは、OAM の中のオブジェクトを奥行きでソートすることです。オブジェクトのための一種の [Z バッファ](https://en.wikipedia.org/wiki/Z-buffering)です。スプライトの奥行きは単に _z_<sub>c</sub> で、_z_<sub>c</sub> の昇順に、スプライトのオブジェクト属性で OAM を埋める必要があります。念のため、隠れているオブジェクトには可能な最大の奥行きの値を与えるか、ソートの処理から完全に外しておくのがよいでしょう。
 
-There are many possible strategies for sorting the objects. My own choice aright now would be to not sort the sprites or objects directly but to create an **index table**, which indicates the order the sprites' attributes should go into OAM. The pseudo-code for this is given below. Which algorithm you use to sort the keys doesn't really matter at this time, as long as it does the job. I'm sure that faster methods can be found, but probably at the expense of more code and I want to keep things relatively simple.
+オブジェクトのソートの方法はたくさん考えられます。今の私の選択は、スプライトやオブジェクトを直接ソートするのではなく、スプライトの属性を OAM に入れる順序を示す**インデックスの表**を作ることです。その擬似コードを下に示します。キーのソートにどのアルゴリズムを使うかは、仕事をこなしさえすれば、今のところあまり重要ではありません。もっと速い方法もきっと見つかるでしょうが、おそらくコードが増えるという代償があり、私は話を比較的単純にしておきたいのです。
 
 ```c
 // Pseudo code for sorting sprites for OAM
@@ -2444,17 +2444,17 @@ void spr_sort()
 }
 ```
 
-### Renormalization {#ssec-obj-norm}
+### 再正規化 {#ssec-obj-norm}
 
-I wouldn't be surprised if you've never heard of this term before. <dfn>Normalization</dfn> means that you scale a quantity to a user-friendly value – usually 1. You have already scaled the sprite by a factor λ, but that's not enough. In most cases, you have to scale it further, i.e _renormalize_ it. Here's why.
+この言葉をこれまで聞いたことがなくても驚きません。<dfn>正規化</dfn>とは、量を使いやすい値、普通は 1 に合わせて拡大縮小することです。スプライトはすでに係数 λ で拡大縮小していますが、それでは足りません。ほとんどの場合、さらに拡大縮小する、つまり_再正規化_する必要があります。その理由は次のとおりです。
 
-By definition, the scaling factor λ will be one when _z_<sub>c</sub> = −*D*. Now consider what happens if you look at a closer object, say at _z_<sub>c</sub> = −½*D*. In this case, λ will be ½ and the object will be scaled by a factor of two. In other words, it'll already fill the double-size canvas. And higher scales are possible too: with the suggested values of *D* = 256 and *N* = 24, you could end up with scaling of 10! This will not do.
+定義により、スケール係数 λ は _z_<sub>c</sub> = −*D* のときに 1 になります。では、もっと近い物体、たとえば _z_<sub>c</sub> = −½*D* にある物体を見たらどうなるか考えてみてください。この場合 λ は ½ になり、物体は 2 倍に拡大されます。言い換えると、それだけで倍サイズのキャンバスをいっぱいに使ってしまいます。そして、もっと大きな拡大率も起こりえます。提案した値 *D* = 256 と *N* = 24 では、拡大率が 10 になることもあります！ これではだめです。
 
-It is possible to get around this by moving the near-plane further away. However, then you'll see object disappearing if they're still quite far off, which will look just as strange as seeing them clipped. A better solution is to give the objects an extra scaling factor. In `m7_ex` I have scaled the objects by an additional factor of ¼, so that a 32x32 sprite is actually only 8x8 ‘world’-pixels in size. This seems to work out quite nicely.
+ニア面をもっと遠くに動かせば、これを回避できます。しかしそうすると、まだかなり遠くにある物体が消えてしまうのが見えることになり、切り取られるのを見るのと同じくらい変に見えます。もっと良い解決策は、物体に追加のスケール係数を与えることです。`m7_ex` では物体をさらに ¼ 倍に拡大縮小していて、32x32 のスプライトが実際には「ワールド」のピクセルで 8x8 の大きさしかないようにしています。これはかなりうまくいくようです。
 
-This renormalization means that you're actually working with _two separate_ scaling factors: one for the coordinate transformation, and one for visual effects. It is the _visual_ scaling you need to use in positioning and culling the sprites, not the transformation scaling; the latter's influence stops once you've found the screen-position of the anchor.
+この再正規化は、実際には_2 つの別々の_スケール係数を扱っていることを意味します。1 つは座標変換のため、もう 1 つは見た目の効果のためです。スプライトの位置合わせとカリングで使う必要があるのは、変換のスケールではなく_見た目の_スケールです。変換のスケールの影響は、アンカーの画面上の位置を求めたところで終わります。
 
-There's probably an official term for this process, but I wouldn't know what it is. I'm familiar with the process of renormalization from physics (a few Dutch professors got the Nobel Prize for this subject a few years back) and it seemed to fit. If you know the official term, I'd like to hear it.
+この処理にはおそらく公式の名前があるのでしょうが、私は知りません。再正規化の処理は物理学で知っていて（数年前に、オランダの教授が何人か、この題材でノーベル賞を受けました）、ぴったりだと思ったのです。公式の名前を知っていたら、ぜひ教えてください。
 
 <div class="cblock">
   <table id="fig:img-obj-norm" class="bdr" width=512 border=0 cellpadding=4 cellspacing=0>
@@ -2465,25 +2465,25 @@ There's probably an official term for this process, but I wouldn't know what it 
     </tr>
     <tr>
       <td colspan=3>
-        <b>{*@fig:img-obj-norm}</b>. Object renormalization. Left: normal (ew, no!). Middle: &times;&frac12; (hmmm, no). Right: &times;&frac14; (yeah, that's it).
+        <b>{*@fig:img-obj-norm}</b>。オブジェクトの再正規化。左: 通常（うわっ、だめ！）。真ん中: &times;&frac12;（うーん、だめ）。右: &times;&frac14;（そう、これだ）。
       </td>
     </tr>
   </table>
 </div>
 
-And with that, we've reached the end of the theory. Now to actually implement all of this.
+これで理論は終わりです。次は、これを全部実際に実装します。
 
-## Implementation {#sec-code}
+## 実装 {#sec-code}
 
-### Design considerations. {#ssec-code-design}
+### 設計の検討 {#ssec-code-design}
 
-My aim here is not to merely dish out a couple of functions that can make mode 7 happen, but also provide something that can be easily modified if necessary. The code of the `m7_ex` demo is spread over 4 files: one for the things specific to the demo itself `m7_ex.c`; and three for mode 7 specific stuff, `mode7.h`, `mode7.c` and `mode7.iwram.c`. Yes, iwram functions too; some of these things are going to be computation extensive and I want them as fast as possible right off the bat. I'm also borrowing the object sorter from the [priority demo](lab.html##ssec-prio-objsort).
+ここでの私の目的は、モード 7 を実現できる関数をいくつか出すだけでなく、必要なら簡単に変更できるものを提供することでもあります。`m7_ex` デモのコードは 4 つのファイルに分かれています。デモそのものに固有のもののための `m7_ex.c` と、モード 7 に固有のもののための 3 つ、`mode7.h`、`mode7.c`、`mode7.iwram.c` です。そう、IWRAM の関数もあります。これらの中には計算量の多いものがあり、最初からできるだけ速くしておきたいのです。オブジェクトのソートは[優先順位のデモ](lab.html##ssec-prio-objsort)から借りています。
 
-There are three main areas of interest here: the **camera**, **background stuff** and **sprites**. For each of these we will use a struct and/or array to keep their data so it's nice and OOPy. There will also be a sort of manager struct for the mode 7 stuff as a whole. And, of course, we need constants for the view volume, focus length and a few other items. A handful of functions will then operate on these items to give up what we need.
+主な関心事は 3 つあります。**カメラ**、**背景まわり**、**スプライト**です。それぞれについて、データを保持するために構造体や配列を使うので、オブジェクト指向っぽくて良い感じです。モード 7 全体のための、一種の管理用の構造体もあります。そしてもちろん、視野の空間、焦点距離、そのほかいくつかの項目のための定数が必要です。それから、一握りの関数がこれらの項目を操作して、必要なものを提供します。
 
-#### Constants
+#### 定数
 
-There aren't too many constants. Most have to do with the viewport, the others with the focus and renormalization.
+定数はそれほど多くありません。ほとんどはビューポートに関するもので、残りは焦点と再正規化に関するものです。
 
 ```c
 #define M7_D        256     //!< Focal length
@@ -2501,11 +2501,11 @@ There aren't too many constants. Most have to do with the viewport, the others w
 #define M7_FAR_BG    768        //!< Far plane (floor)
 ```
 
-#### Structs and variables {#ssec-code-class}
+#### 構造体と変数 {#ssec-code-class}
 
-Mode 7 would be a wonderful place to use classes, but since I'm working in C, not C++, I'm sticking to structs. Apart from the `BG_AFFINE` struct I presented in the [affine background](affbg.html) page, you need one struct for the camera and one struct for the mode 7 objects. I'm also using a mode 7 container struct to keep track of all the parts that go into the mode 7 functionality, so that you won't have loose global variables lying around the place.
+モード 7 はクラスを使うのにうってつけの場所でしょうが、私は C++ ではなく C で書いているので、構造体にこだわります。[アフィン背景](affbg.html)のページで示した `BG_AFFINE` 構造体のほかに、カメラのための構造体と、モード 7 のオブジェクトのための構造体が必要です。また、モード 7 の機能に関わるすべての部品を管理するために、モード 7 の入れ物の構造体も使っています。そうすれば、グローバル変数があちこちに転がっていることもありません。
 
-You're free to create your own structs for these, but the ones I will use are given below. If you've been paying attention, most of the members should be familiar. Oh, the `POINT` and `VECTOR` structs are 2D and 3D vectors, of course.
+これらのために自分の構造体を作ってもかまいませんが、私が使うものを以下に示します。ここまで注意を払ってきたなら、メンバのほとんどはおなじみのはずです。そうそう、`POINT` 構造体と `VECTOR` 構造体は、もちろん 2D と 3D のベクトルです。
 
 ```c
 //! 3D sprite struct
@@ -2545,11 +2545,11 @@ typedef struct M7_LEVEL
 } M7_LEVEL;
 ```
 
-There's not much more I have to say about these structs. The `M7_SPRITE` has the attributes of its object as a member itself, rather than an index or pointer to any sort of buffer. The reason behind this is essentially “why the hell not”. Because I have to sort the objects anyway, using an extra buffer might not be worthwhile, so I chose this. I'm also keeping track of the position in camera space because I need it on more than one occasion, and a TILE pointer for graphics. The reason for this will become apparent when we implement animation.
+これらの構造体について言うべきことは、それほど多くありません。`M7_SPRITE` は、何かのバッファへのインデックスやポインタではなく、オブジェクトの属性そのものをメンバとして持っています。その理由は、基本的には「別にいいじゃないか」です。どのみちオブジェクトをソートしなければならないので、余分なバッファを使う価値はあまりないかもしれず、こうすることにしました。また、カメラ空間での位置も保持しています。何度か必要になるからです。そしてグラフィックのための TILE のポインタもあります。その理由は、アニメーションを実装するときに明らかになります。
 
-The `M7_LEVEL` holds pointers to the main variables for mode 7 (the camera, affine array and sprites) as well as the horizon scanline needed to switch from backdrop to floor, and two variables containing the data of the bg control register, as this will be different for the backdrop and floor.
+`M7_LEVEL` は、モード 7 の主な変数（カメラ、アフィンの配列、スプライト）へのポインタと、バックドロップから床に切り替えるのに必要な地平線のスキャンライン、そして背景の制御レジスタのデータを入れた 2 つの変数を持っています。背景の制御レジスタはバックドロップと床とで違うからです。
 
-Now we need these four variables using these structs. Because these are technically part of the demo itself, I've put them in `m7_ex.c` instead of the main mode 7 code, although that code does require an actual `m7_level` variable to exist for the HBlank interrupt. `SPR_COUNT` is the number of sprites, which is _definitely_ demo specific. There are 161 entries in `m7_bgaffs` rather than just 160 for the same reason as in the [DMA demo](dma.html#sec-demo): HBlank sets up the next line, rather than the current one, and having this is better (and faster) than the alternative with if/else blocks.
+さて、これらの構造体を使った 4 つの変数が必要です。これらは厳密にはデモそのものの一部なので、モード 7 の主なコードではなく `m7_ex.c` に置きました。ただし、そのコードは HBlank の割り込みのために、実際の `m7_level` 変数が存在することを必要とします。`SPR_COUNT` はスプライトの数で、これは_間違いなく_デモ固有のものです。`m7_bgaffs` のエントリが 160 ではなく 161 個あるのは、[DMA のデモ](dma.html#sec-demo)と同じ理由です。HBlank は現在のラインではなく次のラインを準備するので、こうしておくほうが、if/else ブロックを使うほかの方法より良い（そして速い）のです。
 
 ```c
 M7_CAM m7_cam;
@@ -2559,26 +2559,26 @@ M7_SPRITE m7_sprites[SPR_COUNT];
 M7_LEVEL m7_level;
 ```
 
-:::tip Type and order of struct members
+:::tip 構造体のメンバの型と順序
 
-My usual advice is to use ints for your data types, but for structs this may not always be the best thing to do. Local variables may not use up memory, but structs do. And when you have arrays of structs, the extra space that word-sized members cost adds up quickly. So in that case feel free to use non-ints.
+私はいつも、データ型には int を使うようにすすめていますが、構造体では、それが常に最善とは限りません。ローカル変数はメモリを使わないかもしれませんが、構造体は使います。そして構造体の配列があると、ワードの大きさのメンバにかかる余分な領域はすぐにかさみます。ですからその場合は、遠慮なく int 以外を使ってください。
 
-Having said that, when it's time to use those members it can pay to copy its data to a local 32bit variable, rather an using a byte or halfword member for all the calculations.
+とはいえ、それらのメンバを使うときには、すべての計算にバイトやハーフワードのメンバを使うのではなく、そのデータを 32 ビットのローカル変数にコピーしたほうが得をすることがあります。
 
-Also, and this is _very_ important, you won't be saving any space if you don't pay attention to the order of the members. An int will still require word-alignment, even when it comes right after a byte member. The compiler may add padding after bytes and halfwords to ensure the next member is correctly aligned. It'd be best if you ordered the members in such a way that there's as little padding as possible.
+また、そしてこれは_とても_重要なのですが、メンバの順序に注意を払わなければ、領域はまったく節約できません。int は、バイトのメンバのすぐあとに来ても、やはりワード境界への整列が必要です。コンパイラは、次のメンバが正しく整列するように、バイトやハーフワードのあとに詰め物を加えることがあります。詰め物ができるだけ少なくなるようにメンバを並べるのが一番です。
 
 :::
 
-### Background functions {#ssec-code-bg}
+### 背景の関数 {#ssec-code-bg}
 
-These are my four main background functions:
+背景の主な関数は次の 4 つです。
 
-- `void m7_prep_horizon(M7_LEVEL *level)`. Calculates the horizon scanline.
-- `IWRAM_CODE void m7_prep_affines(M7_LEVEL *level)`. Calculates the affine parameters for the floor, based on camera position and orientation..
-- `void m7_update_sky(const M7_LEVEL *level)`. Positions the backdrop.
-- `IWRAM_CODE void m7_hbl_floor()`. HBlank interrupt routine. Switches to mode 2 when necessary and copies affine parameters and creates fog effect.
+- `void m7_prep_horizon(M7_LEVEL *level)`。地平線のスキャンラインを計算します。
+- `IWRAM_CODE void m7_prep_affines(M7_LEVEL *level)`。カメラの位置と向きに基づいて、床のアフィンパラメータを計算します。
+- `void m7_update_sky(const M7_LEVEL *level)`。バックドロップを配置します。
+- `IWRAM_CODE void m7_hbl_floor()`。HBlank の割り込みルーチン。必要に応じてモード 2 に切り替え、アフィンパラメータをコピーし、フォグの効果を作ります。
 
-`m7_prep_horizon()` and ` m7_update_sky()` are simple implementations of {@eq:horz-line} and {@eq:psi}, respectively, so I can be brief with these.
+`m7_prep_horizon()` と ` m7_update_sky()` は、それぞれ {@eq:horz-line} と {@eq:psi} の単純な実装なので（訳注: 2 つ目の関数が実装しているのは、バックドロップの位置の式のほうと思われます）、これらは手短に済ませられます。
 
 ```c
 //! Calculate the horizon scanline
@@ -2606,19 +2606,19 @@ void m7_update_sky(const M7_LEVEL *level)
 }
 ```
 
-The horizon calculation makes use of a clipping far-plane, though this is not strictly necessary. If you want the horizon at infinity, remove the subtraction by the camera's height and use `M7_FAR_BG` = 1. Note the check for _v_<sub>y</sub> = 0. As _v_<sub>y</sub> = cos(θ), this will be true when looking straight up or straight down. The distinction is important because sees the sky (no affine bg) and one sees only floor (no backdrop). Technically these should be ±infinity, but as this is fixed-point, `INT_MIN/MAX` will have to do.
+地平線の計算ではクリッピングのファー面を使っていますが、厳密には必要ありません。地平線を無限遠にしたければ、カメラの高さを引くのをやめて、`M7_FAR_BG` = 1 を使ってください。_v_<sub>y</sub> = 0 の確認に注意してください。_v_<sub>y</sub> = cos(θ) なので、これは真上か真下を見ているときに真になります。一方では空だけが見え（アフィン背景なし）、もう一方では床だけが見える（バックドロップなし）ので、この区別は大事です。厳密には ±無限大にするべきですが、これは固定小数点なので、`INT_MIN/MAX` で我慢するしかありません。
 
-As for the backdrop placement: I'm taking a _lot_ of shortcuts here. A mathematically correct backdrop would use a background map 1720 pixels wide. It can be done, but mostly it's just annoying. Instead, I'm using a 512x256p regular background and use *P* = 1024 in the angle→scroll-offset conversion. This means the map shows up twice in one 360° rotation and that the _dx_ is just φ/64. Yes, the floor and backdrop field-of-view will be slightly out of sync, but you'll only notice if you know what to look for, so that's alright.
+バックドロップの配置については、ここでは_たくさん_手を抜いています。数学的に正しいバックドロップなら、幅 1720 ピクセルの背景のマップを使うことになります。できなくはありませんが、たいていはただ面倒なだけです。代わりに、512x256p の通常の背景を使い、角度→スクロールのオフセットの変換で *P* = 1024 を使っています。つまり、360° の 1 回転でマップが 2 回表示され、_dx_ は単に φ/64 になります。たしかに、床とバックドロップの視野は少しずれますが、何を探せばいいか知っていなければ気づかないので、問題ありません。
 
-Strictly speaking, the vertical offset should be bgHeight − horizon, but the bg-height can be ignored due to wrapping. The reason I'm also clamping the horizon to the size of the viewport is because the horizon scanline can become very large – the tan(θ) in it will approach infinity when looking up, remember? If you don't clamp it you'll scroll through the whole backdrop map a couple of times when panning up, which just looks awful.
+厳密に言えば、縦のオフセットは「背景の高さ − 地平線」になるべきですが、回り込みのおかげで背景の高さは無視できます。地平線をビューポートの大きさに制限しているのは、地平線のスキャンラインがとても大きくなりうるからです。上を見ると、その中の tan(θ) は無限大に近づくのでしたね？ 制限しないと、上を向いていくときにバックドロップのマップ全体を何周もスクロールしてしまい、とにかくひどい見た目になります。
 
-#### Preparing the affine parameter table
+#### アフィンパラメータの表を準備する
 
-Calculating the affine parameters happens in `m7_prep_affines()`. You could try to do this in the HBlank isr, but because it requires a division, it would simply take too long. Also, doing it in one spot is more efficient, as you only have to set-up the variables once. This routine carries out the calculations of {@eq:m7-sum}. It has to do quite a number of calculations for each scanline, including a division, so you can expect it to be rather costly; which is why I'm putting it in IWRAM right from the start.
+アフィンパラメータの計算は `m7_prep_affines()` で行います。HBlank の ISR の中でやってみることもできますが、除算が必要なので、単純に時間がかかりすぎます。また、1 か所でまとめてするほうが効率的です。変数の準備が 1 回で済むからです。このルーチンは {@eq:m7-sum} の計算を行います。スキャンラインごとに除算を含むかなりの数の計算をしなければならないので、かなり高くつくと予想できます。そのため、最初から IWRAM に置いています。
 
-Now, you don't have to calculate things for every scanline: just the ones below the horizon. As for implementing {@eq:m7-sum} itself: it turns out that it works much better if you take the camera matrix apart again and work with sines and cosines of θ and φ, rather than the nine matrix entries. This next paragraph will explain how, but feel free to skip it and go onto the code.
+さて、すべてのスキャンラインについて計算する必要はありません。地平線より下のものだけです。{@eq:m7-sum} そのものの実装については、カメラ行列の 9 つの要素で計算するよりも、カメラ行列をまたばらして、θ と φ のサインとコサインで計算したほうがずっとうまくいくことがわかりました。次の段落でその方法を説明しますが、読み飛ばしてコードに進んでもかまいません。
 
-Remember that the camera matrix is **C** = **R**<sub>y</sub>(φ)·**R**<sub>x</sub>(θ); and that λ and **dx** are calculated via {@eq:m7-ofs}: **dx**′ = **a**<sub>cw</sub> + λ·**C**·**b**. You can break up **C** can combine it with **b** to form **b**′ = **R**<sub>x</sub>(θ)·**b**. This new vector takes care of the pitch entirely – it's as if we only had a rotation around the vertical axis, i.e., the case discussed in the previous chapter. With this pre-rotation, the code becomes simpler and faster.
+カメラ行列は **C** = **R**<sub>y</sub>(φ)·**R**<sub>x</sub>(θ) であり、λ と **dx** は {@eq:m7-ofs}、つまり **dx**′ = **a**<sub>cw</sub> + λ·**C**·**b** で計算されることを思い出してください。**C** を分解して **b** と組み合わせれば、**b**′ = **R**<sub>x</sub>(θ)·**b** を作れます。この新しいベクトルがピッチを完全に引き受けます。縦の軸の周りの回転しかない場合、つまり前の章で説明した場合と同じようになるのです。この事前の回転のおかげで、コードはより単純で速くなります。
 
 ```c
 IWRAM_CODE void m7_prep_affines(M7_LEVEL *level)
@@ -2662,13 +2662,13 @@ IWRAM_CODE void m7_prep_affines(M7_LEVEL *level)
 }
 ```
 
-We begin by getting the scanline to begin calculating at (which may be nothing), and defining _lots_ of temporaries. Not all of the temporaries are necessary, but they make the code more readable. Names aside, the code within the loop is very similar to that of `hbl_mode7_c` in the [first mode 7 demo](mode7.html#ssec-order-code), except that in calculating λ we use a rotated _y_<sub>s</sub>-value, and in calculating the offsets a rotated _z_<sub>s</sub> (= −*D*) value. Annnd, that's it.
+まず、計算を始めるスキャンライン（何もないこともあります）を求め、一時変数を_たくさん_定義します。一時変数のすべてが必要なわけではありませんが、コードが読みやすくなります。名前はさておき、ループの中のコードは[最初のモード 7 のデモ](mode7.html#ssec-order-code)の `hbl_mode7_c` ととてもよく似ています。違うのは、λ の計算で回転させた _y_<sub>s</sub> の値を使い、オフセットの計算で回転させた _z_<sub>s</sub>（= −*D*）の値を使うことです。でもって、それで全部です。
 
-The comments behind the calculations indicate the fixed-point count of the results, which in this case can be either .8f or .12f. Now hear this: it is **very** important that the scaled (co)sine of φ, `lcf` and `lsf`, use 12 bits of precision or more. I've tried 8, it's not pretty – the displacements are all off at close range. Secondly, note the order of multiplications and shifts in the displacements; it is also very important that these stay the way they are. Particularly the one with _L_: the multiplication by `M7_LEFT` **must** happen after the shift, trust me on this.
+計算の後ろのコメントは結果の固定小数点の桁数を示していて、この場合は .8f か .12f のどちらかです。さあ、よく聞いてください。φ の拡大縮小した（コ）サイン、`lcf` と `lsf` は、12 ビット以上の精度を使うことが**とても**大事です。8 ビットで試しましたが、ひどいものでした。近距離で変位が全部ずれてしまいます。次に、変位での乗算とシフトの順序に注意してください。これらが今のままであることも、とても大事です。特に _L_ のあるものは、`M7_LEFT` との乗算をシフトのあとにしなければ**なりません**。これは信じてください。
 
-The last interesting point is the line after the loop, which copies the parameters for scanline 0 to the back of the array to compensate for the HBlank-interrupt obiwan error.
+最後に面白い点は、ループのあとの行です。HBlank の割り込みの 1 つずれのエラーを補うために、スキャンライン 0 のパラメータを配列の最後にコピーしています。
 
-This function is probably as fast as you can make it in C, and it the compiler does its job pretty well so there is little to be gained by going to manual assembly. This does not mean it doesn't still take quite some time. The division alone costs something like 100 to 400 cycles (the cycle-count for BIOS division is roughly 90 + 13/significant bit). At one division per scanline, this can really add up. The best strategy to deal with this is to _not do it_ if you don't have to. If you use a fixed pitch angle, you can precalculate all the divisions and just look them up. If you must have a variable pitch, you can also go the trig way. Look back at {@fig:img-obj-sort}. If β is the angle between (0, *y*<sub>p</sub>, −*D*) and (0, 0, −*D*), then tan(β) = *y*<sub>p</sub>/_D_. With a good deal of trigonometry, you could rewrite the formula for λ to
+この関数は、おそらく C で作れる限り速いもので、コンパイラもかなりうまく仕事をしているので、手書きのアセンブリにしても得るものはほとんどありません。だからといって、まだかなりの時間がかからないわけではありません。除算だけで 100 から 400 サイクルほどかかります（BIOS の除算のサイクル数は、おおよそ 90 + 有効ビットあたり 13 です）。スキャンラインごとに除算が 1 回あると、これは本当にかさみます。これに対処する最善の戦略は、必要がなければ_しない_ことです。ピッチの角度を固定にするなら、すべての除算を前もって計算しておき、表を引くだけにできます。どうしても可変のピッチが必要なら、三角関数の方法もあります。{@fig:img-obj-sort} を振り返ってください（訳注: 参照すべきなのは投影の図のほうと思われます）。β を (0, *y*<sub>p</sub>, −*D*) と (0, 0, −*D*) の間の角度とすると、tan(β) = *y*<sub>p</sub>/_D_ です。三角法をたっぷり使えば、λ の式を次のように書き直せます。
 
 <table id="eq:lambda-alt">
   <tr>
@@ -2735,24 +2735,24 @@ This function is probably as fast as you can make it in C, and it the compiler d
   </tr>
 </table>
 
-You can get β via an arctan LUT of 160 entries, one for each scanline (hey, you could even put that into _p_<sub>d</sub>!), and then use a 1/sine LUT. You have to be careful to use large enough LUTs, though. Since the arguments of LUTs are integers, β will be truncated, and you will lose a _lot_ of accuracy though this, especially near the horizon. Now, I haven't actually tried the trig-way yet, but I have done some basic tests in Excel which would suggest that with a 1/sine LUT of 512/circle, you'd get λ-errors well over 10% near the horizon, and errors around 1% everywhere else. With that in mind, I'd suggest 1024/circle at least. Or interpolating between LUT entries, which you can do with libtonc's `lu_lerp16()` and `lu_lerp32()` functions.
+β は、スキャンラインごとに 1 つ、160 エントリのアークタンジェントのルックアップテーブルで得られます（そうだ、それを _p_<sub>d</sub> に入れておくことだってできます！）。それから 1/サインのルックアップテーブルを使います。ただし、十分に大きなルックアップテーブルを使うように気をつけなければなりません。ルックアップテーブルの引数は整数なので、β は切り捨てられ、それによって_大きく_精度を失います。特に地平線の近くではそうです。さて、三角関数の方法はまだ実際に試していませんが、Excel で簡単なテストをしてみたところ、1 周 512 の 1/サインのルックアップテーブルでは、地平線の近くで λ の誤差が 10% を大きく超え、それ以外のところでも誤差は 1% 前後になるようです。それを踏まえると、少なくとも 1 周 1024 をおすすめします。あるいは、ルックアップテーブルのエントリの間を補間することです。それは libtonc の `lu_lerp16()` 関数と `lu_lerp32()` 関数でできます。
 
-Aside from going triggy with it, you can probably speed up the division as well in a number of ways. But before you go and optimize this, ask yourself if you really need it first. Premature optimization is the root of all evil, after all.
+三角関数の方法を使う以外にも、おそらくいろいろな方法で除算を速くできるでしょう。でも、これを最適化しに行く前に、本当にそれが必要なのかをまず自問してください。結局のところ、早すぎる最適化は諸悪の根源なのですから。
 
-:::note Speed-ups for affine calculations
+:::note アフィンの計算の高速化
 
-Tried three optimizations recently. First, ARM/IWRAM, which brings the thing down to 23k-58k cycles. Then, a little refactoring that presented itself in a discussion with sgeos: the camera vectors can resolve to a smaller set of variables, saving 10-20%. Then, the trig thing, which can bring the whole thing down to 10-20k or even 7k-14k max, depending on whether you get cos(β) and 1/sin(θ+β) via large luts, or smaller luts and linear interpolation. Once you get the math, shifts, and signs in order, it works like a charm.
+最近、3 つの最適化を試しました。まず ARM/IWRAM で、これで 23k-58k サイクルにまで下がります。次に、sgeos との議論で見つかったちょっとしたリファクタリングです。カメラのベクトルをより少ない変数の集まりにまとめられ、10-20% 節約できます。それから三角関数の方法で、cos(β) と 1/sin(θ+β) を大きなルックアップテーブルで得るか、小さなルックアップテーブルと線形補間で得るかによって、全体を最大でも 10-20k、あるいは 7k-14k にまで下げられます。数学、シフト、符号をきちんと整えれば、魔法のようにうまくいきます。
 
 :::
 
-#### The mode 7 HBlank interrupt routine
+#### モード 7 の HBlank の割り込みルーチン
 
-To keep things simple, nearly everything that has to happen during VDraw happens inside one HBlank isr called `m7_hbl_floor()`. Earlier versions of this demo used a system of VCount/HBlank interrupts, but that turned out to be more trouble than it's worth. This is also an IWRAM routine because it really needs to be as fast as possible. The interrupt service routine does the following things:
+話を単純にするため、VDraw の間に起きる必要のあることは、ほぼすべて `m7_hbl_floor()` という 1 つの HBlank の ISR の中で行います。このデモの以前の版では VCount/HBlank の割り込みの仕組みを使っていましたが、それは手間に見合わないことがわかりました。これも IWRAM のルーチンです。本当にできるだけ速くする必要があるからです。この割り込みサービスルーチンは次のことをします。
 
-1.  **Check vcount for floor-range**. If this scanline is not part of the floor, return.
-2.  **Check vcount for horizon**. At reaching the horizon scanline the video mode should change and `REG_BG2CNT` should be set to the floor's settings.
-3.  **Copy affine parameters to `REG_BG_AFFINE[2]`**. Copy the _next_ scanline's parameters to `REG_BG_AFFINE[2]`, as we've already past the current scanline.
-4.  **Fogging**. Fade to orange in this case.
+1.  **vcount が床の範囲にあるか確認する**。このスキャンラインが床の一部でなければ、戻ります。
+2.  **vcount が地平線か確認する**。地平線のスキャンラインに達したら、ビデオモードを変えて、`REG_BG2CNT` を床の設定にします。
+3.  **アフィンパラメータを `REG_BG_AFFINE[2]` にコピーする**。現在のスキャンラインはもう過ぎているので、_次の_スキャンラインのパラメータを `REG_BG_AFFINE[2]` にコピーします。
+4.  **フォグ**。この場合はオレンジ色にフェードします。
 
 ```c
 // from tonc_core.h
@@ -2790,21 +2790,21 @@ IWRAM_CODE void m7_hbl_floor()
 }
 ```
 
-Points (3) and (4) could benefit from a bit more explanation. As mentioned several times now, the isr of any scanline _vc_ should set-up the parameters of _next_ scanline, which is why we're copying from `level.bgaff[vc+1]` rather than just `[vc]`. Scanline zero's uses the set from *vc* = 160, which is alright because we've copied zero's data to the last element in the array. As usual, struct copies ftw.
+ポイント (3) と (4) はもう少し説明があったほうがよいでしょう。もう何度も言ったように、スキャンライン _vc_ の ISR は_次の_スキャンラインのパラメータを準備するべきです。だから単なる `[vc]` ではなく `level.bgaff[vc+1]` からコピーしているのです。スキャンライン 0 では *vc* = 160 の組を使いますが、0 のデータを配列の最後の要素にコピーしてあるので問題ありません。いつものように、構造体のコピー最高。
 
-For the fogging I use _p_<sub>b</sub> which filled with λ in `m7_prep_affines()` for this very reason. A scaled λ is not the most accurate model for fogging, but the effect looks well enough. Because the blending registers cap at 16, I need to make sure it doesn't wrap around at higher values.
+フォグには、まさにこのために `m7_prep_affines()` で λ を入れておいた _p_<sub>b</sub> を使っています。λ を拡大縮小したものはフォグのモデルとして最も正確ではありませんが、効果は十分に良く見えます。ブレンドのレジスタは 16 で頭打ちになるので、大きな値で回り込まないようにする必要があります。
 
-This _still_ leaves the question of what I'm actually blending with, as orange isn't part of the GBA's fade repertoire. At least, not _directly_. It is, however, quite possible to blend with the backdrop, which just shows bg-color 0. This color can be anything, including orange.
+それでも_まだ_、実際に何とブレンドしているのかという疑問が残ります。オレンジ色は GBA のフェードの持ち技にはないからです。少なくとも、_直接_にはありません。しかし、バックドロップとブレンドすることは十分に可能で、バックドロップは背景の色 0 を表示しているだけです。この色はオレンジ色も含めて何にでもできます。
 
-### Sprites and objects {#ssec-code-spr}
+### スプライトとオブジェクト {#ssec-code-spr}
 
-Sprite and object handling has been distributed over the following three functions:
+スプライトとオブジェクトの処理は、次の 3 つの関数に分けてあります。
 
-- `void update_sprites()`. This is the main sprite handler, which calls other functions to do positioning, sorting and animation.
-- `IWRAM_CODE void m7_prep_sprite(M7_LEVEL *level, M7_SPRITE *spr)`. This calculates the correct position and scale of the sprite.
-- `void kart_animate(M7_SPRITE *spr, const M7_CAM *cam)`. This selects the correct frame for rotating around the karts.
+- `void update_sprites()`。主なスプライトの処理で、ほかの関数を呼んで位置合わせ、ソート、アニメーションを行います。
+- `IWRAM_CODE void m7_prep_sprite(M7_LEVEL *level, M7_SPRITE *spr)`。スプライトの正しい位置と拡大率を計算します。
+- `void kart_animate(M7_SPRITE *spr, const M7_CAM *cam)`。カートの周りを回るための正しいフレームを選びます。
 
-Only `m7_prep_sprite()` is actually part of the mode 7 functions; the others could very well differ for every mode 7 game you have in mind. The main sprite handler, `update_sprites()`, is pretty simple: it needs to call `m7_prep_sprite()` for each sprite and create the sprite's sorting key, sort all the sprites and copy the sorted attributes to OAM. It also calls `kart_animate()` for each kart-sprite for their animations; if I had animations for the thwomps or other sprites they'd probably go here as well.
+実際にモード 7 の関数の一部なのは `m7_prep_sprite()` だけです。ほかのものは、考えているモード 7 のゲームごとに大きく違ってもおかしくありません。主なスプライトの処理 `update_sprites()` はかなり単純です。各スプライトについて `m7_prep_sprite()` を呼んでスプライトのソートのキーを作り、すべてのスプライトをソートし、ソートした属性を OAM にコピーする必要があります。アニメーションのために、各カートのスプライトについて `kart_animate()` も呼びます。ドッスンやほかのスプライトにもアニメーションがあれば、おそらくそれもここに入るでしょう。
 
 ```c
 void update_sprites()
@@ -2836,21 +2836,21 @@ void update_sprites()
 }
 ```
 
-Most of the code has to do with sorting the sprites, which was already described in the theory. The `pos2` member of the sprites is set by `m7_prep_sprite()` to contain the sprite's position in camera space. The sorting routine `id_sort_shell()` is the index-table sorter described in the [priority section](lab.html#sec-prio).
+コードのほとんどはスプライトのソートに関するもので、それは理論のところですでに説明しました。スプライトの `pos2` メンバは、`m7_prep_sprite()` がスプライトのカメラ空間での位置を入れるように設定します。ソートのルーチン `id_sort_shell()` は、[優先順位の節](lab.html#sec-prio)で説明したインデックスの表のソート処理です。
 
-If I had wanted to have more advanced animation or sprite things, they'd be put here as well. But I didn't, so I haven't.
+もっと高度なアニメーションやスプライトの処理が欲しかったなら、それもここに入れていたでしょう。でも欲しくなかったので、入れていません。
 
-#### Sprite positioning and scaling
+#### スプライトの位置合わせと拡大縮小
 
-The function `m7_prep_sprite()` calculates the correct on-screen position for a sprite, sets up the affine matrix with the proper (renormalized) scales and hides the sprite if it falls outside the view volume.
+関数 `m7_prep_sprite()` は、スプライトの画面上の正しい位置を計算し、正しい（再正規化した）拡大率でアフィン行列を準備し、スプライトが視野の空間の外にあれば隠します。
 
-The first step is convert to the convert the world-position of the sprite to a vector in the camera space, using the first part of {@eq:obj-w2s}: **x**<sub>c</sub> = **C**<sup>T</sup>·**r**, with **r** being the position of the sprite relative to the camera: **r** = **x**<sub>w</sub>−**a**<sub>cw</sub>. This is put into variable `vc`, but with the signs of _y_ and _z_ switched! This makes subsequent calculations a little easier. This vector is also stored in `spr->pos2`, which is used in sorting elsewhere.
+最初の段階は、{@eq:obj-w2s} の最初の部分 **x**<sub>c</sub> = **C**<sup>T</sup>·**r** を使って、スプライトのワールドでの位置をカメラ空間のベクトルに変換することです。ここで **r** はカメラに対するスプライトの位置 **r** = **x**<sub>w</sub>−**a**<sub>cw</sub> です。これを変数 `vc` に入れますが、_y_ と _z_ の符号を入れ替えています！ これで、続く計算が少し楽になります。このベクトルは `spr->pos2` にも格納され、別のところでソートに使われます。
 
-The second step is checking whether the sprite would actually be visible, using the conditions from {@tbl:culltest}, with one exception: the checks now use the _renormalized_ rectangle of the sprite. Leaving that part out could create artifacts for some orientations. To calculate the sprite rectangle I'm using the sizes of the object rectangle. It is possible to get a tighter fit if you'd also define a sprite rectangle indicating the visible pixels within the object frame, but that might be going a little too far here.
+2 つ目の段階は、{@tbl:culltest} の条件を使って、スプライトが実際に見えるかどうかを確認することです。ただし 1 つ例外があり、今度の確認ではスプライトの_再正規化した_長方形を使います。その部分を省くと、向きによってはおかしな表示が出ることがあります。スプライトの長方形を計算するのに、オブジェクトの長方形の大きさを使っています。オブジェクトの枠の中で見えるピクセルを示すスプライトの長方形も定義すれば、もっとぴったり合わせられますが、ここではそれは少しやりすぎかもしれません。
 
-Note that most of the code from the bounds checks on is done in a `do-while(0)` loop. This pattern is sort of a poor-man's `try/catch` block – I _could_ have used `goto`s here, but as they're considered harmful I decided against it. Anyway, an out-of-bounds ‘exception’ here would indicate that the sprite should be hidden, which is done in step (5).
+範囲の確認から先のコードのほとんどが `do-while(0)` ループの中にあることに注意してください。このパターンは、いわば貧乏人の `try/catch` ブロックです。ここで `goto` を使うことも_できました_が、有害とされているのでやめておきました。ともかく、ここで範囲外の「例外」が起きたら、スプライトを隠すべきだということで、それは手順 (5) で行います。
 
-If we've passed the bounds-checks, we need to set-up the affine matrix and calculate the object's position via the anchoring equation of {@eq:anchor}.
+範囲の確認を通過したら、アフィン行列を準備し、{@eq:anchor} のアンカリングの式でオブジェクトの位置を計算する必要があります。
 
 ```c
 //! Setup an object's attr/affine with the right attributes
@@ -2926,19 +2926,19 @@ IWRAM_CODE void m7_prep_sprite(M7_LEVEL *level, M7_SPRITE *spr)
 }
 ```
 
-#### Kart animation
+#### カートのアニメーション
 
-The basic theory for animation around a sprite is simple, namely {@eq:psi}: the viewing angle ψ is the difference between the global sprite angle φ<sub>o</sub>, and the camera angle φ<sub>c</sub> and the angle to the sprite in camera-space α: ψ = φ<sub>o</sub>−φ<sub>c</sub>−α. The angle translates to an animation frame to use and you're done.
+スプライトの周りを回るアニメーションの基本の理論は単純で、{@eq:psi} です。視線の角度 ψ は、スプライトのグローバルな角度 φ<sub>o</sub> と、カメラの角度 φ<sub>c</sub> およびカメラ空間でのスプライトへの角度 α との差、ψ = φ<sub>o</sub>−φ<sub>c</sub>−α です。角度を使うべきアニメーションのフレームに変換すれば完成です。
 
-In theory.
+理論上は。
 
-The practice has a number of snares, especially the way SMK does it. First, look at {@fig:img-obj-frames}. These 12 frames are the ones that Super Mario Kart uses for Toad. The first complication is that this is only the right side of the rotation; the left side is done via mirroring. That's easy enough: just change the sign of _p_<sub>a</sub> of the view-angle is negative.
+実際には、特にスーパーマリオカートのやり方には、いくつも落とし穴があります。まず {@fig:img-obj-frames} を見てください。これらの 12 枚のフレームは、スーパーマリオカートがキノピオに使っているものです。最初の厄介な点は、これが回転の右側だけだということです。左側は鏡映で作ります。それは簡単です。視線の角度が負なら、_p_<sub>a</sub> の符号を変えるだけです。
 
-The second problem is the number of tiles. 12 frames for half a circle means 24 for the full rotation (well 22 actually, as we don't need to duplicate the front and back frames). At 4x4=16 tiles each, this gives 384 tiles for Toad alone (and only the rotation animation at that!) Multiply by 8 for the full set of characters and you're _way_ out of VRAM. This means that you can't load all the frames into VRAM in one go and use an object's tile-index for animation: you have to dynamically load frames you need. This is why the sprite struct had a `tiles` member, pointing to the full sprite sheet in ROM.
+2 つ目の問題はタイルの数です。半円で 12 フレームということは、1 回転では 24 フレーム（実際には、前と後ろのフレームを重複させる必要はないので 22）になります。それぞれ 4x4=16 タイルなので、キノピオだけで 384 タイルになります（しかも回転のアニメーションだけで！）。キャラクター全員分で 8 倍すれば、VRAM を_はるかに_超えてしまいます。つまり、すべてのフレームを一度に VRAM に読み込んで、オブジェクトのタイルのインデックスでアニメーションさせることはできません。必要なフレームを動的に読み込まなければなりません。スプライトの構造体に、ROM にあるスプライトシート全体を指す `tiles` メンバがあったのはこのためです。
 
-The third complication is that the frames aren't uniformly divided over the circle. If you look closely, the first 8 frames are for angles 0° through 90°, the remaining four for 90°-180°. The reason behind this is that most of the time you'll see the karts from the back, so it pays to have more frames for those. Now, in the theory we could calculate the animation frame quite nicely, namely _N_·ψ/2<sup>16</sup>. However, that relied on having _N_ equal slices, which we don't have anymore. Or do we?
+3 つ目の厄介な点は、フレームが円の上に均等に分けられていないことです。よく見ると、最初の 8 フレームは 0° から 90° の角度用で、残りの 4 つが 90°-180° 用です。その理由は、ほとんどの時間はカートを後ろから見ることになるので、そちらにフレームを多く割いたほうが得だからです。さて、理論ではアニメーションのフレームをとてもうまく計算できました。_N_·ψ/2<sup>16</sup> です。しかしそれは _N_ 個の等しい切れ端があることを前提にしていて、それはもうありません。本当にそうでしょうか？
 
-Well no, we don't have equal slices anymore. But we can _make_ equal slices again, using a sort of mapping. {\*@fig:img-psi-lut} shows could the principle works. In the figure there are 12 main partitions (inside circle), with 0, 1, 10 and 11 covering more angular space than 2-9. However, we can also divide the circle into 16 parts (outer circle), and use the same frame for multiple entries. For example, slice-0 of the main sequence is now covered by slice-0 and slice-1 of the new sequence. While it's possible to use if/else blocks to the mapping, it's easier on everyone to just use a LUT for it. This actually takes care of two other problems I hadn't mentioned before, namely that mirroring would require some sort of reversal of the normal sequence, and the fact that the slices actually have to be offset by half a slice so that you don't have a slice-switch when looking exactly at the front or back, for example. A LUT solves all those problems in one go.
+たしかに、等しい切れ端はもうありません。でも、一種の対応づけを使って、等しい切れ端を_作る_ことはできます。{\*@fig:img-psi-lut} は、その原理がどう働くかを示しています。図には 12 個の主な区画（内側の円）があり、0、1、10、11 は 2-9 より広い角度を占めています。しかし、円を 16 個の部分（外側の円）に分けて、複数のエントリに同じフレームを使うこともできます。たとえば、主な並びの切れ端 0 は、新しい並びの切れ端 0 と切れ端 1 で受け持ちます。if/else ブロックで対応づけることもできますが、ルックアップテーブルを使うほうが誰にとっても楽です。実はこれで、前に触れなかったほかの 2 つの問題も片づきます。鏡映には通常の並びを何らかの形で逆にする必要があることと、たとえば真正面や真後ろを見ているときに切れ端が切り替わらないように、切れ端を実際には半分ずらさなければならないことです。ルックアップテーブルなら、これらの問題を一度にすべて解決できます。
 
 <div class="cblock">
   <table cellspacing=4>
@@ -2947,14 +2947,14 @@ Well no, we don't have equal slices anymore. But we can _make_ equal slices agai
         <div class="cpt" style="width:392px;">
           <img src="img/mode7/toad_frames.png" id="fig:img-obj-frames" alt="animation frames">
           <br>
-          <b>{*@fig:img-obj-frames}</b>: Toad's frames from different angles.
+          <b>{*@fig:img-obj-frames}</b>: いろいろな角度から見たキノピオのフレーム。
         </div>
       </td>
       <td>
         <div class="cpt" style="width:160px;">
           <img src="img/mode7/psi_lut.png" id="fig:img-psi-lut" alt="view LUT">
           <br>
-          <b>{*@fig:img-psi-lut}</b>: Using &psi; for 16-element LUT entry, instead of 12 non-equal partitions.
+          <b>{*@fig:img-psi-lut}</b>: 12 個の不均等な区画の代わりに、&psi; を 16 要素のルックアップテーブルのエントリに使う。
         </div>
       </td>
     </tr>
@@ -2991,19 +2991,19 @@ void kart_animate(M7_SPRITE *spr, const M7_CAM *cam)
 }
 ```
 
-The snippet above shows the kart's angle-LUT and animation routine. The LUT has 32 entries, with the first and last 7 using single chunks and the rest being doubled. Also note that the LUT is symmetric, which is required for the mirroring.
+上のコードは、カートの角度のルックアップテーブルとアニメーションのルーチンです。ルックアップテーブルには 32 個のエントリがあり、最初と最後の 7 つは 1 つずつの区画を使い、残りは 2 つずつになっています。また、ルックアップテーブルが対称であることにも注意してください。これは鏡映のために必要です。
 
-The routine itself isn't exactly pretty, but it gets the job done. It checks whether the sprite is visible first and bugs out if it's not: no point in doing work if we can't see its results. The sprite's in-camera angle, α, requires an arctan. I've added a switch in the menu so you can see the results with and without the α-correction, and I think you'll find that the difference is pretty small. Since I always use the same VRAM for each sprite, finding the destination of the tile-copy is easy; finding the source frame looks a little ugly, but it's just the ψ→slice conversion and the look-up, really.
+ルーチンそのものはきれいとは言えませんが、仕事はこなします。まずスプライトが見えるかどうかを確認し、見えなければ抜けます。結果が見えないなら作業する意味はありません。スプライトのカメラでの角度 α には arctan が必要です。α の補正ありとなしの結果を見られるように、メニューにスイッチを付けておきました。違いはかなり小さいとわかると思います。各スプライトには常に同じ VRAM を使っているので、タイルのコピー先を求めるのは簡単です。コピー元のフレームを求めるのは少し見苦しく見えますが、実際には ψ→切れ端の変換と表引きだけです。
 
-### Rounding up: the main loop and other fluff {#ssec-code-misc}
+### 仕上げ: メインループとそのほかの飾り {#ssec-code-misc}
 
-The hard parts of mode 7 have more or less been covered now, with the possible exception of the main loop, which we'll get to in a moment. There is, of course, initialization of the registers, the sprites and mode 7 variables, loading of VRAM and input, but that's rather easy and tends to vary from game to game anyway. For those things, please see the actual code.
+モード 7 の難しい部分は、これでほぼ扱いました。例外があるとすればメインループで、それはすぐあとで扱います。もちろん、レジスタ、スプライト、モード 7 の変数の初期化や、VRAM の読み込み、入力もありますが、それらはかなり簡単ですし、どのみちゲームごとに違いがちです。それらについては、実際のコードを見てください。
 
-#### The main program flow
+#### プログラムの主な流れ
 
-In the snippet below you can see the `main()` function and its major branches. `init_main()` sets up the main mode 7 variables, `m7_level` through `m7_init()`, initializes the VBlank and HBlank interrupts and various other things. The main loop is quite short. The function `input()` does both the movement of the camera and menu.
+下のコードに、`main()` 関数とその主な分岐があります。`init_main()` は、モード 7 の主な変数 `m7_level` を `m7_init()` で準備し、VBlank と HBlank の割り込みや、そのほかいろいろなものを初期化します。メインループはかなり短いです。関数 `input()` がカメラの移動とメニューの両方を処理します。
 
-After that come the actual mode 7 functions. `m7_prep_horizon()` has to come first, but the order of the rest is pretty arbitrary. I would suggest calling `m7_prep_affines()` last, though: it's the most costly function here, but it'd be alright to let it run into VDraw time. Not that that happens here (I've clocked the main loop to end around scanline 170-210), but it'd be okay if it did.
+そのあとに実際のモード 7 の関数が来ます。`m7_prep_horizon()` は最初に来る必要がありますが、残りの順序はかなり任意です。ただ、`m7_prep_affines()` は最後に呼ぶことをおすすめします。ここで最も高くつく関数ですが、VDraw の時間にはみ出しても問題ないからです。ここでそうなるわけではありません（メインループはスキャンライン 170-210 あたりで終わることを計測しました）が、そうなっても大丈夫です。
 
 ```c
 int main()
@@ -3033,47 +3033,47 @@ int main()
 }
 ```
 
-#### Movement in 3D
+#### 3D での移動
 
-This is the last thing I want to cover: how to move things in 3D. To be precise: how to do different methods of motion in 3D; which I'm sure people might want to know.
+これが最後に扱いたいことです。3D でものを動かす方法です。正確に言うと、3D でのいろいろな移動の方法の実現の仕方です。知りたい人はきっといると思います。
 
-3D movement is actually much the same as 2D movement, except with an extra dimension. The reason why people sometimes find it difficult is that they think in terms of angles, when what they _should_ be thinking in is vectors. Vector-based movement (or vector-based anything) usually makes things much easier than with angles and trigonometry. This is also why the theory of this chapter has been using vectors and matrices.
+3D での移動は、次元が 1 つ増えることを除けば、実は 2D での移動とほとんど同じです。人がときどき難しいと感じるのは、_本当は_ベクトルで考えるべきなのに、角度で考えてしまうからです。ベクトルに基づく移動（あるいは、ベクトルに基づく何でも）は、たいてい角度と三角法を使うよりずっと話を簡単にします。この章の理論でベクトルと行列を使ってきたのもそのためです。
 
-Here I'll look into three different modes of camera movements: one using the world coordinate system, one using the camera system, and one somewhere in between so that it stays parallel to the ground. But first, let's take a look at what moving in a certain direction actually _means_.
+ここでは、カメラの移動の 3 つの異なるモードを見ていきます。ワールドの座標系を使うもの、カメラの座標系を使うもの、そして地面と平行なままにするための、その中間のものです。でもまず、ある方向に動くということが実際に何を_意味する_のかを見てみましょう。
 
-Every object in 3D space has its own little coordinate space, the <dfn>local frame</dfn>. This is defined as a set of 3 vectors, denoting the directions of the local _x_, _y_ and _z_ directions. In the case of the camera, I named these **u**, **v** and **w**, respectively. The local matrix is just another way of writing down this set of vectors. Movement is usually defined as steps along these vectors.
+3D 空間のすべての物体は、自分だけの小さな座標空間、<dfn>ローカル座標系</dfn>を持っています。これは、ローカルの _x_、_y_、_z_ の方向を表す 3 つのベクトルの組として定義されます。カメラの場合は、これらをそれぞれ **u**、**v**、**w** と名付けました。ローカルの行列は、このベクトルの組を書き表す別の方法にすぎません。移動は普通、これらのベクトルに沿った歩みとして定義されます。
 
-As an example of this, consider your head to be the camera and use arrows to indicate the local axes: **u** would stick out of your right ear, **v** out of the top of your head and **w** out the back. A step right would be along the **u** direction, and one forward along −**w**. A general movement could be written as _x_ steps right, _y_ steps up, and _z_ steps back. _x_, _y_ and _z_ are used as _multipliers_ for the direction vectors, and the final displacement in global space is **dx** = _x_·**u** + _y_·**v** + _z_·**w**.
+この例として、自分の頭をカメラだと考えて、ローカルの軸を矢印で表してみてください。**u** は右耳から、**v** は頭のてっぺんから、**w** は後頭部から突き出ています。右に 1 歩なら **u** の方向に、前に 1 歩なら −**w** の方向に進みます。一般の移動は、右に _x_ 歩、上に _y_ 歩、後ろに _z_ 歩と書けます。_x_、_y_、_z_ は方向ベクトルの_倍率_として使われ、グローバルな空間での最終的な変位は **dx** = _x_·**u** + _y_·**v** + _z_·**w** になります。
 
-And where matrices come in. Those three multipliers can be written a vector **r** = (_x_, *y*, *z*), which is the distance vector in _local_ space. The three directions formed a matrix **C**, The definition of **dx** given above is nothing else than the long way of writing down **dx** = **C**·**r**. The matrix multiplication is just shorthand for “scale the vectors of **C** by the elements of **r** and add them all up”. Note that this procedure would work for any object, in any orientation. All you need to do is find the correct local matrix.
+そしてここで行列が出てきます。この 3 つの倍率はベクトル **r** = (_x_, *y*, *z*) として書けます。これは_ローカル_空間での距離のベクトルです。3 つの方向は行列 **C** を作っていました。上で示した **dx** の定義は、**dx** = **C**·**r** を長々と書いたものにほかなりません。行列の積は、「**C** のベクトルを **r** の要素で拡大縮小して、全部足し合わせる」の略記にすぎないのです。この手順は、どんな向きのどんな物体にも使えることに注意してください。必要なのは、正しいローカルの行列を見つけることだけです。
 
-In my case, I construct vector **r** in `input()`, based on various buttons. At this point it doesn't really mean anything yet. Each of the movement methods has its own set of directions and hence its own matrix that has to be applied to **r**; I have functions that can perform them and add the results to the camera position. All of these can be found in {@tbl:motion} and the code below it.
+私の場合は、`input()` の中で、いろいろなボタンに基づいてベクトル **r** を組み立てています。この時点では、それはまだ何も意味していません。移動の方法にはそれぞれ独自の方向の組、したがって **r** にかけるべき独自の行列があります。それらをかけて結果をカメラの位置に加える関数を用意してあります。これらはすべて {@tbl:motion} とその下のコードにあります。
 
-The ‘level’ (that is, level to the ground) is probably the most common for camera systems for ground-based objects, though using the local system might make sense for flying objects. Experiment with them and see what you like.
+「level」（つまり地面と水平な）方式は、地上の物体のカメラの仕組みとしてはおそらく最も一般的です。ただ、飛んでいる物体ならローカルの座標系を使うのが理にかなっているかもしれません。いろいろ試して、好きなものを見つけてください。
 
 <div class="cblock">
   <table id="tbl:motion" class="table-data">
     <caption align="bottom">
-      <b>{*@tbl:motion}</b>: Movement methods and their associated transformations to world-space. New position of an object is given by <b>x</b><sub>w</sub> += <b>v</b><sub>w</sub>.
+      <b>{*@tbl:motion}</b>: 移動の方法と、それに対応するワールド空間への変換。物体の新しい位置は <b>x</b><sub>w</sub> += <b>v</b><sub>w</sub> で与えられます。
     </caption>
     <tbody>
       <tr>
-        <th>Method</th>
-        <th>Function</th>
-        <th>Transformation</th>
+        <th>方法</th>
+        <th>関数</th>
+        <th>変換</th>
       </tr>
       <tr>
-        <td>Global frame</td> 
+        <td>グローバル座標系</td> 
         <td><code>m7_translate_global()</code></td>
         <td><b>dx</b> = <b>I</b> · <b>r</b> = <b>r</b>
       </tr>
       <tr>
-        <td>Local (camera) frame</td> 
+        <td>ローカル（カメラ）座標系</td> 
         <td><code>m7_translate_local()</code></td>
         <td><b>dx</b> = <b>C</b>(&theta;, &phi;) · <b>r</b>
       </tr>
       <tr>
-        <td>Level: local but parallel to ground</td> 
+        <td>Level: ローカルだが地面と平行</td> 
         <td><code>m7_translate_level()</code></td>
         <td><b>dx</b> = <b>R</b><sub>y</sub>(&phi;) · <b>r</b>
       </tr>
@@ -3105,18 +3105,18 @@ void m7_translate_level(M7_CAM *cam, const VECTOR *dir)
 }
 ```
 
-If you're not really familiar with matrices they may seem bright and scary, but they can be a lifesaver once you get used to them a bit. There is a _reason_ why large 3D systems use them non-stop; doing everything by raw trig is hard, very hard. Matrices allow you to work within whatever coordinate system is most natural to the task at hand, and then transform to whatever system you need in the end. If you have any work related to geometry, learning more about the basics of linear algebra (the rules for vector and matrix use) is well worth the effort.
+行列にあまりなじみがなければ、まぶしくて恐ろしく見えるかもしれませんが、少し慣れれば命の恩人になりえます。大規模な 3D システムがひっきりなしに行列を使っているのには_理由が_あるのです。何もかも生の三角法でやるのは難しい、とても難しいのです。行列を使えば、目の前の仕事に一番自然な座標系の中で作業し、最後に必要な座標系に変換できます。幾何学に関わる仕事をするなら、線形代数の基本（ベクトルと行列の使い方の規則）をもっと学ぶ努力は、十分に報われます。
 
-:::note Side note : centering on a sprite
+:::note 余談: スプライトを中心に据える
 
-As an example of how easy matrices can make life, consider the issue of centering the camera on a given sprite and then rotating around it. You have the camera matrix **C**, the distance you want to view from, _Z_ and presumably the sprite position, **x**<sub>w</sub>. What you need to do is: move the camera to the sprite's position, then take _Z_ steps back. In other words **a**<sub>cw</sub> = **x**<sub>w</sub>+**C**·(0, 0, _Z_), which boils down to **a**<sub>cw</sub> = **x**<sub>w</sub>+Z**w**,
+行列でどれほど楽ができるかの例として、カメラを特定のスプライトに向けて中心に据え、その周りを回る問題を考えてみてください。手元にあるのは、カメラ行列 **C**、見る距離 _Z_、そしておそらくスプライトの位置 **x**<sub>w</sub> です。すべきことは、カメラをスプライトの位置に動かし、それから後ろに _Z_ 歩下がることです。言い換えると **a**<sub>cw</sub> = **x**<sub>w</sub>+**C**·(0, 0, _Z_) で、これは結局 **a**<sub>cw</sub> = **x**<sub>w</sub>+Z**w** になります。
 
-Once you know the camera matrix, positioning it practically writes itself.
+カメラ行列がわかっていれば、位置合わせはほとんど自動的に書けてしまいます。
 
 :::
 
-## Concluding remarks {#sec-conc}
+## まとめ {#sec-conc}
 
-It's done, finally! This chapter's text explained the most important elements of a mode 7 game: calculation of the affine parameters, adding a horizon and backdrop, positioning, sorting _and_ animating 3D sprites and as a bonus how to use create a distance fogging effect. In the preceding text, I've used stuff from just about every subject described in the rest of Tonc, and not just the easy parts. If you're here and understood all or most of the above, congratulations.
+ついに終わりました！ この章の本文では、モード 7 のゲームの最も重要な要素を説明しました。アフィンパラメータの計算、地平線とバックドロップの追加、3D のスプライトの位置合わせ、ソート、_そして_アニメーション、さらにおまけとして距離に応じたフォグの効果の作り方です。ここまでの本文では、Tonc のほかの部分で説明したほぼすべての題材を、しかも簡単な部分だけでなく使いました。ここまで来て、上のことのすべてかほとんどを理解できたなら、おめでとうございます。
 
-But still I've omitted a few things that would make it a little better. Getting rid of all those divisions in the λ calculations, for instance. Or getting around the 32 affine object limitation or placing shadows for the sprites on the floor. Nor have I shown how to correctly allow for loopings, instead of clamping the pitch at straight up or down. These things are relatively easy to grasp, conceptually, but implementing them would require a lot more code. If you understood this text, I'm sure you can figure it out on your own.
+それでも、もう少し良くするためのいくつかのことは省きました。たとえば、λ の計算にあるあの除算をすべてなくすこと。あるいは、アフィンオブジェクトが 32 個までという制限を回避することや、床にスプライトの影を置くこと。ピッチを真上か真下で止める代わりに、宙返りをきちんとできるようにする方法も示していません。これらは概念的には比較的わかりやすいのですが、実装するにはずっと多くのコードが必要になります。この本文を理解できたなら、きっと自分で解決できるでしょう。

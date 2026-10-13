@@ -27,14 +27,14 @@
 - [BIOS コール](./swi.md)
 - [ピッ！ GBA の音の入門](./sndsqr.md)
 
-# Advanced / Applications
+# 発展 / 応用例
 
-- [Text systems](./text.md)
-- [Mode 7](./mode7.md)
-- [More Mode7 tricks](./mode7ex.md)
-- [Tonc's Text Engine](./tte.md)
-- [Whirlwind tour of ARM assembly](./asm.md)
-- [The Lab](./lab.md)
+- [テキストシステム](./text.md)
+- [モード 7](./mode7.md)
+- [モード 7 のさらなる技](./mode7ex.md)
+- [Tonc のテキストエンジン](./tte.md)
+- [ARM アセンブリ駆け足ツアー](./asm.md)
+- [ラボ](./lab.md)
 
 ---
 

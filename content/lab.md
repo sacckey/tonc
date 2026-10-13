@@ -1,34 +1,34 @@
-# 24. The Lab
+# 24. ラボ
 
 <!-- toc -->
 
-## Lab introduction {#sec-intro}
+## ラボの紹介 {#sec-intro}
 
-The Lab stands for “laboratory”, a place for me to toy with new stuff. If I have something new that may be useful, but isn't quite ready to be up anywhere else yet, I'll put it here for a while. It does mean it may get messy at times, but that's alright because that's what laboratories are for anyway. As a by-product, “lab” may double for “labyrinth”, but that's just a little bonus <kbd>:)</kbd>.
+ラボは「laboratory（実験室）」の略で、私が新しいものをいじって遊ぶ場所です。役に立ちそうな新しいものがあっても、まだほかのどこかに置ける状態になっていなければ、しばらくここに置いておきます。つまり、ときどき散らかることもあるかもしれませんが、どのみち実験室とはそういうものなので問題ありません。副産物として、「lab」は「labyrinth（迷宮）」の意味も兼ねるかもしれませんが、それはちょっとしたおまけです <kbd>:)</kbd>。
 
-## Priority and drawing order {#sec-prio}
+## 優先順位と描画の順序 {#sec-prio}
 
-This section covers the last of the bits in the background and object control that I haven't discussed yet: <dfn>priority</dfn>. There are four priority levels, 0-3, and you can set the priority for backgrounds in [REG_BGxCNT](regbg.html#tbl-reg-bgxcnt) bits 0 and 1, and for objects in [attribute 2](regobj.html#tbl-oe-attr2), bits 10 and 11. The concept of priority is simple: higher priorities are rendered first, so they appear behind things with a lower priority. This will allow you to have objects behind backgrounds, for example.
+この節では、背景とオブジェクトの制御のビットのうち、まだ説明していない最後のもの、<dfn>優先順位</dfn>を扱います。優先順位には 0-3 の 4 段階があり、背景の優先順位は [REG_BGxCNT](regbg.html#tbl-reg-bgxcnt) のビット 0 と 1 で、オブジェクトの優先順位は[属性 2](regobj.html#tbl-oe-attr2) のビット 10 と 11 で設定できます。優先順位の考え方は単純です。優先順位の値が大きいものが先に描画されるので、値の小さいものの後ろに表示されます。これで、たとえばオブジェクトを背景の後ろに置けます。
 
-This all sounds very simple, and it is, but there is a little more to the order of the rendering process than this. On the one hand you have the priority settings, on the other you have the obj and bg <dfn>numbers</dfn>. Objects are numbered 0 to 127, backgrounds from 0 to 3. Again, higher numbers appear behind lower numbers: in a stack of objects, obj 0 is on top; bg 0 covers the others, and objects are drawn in front of backgrounds. This is *not* due to the priority settings; in fact the whole point of priorities is so that the default order can be altered.
+これはとても単純に聞こえますし、実際そうなのですが、描画の処理の順序にはもう少しだけ話があります。一方には優先順位の設定があり、もう一方にはオブジェクトと背景の<dfn>番号</dfn>があります。オブジェクトには 0 から 127、背景には 0 から 3 の番号が付いています。ここでも、大きな番号は小さな番号の後ろに表示されます。オブジェクトが積み重なっていれば obj 0 が一番上で、背景 0 はほかの背景を覆い、オブジェクトは背景の手前に描かれます。これは優先順位の設定によるものでは*ありません*。実際、優先順位の存在意義はまさに、このデフォルトの順序を変えられるようにすることです。
 
-The above is true for objects and backgrounds of *the same* priority. You could argue that the final obj/bg order is composed of both the priority and the obj/bg number, where priority is the most significant part. So if, for example you have obj 1 and bg 2 at priority 0, and obj 0 and bg 1 at priority 1, the order would be obj1 (prio0), bg2 (prio0), obj0 (prio1), bg1 (prio1).
+上のことは、*同じ*優先順位のオブジェクトと背景について成り立ちます。最終的なオブジェクト/背景の順序は、優先順位とオブジェクト/背景の番号の両方で構成されていて、優先順位が最上位の部分だと言えます。たとえば、優先順位 0 に obj 1 と背景 2 が、優先順位 1 に obj 0 と背景 1 があれば、順序は obj1 (prio0)、bg2 (prio0)、obj0 (prio1)、bg1 (prio1) になります。
 
-Well, *mostly* …
+まあ、*だいたい*は……
 
-### The object-priority bug and object sorting {#ssec-prio-objsort}
+### オブジェクトの優先順位のバグとオブジェクトのソート {#ssec-prio-objsort}
 
-For the most part, the order is as mentioned above, except for the parts where obj 0 and obj 1 overlap. Due to a, well I guess you can call it a design flaw, the notion of order = priority.number isn't quite true: if you have two objects in which the priorities and numbers are asymmetrical and there is a background in between, the object that's supposed to be below the background will shine through the background in the region where the two objects overlap. This sounds very complicated, but that's just because words can't really capture what happens. Basically, something like obj1+prio0, bg0+prio0, obj0+prio1 will cause a pretty nasty graphical artifact if the rectangles of these objects overlap. However, obj0+prio0, bg0+prio0, obj1+prio1 will work fine, because the object numbers are now in line with the priorities.
+ほとんどの部分では、順序は上で述べたとおりですが、obj 0 と obj 1 が重なる部分は例外です。設計上の欠陥と呼んでいいと思うものがあるせいで、「順序 = 優先順位.番号」という考え方は完全には正しくないのです。優先順位と番号の関係が食い違った 2 つのオブジェクトがあり、その間に背景があると、背景の下にあるはずのオブジェクトが、2 つのオブジェクトが重なる領域で背景を透けて見えてしまいます。とても複雑に聞こえますが、それは起きることを言葉ではうまく捉えきれないからにすぎません。基本的には、obj1+prio0、bg0+prio0、obj0+prio1 のようなものは、これらのオブジェクトの長方形が重なると、かなりひどいグラフィックのアーティファクトを起こします。しかし、obj0+prio0、bg0+prio0、obj1+prio1 なら問題ありません。オブジェクトの番号が優先順位と揃っているからです。
 
-Which brings us to <dfn>object sorting</dfn>: the process of making sure the object that should be first will actually *be* first, i.e., have a lower obj number. This is actually a separate issue from priorities, but it's nice to do them both in one go. In principle, an object sort is a sort like any other: you have an array or list of things, in this case OBJ_ATTR's, and you have to put them into order via some sort of <dfn>key</dfn>, a value that indicates what the sorted order should be.
+ここで<dfn>オブジェクトのソート</dfn>の話になります。先にあるべきオブジェクトが実際に先に*なる*ように、つまり小さいオブジェクトの番号を持つようにする処理です。これは実は優先順位とは別の問題ですが、両方を一度にやってしまうと便利です。原理的には、オブジェクトのソートはほかのソートと同じです。物の配列やリスト（この場合は OBJ_ATTR）があり、それらを何らかの<dfn>キー</dfn>、つまりソートされた順序がどうなるべきかを示す値によって並べなければなりません。
 
-Now, the key can basically be anything. A lot of top-down or isometric games use Y-sorting, as higher Y-values means the object is more in the foreground. 3D and mode 7 games can use Z-sorting, of which Y-sorting is technically a special case.
+さて、キーは基本的に何でもかまいません。見下ろし型やクォータービューのゲームの多くは Y ソートを使います。Y の値が大きいほど、オブジェクトは手前にあるからです。3D やモード 7 のゲームでは Z ソートを使えます。厳密には、Y ソートはその特殊な場合です。
 
-You'll also need a sorting algorithm. There are plenty of them to choose from the [wiki on sorting algorithms](https://en.wikipedia.org/wiki/Sorting_algorithm). When picking an algorithm, remember that the number of items to sort here is maybe about a hundred tops, and that it's likely that the items don't change order all that often. Finally, you need a way to put the whole thing together; make it work with the sprite and OBJ_ATTR structs that you have.
+ソートのアルゴリズムも必要です。[ソートのアルゴリズムの Wiki](https://en.wikipedia.org/wiki/Sorting_algorithm) には選べるものがたくさんあります。アルゴリズムを選ぶときは、ここでソートする項目の数はせいぜい 100 個ほどであること、そして項目の順序はそれほど頻繁には変わらない可能性が高いことを思い出してください。最後に、全体をまとめる方法が必要です。手元のスプライトと OBJ_ATTR の構造体で動くようにするのです。
 
-For the moment, I've chosen primarily for *simplicity*, not speed. The sorter, `id_sort_shell()`, uses a slightly modified version of the [Shell sort](https://en.wikipedia.org/wiki/Shellsort) algorithm found in Numerical Recipes (ch 8, pp 321). Its parameters are an array of key values and the number of elements. However, it does not sort these directly (which would be fairly pointless as they're not tied to objects here), but keeps track of the sorting results in an index table, `ids[]`.
+今のところは、速さではなく、主に*単純さ*を重視して選びました。ソート処理 `id_sort_shell()` は、Numerical Recipes（8 章、321 ページ）にある[シェルソート](https://en.wikipedia.org/wiki/Shellsort)のアルゴリズムを少し変えた版を使っています。パラメータはキーの値の配列と要素の数です。ただし、これらを直接ソートするのではなく（ここではオブジェクトに結びついていないので、それはまったく無意味でしょう）、ソートの結果をインデックスの表 `ids[]` に記録します。
 
-An <dfn>index table</dfn> is, well, a table of indices, obviously; it will provide the sorted order of the keys after the routine has finished. This strategy allows me to keep the object double buffer intact, which I like because it makes sprite management simpler. Also, I don't have to swap whole structs (although that's usually done by pointers anyway), and it makes the routine usable as a general sorter, not just for objects. The choice of bytes as the type for the index table does limit this, but that's just one of those space trade-offs one has to make sometimes. Changing it to use full integers isn't exactly hard, of course.
+<dfn>インデックスの表</dfn>とは、まあ当然ですが、インデックスの表です。ルーチンが終わったあとで、キーのソートされた順序を示してくれます。この方法なら、オブジェクトのダブルバッファをそのまま保てます。スプライトの管理が単純になるので、私はこれが気に入っています。また、構造体を丸ごと入れ替える必要がありません（もっとも、それはたいていポインタでやるものですが）。そして、このルーチンをオブジェクト専用ではなく、汎用のソート処理として使えるようになります。インデックスの表の型にバイトを選んだことでこれは制限されますが、それは時々しなければならない、領域とのトレードオフの 1 つにすぎません。もちろん、完全な整数を使うように変えるのは難しくありません。
 
 <div id="cd-oe-sort1">
 
@@ -96,34 +96,34 @@ void foo()
 
 </div>
 
-Note that I intend the routine to be in IWRAM (and compiled as ARM code) because it's so **very f%#\$@\*g slow**! Or perhaps I shouldn't say slow, just costly.
+このルーチンは IWRAM に（そして ARM のコードとしてコンパイルして）置くつもりであることに注意してください。**とんでもなくクソ遅い**からです！ あるいは、遅いと言うべきではなく、高くつくと言うべきかもしれません。
 
-Think of how a basic sort works. You have *N* elements to sort. In principle, each of these has to be checked with every other element, so that the routine's speed is proportional to *N*<sup>2</sup>, usually expressed as *O*(*N*<sup>2</sup>), where the *O* stands for order of magnitude. For sorting, *O*(*N*<sup>2</sup>) is bad. For example, when *N*=128, you would be looking at 16k checks. Times the number of cycles that the actual checks and updates would take. Not pleasant.
+基本的なソートの仕組みを考えてみてください。ソートする要素が *N* 個あります。原理的には、それぞれをほかのすべての要素と比べなければならないので、ルーチンの速さは *N*<sup>2</sup> に比例し、普通は *O*(*N*<sup>2</sup>) と表されます。ここで *O* はオーダー（桁）を表します。ソートにとって、*O*(*N*<sup>2</sup>) は悪いものです。たとえば *N*=128 なら、16k 回の確認が必要になります。それに、実際の確認と更新にかかるサイクル数が掛かります。うれしくありません。
 
-Fortunately, there are faster methods, you'd want at least an *O*(*N*·log<sub>2</sub>(*N*)) for sorting algorithms, and as you can see from the aforementioned wiki, there are plenty of those and shellsort is one of them. Unfortunately, even this can be quite expensive. Again, with *N*=128 this is still about 900, and you can be sure the multiplier can be high, as in 80+. With ARM+IWRAM, I can manage to bring that down to 20-30, and a simple exercise in assembly gives me an acceptable 13 to 22 × *N*·log<sub>2</sub>(*N*).
+幸い、もっと速い方法があります。ソートのアルゴリズムには少なくとも *O*(*N*·log<sub>2</sub>(*N*)) が欲しいところで、先ほどの Wiki を見ればわかるように、そういうものはたくさんあり、シェルソートもその 1 つです。残念ながら、これでもかなり高くつくことがあります。ここでも *N*=128 なら約 900 になり、係数は 80 以上と大きくなりうるのは確実です。ARM+IWRAM なら、それを 20-30 にまで下げられ、アセンブリでちょっと練習してみると、*N*·log<sub>2</sub>(*N*) の 13 から 22 倍という許容できる値になります。
 
-:::note The Big O Notation
+:::note オーダー記法（ビッグ O 記法）
 
-The ‘Big O’ or order notation is a useful expression for comparing algorithms. The notation is *O*( f(*N*) ), where *N* is the number of elements to work on and f(*N*) a function, usually a combination of powers and logarithms. It shows how the runtime of an algorithm rises with increasing *N*. As lower order functions will eventually be overtaken by higher order ones, the former is generally preferable.
+「ビッグ O」、つまりオーダー記法は、アルゴリズムを比べるのに便利な表現です。表記は *O*( f(*N*) ) で、*N* は扱う要素の数、f(*N*) は関数で、たいていは累乗と対数の組み合わせです。これは、*N* が増えるにつれてアルゴリズムの実行時間がどう増えるかを示します。低いオーダーの関数はいずれ高いオーダーの関数に追い越されるので、一般に前者のほうが望ましいです。
 
-The keyword here, though, is ‘eventually’. It does not mention the scale of the algorithm, which varies from case to case. In some cases if *N* is low enough and the scales are different enough, a higher-order routine may actually outperform a lower-order one.
+ただし、ここでの鍵となる言葉は「いずれ」です。この記法はアルゴリズムの規模（係数）については何も言っておらず、それは場合によって違います。*N* が十分に小さく、規模が十分に違えば、高いオーダーのルーチンのほうが低いオーダーのものより実際に速いこともあります。
 
 :::
 
-Now, I'll be the first to admit that the current design isn't exactly optimal anyway. Using linked lists instead of an index table may work faster, and there are other things too (the division isn't a problem, as [it can be faked](fixed.html#sec-rmdiv)). However, then it wouldn't be quite as simple anymore, which is what I was going for here.
+さて、今の設計がどのみち最適とは言えないことは、真っ先に認めます。インデックスの表の代わりに連結リストを使えば速くなるかもしれませんし、ほかにもいろいろあります（除算は[ごまかせる](fixed.html#sec-rmdiv)ので問題ではありません）。しかし、そうするともうそれほど単純ではなくなり、それはここで私が目指していたものではありません。
 
-Once `id_sort_shell()` is finished, we have an table of indices arranged in such a way that `obj_buffer[sort_ids[ii]]` gives the sorted OAM entries, which is used to update to the real OAM.
+`id_sort_shell()` が終わると、`obj_buffer[sort_ids[ii]]` がソートされた OAM のエントリを与えるように並んだインデックスの表が得られ、それを使って本当の OAM を更新します。
 
-### Caged DNA {#ssec-prio-demo}
+### 檻の中の DNA {#ssec-prio-demo}
 
-The demo for this section is probably the coolest and most complicated one yet. It features a double helix of objects, revolving around the center of a toroidal cage (see {!@fig:prio-demo}). All four backgrounds are used here, one for text (little as there is of that), and three parts of the cage: one front end, which obscures the objects, one back end that lies behind everything else and the middle of the toroid around which the the object rotate, i.e., they pass both in front and behind it at different times. And then there are the objects that form the helix. The two strands each consist of 48 spherical 16x16 objects. The strands are distinguishable by their colors: one is red and the other cyan. These will turn to dark red and cyan as they pass behind the central plane. Priority settings are used to allow the objects to pass behind nearer backgrounds, and priorities *and* sorting make the object order smooth and avoid the previously mentioned obj-bg-obj bug. To summarize:
+この節のデモは、おそらくこれまでで一番かっこよく、一番複雑なものです。オブジェクトでできた二重らせんが、トーラス状の檻の中心の周りを回転します（{!@fig:prio-demo} を見てください）。ここでは 4 つの背景すべてを使います。1 つはテキスト用（ほんの少ししかありませんが）で、3 つは檻の部品です。オブジェクトを覆い隠す手前の部分、ほかのすべての後ろにある奥の部分、そしてトーラスの真ん中で、その周りをオブジェクトが回ります。つまり、オブジェクトは時によってその手前を通ったり後ろを通ったりします。そして、らせんを作るオブジェクトがあります。2 本の鎖は、それぞれ 48 個の 16x16 の球形のオブジェクトでできています。鎖は色で区別でき、1 本は赤、もう 1 本はシアンです。これらは中央の面の後ろを通るときに暗い赤と暗いシアンに変わります。優先順位の設定を使ってオブジェクトが近くの背景の後ろを通れるようにし、優先順位*と*ソートによって、オブジェクトの順序をなめらかにし、先ほど述べた obj-bg-obj のバグを避けます。まとめると次のとおりです。
 
--   4 backgrounds with varying priority settings
--   96 objects revolving (in 3D) around a central pillar.
--   Object priorities and number sorting to ensure proper order.
--   Palette swapping to distinguish near from far objects.
+-   さまざまな優先順位の設定を持つ 4 つの背景
+-   中央の柱の周りを（3D で）回る 96 個のオブジェクト。
+-   正しい順序にするための、オブジェクトの優先順位と番号のソート。
+-   近くのオブジェクトと遠くのオブジェクトを区別するためのパレットの切り替え。
 
-You can see a schematic representation of the whole thing in {@fig:prio-demo}b; @tbl:prio-demo-x explains the colors.
+全体の模式図は {@fig:prio-demo}b で見られます。色の意味は @tbl:prio-demo-x で説明しています。
 
 <div class="cblock">
 <table id="fig:prio-demo"
@@ -134,46 +134,46 @@ You can see a schematic representation of the whole thing in {@fig:prio-demo}b; 
   <div class="cpt_fr" style="width:240px;">
   <img src="img/demo/prio_demo.png"
     alt="Priority demo"><br>
-  <b>{*@fig:prio-demo}a</b> (left): 
-    Priority and sprite order demo.
+  <b>{*@fig:prio-demo}a</b>（左）: 
+    優先順位とスプライトの順序のデモ。
   </div>
 <td>
   <div class="cpt_fr" style="width:240px;">
   <img src="img/demo/prio_demo_x.png"
     alt="Priority demo schematic"><br>
   <b>{*@fig:prio-demo}b</b>: 
-    schematic of {!@fig:prio-demo}a.
+    {!@fig:prio-demo}a の模式図。
   </div>
 </tbody>
 </table>
 
 <table id="tbl:prio-demo-x" class="table-data">
 <caption align="bottom">
-  <b>*@tbl:prio-demo-x</b>: legend for 
-  {!@fig:prio-demo}b.
+  <b>*@tbl:prio-demo-x</b>: 
+  {!@fig:prio-demo}b の凡例。
 </caption>
 <tr>
-  <th>color	<th>description		<th>obj/bg	<th>prio
+  <th>色	<th>説明		<th>obj/bg	<th>prio
 <tr>
-  <th>yellow <td>cage near	<td>bg1	<td>prio0
+  <th>黄 <td>檻の手前	<td>bg1	<td>prio0
 <tr>
-  <th>green	<td>cage center	<td>bg2	<td>prio1
+  <th>緑	<td>檻の中央	<td>bg2	<td>prio1
 <tr>
-  <th>blue	<td>cage far	<td>bg3	<td>prio2
+  <th>青	<td>檻の奥	<td>bg3	<td>prio2
 <tr>
-  <th>red	<td>strand 1	<td>obj_buffer[00..47]	<td>var
+  <th>赤	<td>鎖 1	<td>obj_buffer[00..47]	<td>可変
 <tr>
-  <th>cyan	<td>strand 2	<td>obj_buffer[48..95]	<td>var
+  <th>シアン	<td>鎖 2	<td>obj_buffer[48..95]	<td>可変
 <tr>
-  <th>lt red/cyan	<td>near orbs	<td>OAM[0..47]	<td>prio 1
+  <th>明るい赤/シアン	<td>手前の球	<td>OAM[0..47]	<td>prio 1
 <tr>
-  <th>dark red/cyan	<td>far orbs	<td>OAM[48..95]	<td>prio 2
+  <th>暗い赤/シアン	<td>奥の球	<td>OAM[48..95]	<td>prio 2
 </table>
 </div>
 
-#### Sprites and the helix pattern
+#### スプライトとらせんの模様
 
-As you can imagine, the sprite part is the trickiest thing about this demo. The helix is inherently a three dimensional path, so we need a 3D vector for each orb's position, with the coordinates being fixed-point numbers, of course. It also needs an index to the OAM shadow, linking a sprite (the orb) to the right OBJ_ATTR (the object on screen).
+想像がつくでしょうが、このデモで一番やっかいなのはスプライトの部分です。らせんは本質的に 3 次元の経路なので、各球の位置に 3D のベクトルが必要で、座標はもちろん固定小数点数です。スプライト（球）を正しい OBJ_ATTR（画面上のオブジェクト）に結びつけるために、OAM の影へのインデックスも必要です。
 
 ```c
 typedef struct tagSPR_BASE
@@ -190,10 +190,10 @@ SPR_BASE sprites[SPR_COUNT];    // Sprite list
 <div class="cpt_fr" style="width:144px;">
 <img src="img/math/helix.png" id="fig:helix" 
   alt="3 periods of a helix" width=144><br>
-<b>*@fig:helix</b>: 3 periods of a helix.
+<b>*@fig:helix</b>: らせんの 3 周期。
 </div>
 
-A helix is simply a circle parameterization extruded in the direction of its normal axis (see @fig:helix). Note the directions of the three principal axes: it is a right-handed system, with *x* and *y* following the directions of the screens axes, and *z* pointing into the screen. A helix rotating around the *y*-axis can be described by the following relation:
+らせんは、単に円の媒介変数表示を、その法線の軸の方向に押し出したものです（@fig:helix を見てください）。3 つの主軸の向きに注意してください。これは右手系で、*x* と *y* は画面の軸の向きに従い、*z* は画面の奥を指しています。*y* 軸の周りを回転するらせんは、次の関係で表せます。
 
 <!--
 \textbf{x}(y,t)=\begin{bmatrix}
@@ -276,9 +276,9 @@ A \cdot \sin(k\cdot y+\omega t)
 </tr>
 </table>
 
-*A* is the radius of the helix, *k* is the wave number (*k*=2π/λ) and ω the angular velocity (ω=2π/*T*). The wave number defines the spacing between the layers of the helix (i.e., the pitch), the angular velocity gives the speed of rotation. Note that to create the helix in @fig:helix I actually need a negative wave number, but that's not really important right now.
+*A* はらせんの半径、*k* は波数（*k*=2π/λ）、ω は角速度（ω=2π/*T*）です。波数はらせんの層の間隔（つまりピッチ）を決め、角速度は回転の速さを与えます。@fig:helix のらせんを作るには実際には負の波数が必要ですが、今それはあまり重要ではないことに注意してください。
 
-In the actual code I'm going to make a slight change to the formula above to make ω variable without upsetting the whole helix. Instead of simply ω*t*, I'll use the integration of it for the initial phase angle: φ<sub>0</sub>=∫ω(*t*)d*t*. φ<sub>0</sub> will be a parameter to the function that creates the helix, and managed elsewhere. Another parameter for the pattern is **p**<sub>0</sub>, the reference point of the helix. You gotta have one of those.
+実際のコードでは、らせん全体を乱さずに ω を可変にできるように、上の式を少し変えます。単なる ω*t* の代わりに、その積分を初期位相の角度に使います。φ<sub>0</sub>=∫ω(*t*)d*t* です。φ<sub>0</sub> はらせんを作る関数のパラメータになり、ほかのところで管理します。模様のもう 1 つのパラメータは、らせんの基準点 **p**<sub>0</sub> です。これは必ず 1 つ必要です。
 
 ```c
 // some constants
@@ -315,11 +315,11 @@ void spr_helix(const VECTOR *p0, int phi0)
 }
 ```
 
-The routine is fairly straightforward. A running counter for the *y* is kept in the form of `dp.y`, which is used to calculate the full phase, from which we get our sines and cosines. Since the red and cyan helices are in counter-phase, I can simply get the *x* and *z* offsets for one by switching the signs of the other. The only really tricky part is managing the different fixed point scales for the phase; when dealing with fixed point math, always indicate the number of fractional bits, it's so very easy to get lost there.
+このルーチンはかなり素直です。*y* の進行中のカウンタを `dp.y` の形で保持し、それを使って完全な位相を計算し、そこからサインとコサインを得ます。赤とシアンのらせんは逆位相なので、一方の *x* と *z* のオフセットは、もう一方の符号を入れ替えるだけで得られます。本当にやっかいなのは、位相のいろいろな固定小数点のスケールの管理だけです。固定小数点の計算を扱うときは、常に小数部のビット数を示しておいてください。とても簡単に迷子になりますから。
 
 
 
-Now that we have the double helix pattern, we need a way to link it to the objects, complete with sorting and all.
+二重らせんの模様ができたので、ソートなども含めて、それをオブジェクトに結びつける方法が必要です。
 
 ```c
 void spr_update()
@@ -365,32 +365,32 @@ void spr_update()
 }
 ```
 
-The big loop here updates the OAM shadow, *not the real OAM*! It updates the object's position using the sprites *x* and *y* (corrected for fixed point, of course), and uses *z* to set the priority: 1 if it's on the near side (before the central pillar), and 2 if it's on the far side (behind the pillar). It *also* does something funky with the palette, which is the first hack in the function, shortly followed by the second one.
+ここでの大きなループは、*本当の OAM ではなく*、OAM の影を更新します！ スプライトの *x* と *y*（もちろん固定小数点を補正したもの）を使ってオブジェクトの位置を更新し、*z* を使って優先順位を設定します。手前側（中央の柱の前）にあれば 1、奥側（柱の後ろ）にあれば 2 です。パレットについても*ちょっと*変わったことをしていて、それがこの関数の 1 つ目の小技で、すぐあとに 2 つ目が続きます。
 
 <div class="cpt_fr"  style="width:120px;">
 <table id="tbl:prio-hack1" class="table-data">
 <caption align="bottom">
-  <b>*@tbl:prio-hack1</b>: object palette banks.
+  <b>*@tbl:prio-hack1</b>: オブジェクトのパレットバンク。
 </caption>
-<tr><th>bank	<th>color
-<tr><td>4		<td>light red
-<tr><td>5		<td> dark red
-<tr><td>6		<td>light cyan
-<tr><td>7		<td> dark cyan
+<tr><th>バンク	<th>色
+<tr><td>4		<td>明るい赤
+<tr><td>5		<td> 暗い赤
+<tr><td>6		<td>明るいシアン
+<tr><td>7		<td> 暗いシアン
 </table>
 </div>
 
-**Hack 1**. I've arranged the object palette in such a way that the reds are in palette banks 4 and 5, and the cyans in banks 6 and 7 (@tbl:prio-hack1). This means that I can switch between the light and dark versions by toggling the first pal-bank bit, attr2 bit 12.
+**小技 1**。オブジェクトのパレットを、赤がパレットバンク 4 と 5 に、シアンがバンク 6 と 7 に来るように並べておきました（@tbl:prio-hack1）。つまり、パレットバンクの最初のビット、attr2 のビット 12 を切り替えることで、明るい版と暗い版を切り替えられます。
 
-Immediately after this is the second hack, creating the sort key.
+そのすぐあとに 2 つ目の小技、ソートのキーの作成があります。
 
-**Hack 2**. The sort key is a combination of the priority (2 bits) and the depth *z* (the rest). The lower 30 bits of `zz` work as a **signed** offset for the priority levels, so that each priority has its own depth range of \[-2\<\<30,2\<\<30⟩ if one is necessary. The problem is that the keys are also signed, which would mean that priorities 2 and 3 would count as negative and therefore be sorted in front of prio 0 and 1, which would be bad. To remedy this, I subtract 0x60000000, which shifts the range of priority 0 to the most negative range where it should be.
+**小技 2**。ソートのキーは、優先順位（2 ビット）と奥行き *z*（残り）の組み合わせです。`zz` の下位 30 ビットは優先順位の段階に対する**符号付き**のオフセットとして働くので、各優先順位は、必要なら \[-2\<\<30,2\<\<30⟩ という自分の奥行きの範囲を持ちます。問題は、キーも符号付きなので、優先順位 2 と 3 が負とみなされ、優先順位 0 と 1 より手前にソートされてしまうことで、それはまずいことです。これを解決するために 0x60000000 を引きます。これで優先順位 0 の範囲が、あるべき一番負の範囲にずれます。
 
-The last part of the function updates the OAM shadow to OAM, either with or without sorting.
+関数の最後の部分は、ソートありかなしで、OAM の影を OAM に反映します。
 
-:::note Sorting disabled objects
+:::note 無効なオブジェクトのソート
 
-Incidentally, you could easily modify the sort-key creation to account for disabled/hidden objects. All you'd have to do is assign the highest (signed) value to the sort-key, in this case 0x7FFFFFFF.
+ちなみに、ソートのキーの作成を、無効な/隠れたオブジェクトも考慮するように簡単に変えられます。必要なのは、ソートのキーに（符号付きの）最大値、この場合は 0x7FFFFFFF を割り当てることだけです。
 
 ```c
 if( (oe->attr0&ATTR0_MODE_MASK) != ATTR0_HIDE )
@@ -401,9 +401,9 @@ else
 
 :::
 
-#### Rest of code
+#### コードの残り
 
-The rest of the code is just `main()` and the initializer code. Most of the initializer code is pretty standard stuff: loading graphics, register inits and so on. The only interesting part is the object initialization, which sets the pal-banks to 0x4000 and 0x6000 for the red and cyan orbs. And because the sorting uses an index table instead of changing the object buffer itself, this is all I'll ever have to keep the primary colors correct.
+コードの残りは `main()` と初期化のコードだけです。初期化のコードのほとんどは、グラフィックの読み込みやレジスタの初期化など、かなり標準的なものです。唯一面白い部分はオブジェクトの初期化で、赤とシアンの球のパレットバンクを 0x4000 と 0x6000 に設定しています。そして、ソートはオブジェクトのバッファそのものを変えるのではなくインデックスの表を使うので、主な色を正しく保つために必要なのはこれだけです。
 
 ```c
 #define S_AUTO  0x0001
@@ -504,15 +504,15 @@ int main()
 <div class="cpt_fr" style="width:240px;">
 <img src="img/demo/prio_demo2.png" id="fig:prio-demo2" 
   alt=""><br>
-<b>*@fig:prio-demo2</b>: Sorting switched off.
+<b>*@fig:prio-demo2</b>: ソートを切った状態。
 </div>
 
-The main loop checks for state changes, advances and updates the sprites and objects and prints the current angular velocity.
+メインループは状態の変化を確認し、スプライトとオブジェクトを進めて更新し、現在の角速度を表示します。
 
-There are two state switches in `g_state`, one that toggles the sorting procedure (`S_SORT`, with the **Select** Button), and one that sets the rotation to automatic or not (`S_AUTO`, with the **Start** Button). Toggling the sorting is interesting because you can see what happens if you just set the priorities. This has two effects (see @fig:prio-demo2: first, the orb-order in each strand would be fixed and every object would partially obscure the one on its left, which is incorrect for the receding parts of the strands. This is most visible at the right-most side, where the strands seem broken. The second effect is the object priority/number order bug where the deeper object can show through the background that's supposed to be occluding it.
+`g_state` には 2 つの状態のスイッチがあります。1 つはソートの処理を切り替えるもの（`S_SORT`、**Select** ボタン）、もう 1 つは回転を自動にするかどうかを設定するもの（`S_AUTO`、**Start** ボタン）です。ソートの切り替えは、優先順位を設定するだけだと何が起きるかがわかるので面白いです。これには 2 つの影響があります（@fig:prio-demo2 を見てください）。1 つ目は、各鎖の球の順序が固定され、すべてのオブジェクトが左隣のものを一部覆い隠すことで、鎖が遠ざかっていく部分ではこれは正しくありません。これは一番右側で最もよく見え、鎖が切れているように見えます。2 つ目の影響は、オブジェクトの優先順位/番号の順序のバグで、奥にあるオブジェクトが、それを覆い隠しているはずの背景を透けて見えてしまいます。
 
-The start button toggles between automatic and manual rotation. During automatic mode, you can change ω with the **L** and **R** Buttons. In manual mode, L and R update the phase with the current angular speed. By setting the speed really low, you can examine what happens in more detail. For example, you can clearly see that the objects in the vertical centerline are in front of both their left and right neighbors, exactly what one would expect. Unless the sorting is off, that is.
+Start ボタンは自動と手動の回転を切り替えます。自動モードの間は、**L** ボタンと **R** ボタンで ω を変えられます。手動モードでは、L と R が現在の角速度で位相を更新します。速さをとても遅くすれば、何が起きているかをもっと詳しく調べられます。たとえば、縦の中心線にあるオブジェクトが左右両方の隣のものより手前にあることがはっきりわかります。まさに期待どおりです。ソートが切られていなければ、ですが。
 
-And that concludes the topic of priorities and object sorting. Remember that the priorities of objects and backgrounds aren't the only thing that determine the rendering order, the obj or bg number is also important for each priority level. Once you start mixing objects and background priorities, make sure that the object numbers follow the same order as their priorities, and that often means object sorting.
+これで優先順位とオブジェクトのソートの話は終わりです。描画の順序を決めるのはオブジェクトと背景の優先順位だけではなく、各優先順位の段階ではオブジェクトや背景の番号も重要だということを覚えておいてください。オブジェクトと背景の優先順位を混ぜ始めたら、オブジェクトの番号が優先順位と同じ順序になるようにしてください。それにはたいていオブジェクトのソートが必要です。
 
-I've discussed a simple and flexible sorting method, but I warn you that it does take its time. If it's good enough, by all means use it. If it's not, faster methods can certainly be created. Linked lists, range checks, handcrafted assembly (see *id_sort_shell2.s* in the *prio_demo* directory for example) can all help make it faster. but the final implementation will be up to you.
+単純で柔軟なソートの方法を説明しましたが、時間がかかることは警告しておきます。十分に良ければ、ぜひ使ってください。そうでなければ、もっと速い方法はきっと作れます。連結リスト、範囲の確認、手作りのアセンブリ（たとえば *prio_demo* ディレクトリの *id_sort_shell2.s* を見てください）は、どれも速くするのに役立ちます。でも、最終的な実装はあなたにお任せします。
