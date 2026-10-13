@@ -1,10 +1,10 @@
-# 3. My first GBA demo
+# 3. 最初の GBA デモ
 
 <!-- toc -->
 
-## Finally, your first GBA program {#sec-first}
+## ついに、最初の GBA のプログラム {#sec-first}
 
-Now that you have your development environment ready, it's time to take a look at a simple GBA program. For this we will use the code from the C-file *first.c*. The plan at this point is not full understanding; the plan is to get something to compile and get something running. The code will be discussed in this chapter, but what it all means will be covered in later chapters.
+開発環境の準備ができたので、簡単な GBA のプログラムを見てみましょう。ここでは、C のファイル *first.c* のコードを使います。この時点での目標は、完全に理解することではありません。何かをコンパイルして、何かを動かすことが目標です。コードについてはこの章で説明しますが、それが何を意味するのかは、あとの章で扱います。
 
 <div id="cd-first">
 
@@ -29,63 +29,63 @@ int main()
 
 </div>
 
-Don't worry about the code just yet, there's time for that later. And don't leave yet, I'll give a nicer version later on. All that matters for now is that you're able to compile and run it.
+コードについては、まだ心配しなくて大丈夫です。それはあとでやります。それに、ここで帰らないでください。あとで、もっとましな版をお見せします。今大事なのは、これをコンパイルして実行できることだけです。
 
 <div class="cpt_fr" style="width:240px;">
 <img alt="picture of the first demo" src="./img/demo/first.png" id="fig:first">  
 
-**{*@fig:first}**: picture of the first demo
+**{*@fig:first}**: 最初のデモの画面
 </div>
 
-As explained in the [previous chapter](setup.html#sec-compile), you can run `make` in your terminal to build the project. Under the hood this does the following:
+[前の章](setup.html#sec-compile)で説明したとおり、ターミナルで `make` を実行すると、プロジェクトをビルドできます。内部では、次のことが行われます。
 
--   **compile** *first.c* to *first.o*,
--   **link** the list of object files (currently only *first.o*) to *first.elf*,
--   **translate** *first.elf* to *first.gba* by stripping all excess ELF information,
--   **fix the header** so that the GBA will accept it.
+-   *first.c* を *first.o* に**コンパイル**する。
+-   オブジェクトファイルの一覧（今は *first.o* だけ）を *first.elf* に**リンク**する。
+-   余分な ELF の情報をすべて取り除いて、*first.elf* を *first.gba* に**変換**する。
+-   GBA が受け付けるように**ヘッダーを直す**。
 
-After the makefile has run, you should have a file called *first.gba*. If you don't, there's a problem with your setup because the code sure isn't wrong! Go back to make sure you didn't miss anything - but if you're still having trouble, feel free to stop by on [Discord / IRC](https://gbadev.net/resources.html#community) or the [Forums](https://forum.gbadev.net/), there's a good chance someone will be able to help!
+makefile の実行が終わると、*first.gba* というファイルができているはずです。できていなければ、環境の準備に問題があります。コードが間違っているはずはありませんから！ 戻って、何か見落としていないか確かめてください。それでもうまくいかなければ、気軽に [Discord / IRC](https://gbadev.net/resources.html#community) や[フォーラム](https://forum.gbadev.net/)に立ち寄ってください。きっと誰かが助けてくれるはずです！
 
 <!-- I've made a list of [potential problems](setup.html#ssec-dkp-error); check if yours is one of them. -->
 
-If you do find yourself with a GBA executable, run it on hardware or your emulator of choice and you should get a red, a green, and a blue pixel at positions (120, 80), (136, 80) and (120, 96), respectively.
+GBA の実行ファイルができたら、実機か好きなエミュレータで実行してみてください。(120, 80)、(136, 80)、(120, 96) の位置に、それぞれ赤、緑、青のピクセルが表示されるはずです。
 
-Now, for the code itself...
+では、コードそのものの話です……
 
-### Huh? {#ssec-first-huh}
+### え？ {#ssec-first-huh}
 
-If you're somewhat confused by it, you wouldn't be alone. I expect that unless you already know a thing or two about GBA programming or have experience with low-level programming from other platforms, the code will be a total mystery. If you're proficient enough in C you may have some idea what's making the three pixels appear, but I admit that it is *very* hard to see.
+このコードを見て少し混乱しているなら、あなただけではありません。GBA プログラミングについて少しでも知っているか、ほかのプラットフォームで低レベルのプログラミングの経験がない限り、このコードはまったくの謎だと思います。C に十分慣れていれば、何が 3 つのピクセルを表示させているのか見当がつくかもしれませんが、それを読み取るのが*とても*難しいことは認めます。
 
-And that was kind of my point actually. If one were to hand this in for a test at a programming class, you would fail *so* hard. And if not, the professors should be fired. While the code show above does work, the fact that it's almost unreadable makes it bad code. Writing good code is not only about getting results, it's also about making sure *other* people can understand what's happening without too much trouble.
+そして実は、それこそが私の言いたかったことです。プログラミングの授業のテストでこれを提出したら、*見事に*落第するでしょう。もし落第しないなら、その先生はクビにするべきです。上のコードはちゃんと動きますが、ほとんど読めないという点で、悪いコードです。よいコードを書くとは、結果を出すことだけではありません。*ほかの*人が、あまり苦労せずに何が起きているかを理解できるようにすることでもあるのです。
 
-The code of *first.c* also serves another purpose, namely as a reminder that GBA programming is *very* low-level. You interact directly with the memory, and not through multiple layers of abstraction brought by APIs. To be able to do that means you have to really understand how computers work, which all programmers should know at least to some degree. There are APIs (for lack of a better word) like HAM that take care of the lowest levels, which definitely has its merits as it allows you to deal with more important stuff like actual *game* programming, but on the other hand it hides a lot of details – details that sometimes are better left in the open.
+*first.c* のコードには、もう 1 つの役目もあります。GBA プログラミングが*とても*低レベルだということを思い出させてくれることです。API がもたらす何層もの抽象化を通さずに、メモリと直接やり取りします。それができるということは、コンピュータがどう動くのかを本当に理解しなければならないということです。これは、どのプログラマも少なくともある程度は知っておくべきことです。HAM のように、最も低いレベルを引き受けてくれる API（ほかにいい言葉がないのでこう呼びます）もあります。実際の*ゲーム*のプログラミングのような、もっと大事なことに集中できるので、それには確かに利点があります。でも一方で、たくさんの細部を隠してしまいます。その細部は、見えるままにしておいたほうがいいこともあるのです。
 <br>  
-Those who want a better, more intelligible, version of the previous code can skip the next section and move on to the [second](#sec-second) first demo. The warped minds who can't just let it go and want to have an explanation right now (for the record, I count myself among them), here's what's going on.
+前のコードの、もっとよくて分かりやすい版を見たい人は、次の節を飛ばして、[2 つ目](#sec-second)の最初のデモに進んでください。気になって放っておけず、今すぐ説明が欲しいというひねくれ者のみなさん（ちなみに、私もその 1 人です）のために、何が起きているかを説明します。
 
-### Explanation of the code {#ssec-first-expl}
+### コードの説明 {#ssec-first-expl}
 
-This is a quick and dirty explanation of the earlier code. Those previously mentioned warped minds for whom this section is intended will probably prefer it that way. A more detailed discussion will be given later.
+ここでは、さっきのコードを手早く大ざっぱに説明します。この節が対象にしている、さっきのひねくれ者のみなさんには、たぶんそのほうがいいでしょう。もっと詳しい話は、あとでします。
 
-As I said, GBA programming is low-level programming and sometimes goes right down to the bit. The `0x04000000` and `0x06000000` are parts of the accessible [memory sections](hardware.html#sec-memory). These numbers themselves don't mean much, by the way; they just refer to different sections. There aren't really `0x02000000` between these two sections. As you can see in the memory map, these two sections are for the IO registers and VRAM, respectively.
+前に言ったとおり、GBA プログラミングは低レベルのプログラミングで、ときにはビットの単位まで降りていきます。`0x04000000` と `0x06000000` は、アクセスできる[メモリ領域](hardware.html#sec-memory)の一部です。ちなみに、これらの数値自体にはあまり意味がありません。別々の領域を指しているだけです。この 2 つの領域のあいだに、実際に `0x02000000` 分のメモリがあるわけではありません。メモリマップを見ると分かるように、この 2 つの領域は、それぞれ IO レジスタと VRAM のためのものです。
 
-To work with these sections in C, we have to make pointers out of them, which is what the ‘`unsigned int*`’ and ‘`unsigned short*`’ do. The types used here are almost arbitrary; almost, because some of them are more convenient than others. For example, the GBA has a number of different video modes, and in modes 3 and 5 VRAM is used to store 16-bit colors, so in that case casting it to halfword pointers is a good idea. Again, it is not *required* to do so, and in some cases different people will use different types of pointers. If you're using someone else's code, be sure to note the datatypes of the pointers used, not just the names.
+C でこれらの領域を扱うには、ポインタにする必要があります。それをしているのが ‘`unsigned int*`’ と ‘`unsigned short*`’ です。ここで使う型は、ほとんど何でも構いません。「ほとんど」と言うのは、ほかより便利な型もあるからです。たとえば、GBA にはいくつかのビデオモードがあり、モード 3 と 5 では VRAM に 16 ビットの色を入れます。その場合は、ハーフワードのポインタにキャストするのがよいでしょう。繰り返しますが、そうすることは*必須*ではなく、人によって違う型のポインタを使うこともあります。ほかの人のコードを使うときは、名前だけでなく、使われているポインタのデータ型にも注意してください。
 
-The word at 0400:0000 contains the main bits for the display control. By writing `0x0403` into it, we tell the GBA to use video mode 3 and activate background 2. What this actually means will be explained in the [video](video.html) and [bitmap mode](bitmaps.html) chapters.
+0400:0000 のワードには、ディスプレイ制御の主なビットが入っています。ここに `0x0403` を書き込むことで、GBA にビデオモード 3 を使い、背景 2 を有効にするよう指示します。これが実際に何を意味するのかは、[ビデオ](video.html)と[ビットマップモード](bitmaps.html)の章で説明します。
 
-In mode 3, VRAM is a 16-bit bitmap; when we make a halfword pointer for it, each entry is a pixel. This bitmap itself is the same size as the screen (240x160) and because of the way [bitmaps](bitmaps.html) and C matrices work, by using something of the form ‘array\[*y*\**width* + *x*\]’ are the contents of coordinates (*x*, *y*) on screen. That gives us our 3 pixel locations. We fill these with three 16-bit numbers that happen to be full red, green and blue in 5.5.5 BGR format. Or is that RGB, I always forget. In any case, that's what makes the pixels appear. After that there is one more important line, which is the infinite loop. Normally, infinite loops are things to be avoided, but in this case what happens after `main()` returns is rather undefined because there's little to return *to*, so it's best to avoid that possibility.
+モード 3 では、VRAM は 16 ビットのビットマップです。ハーフワードのポインタにすると、1 つの要素が 1 つのピクセルになります。このビットマップ自体の大きさは画面と同じ（240x160）で、[ビットマップ](bitmaps.html)と C の行列の仕組みから、‘array\[*y*\**width* + *x*\]’ という形で、画面上の座標 (*x*, *y*) の中身を表せます。これで、3 つのピクセルの位置が決まります。そこに、5.5.5 の BGR 形式でちょうど真っ赤、真緑、真っ青になる、3 つの 16 ビットの数値を入れます。それとも RGB だったかな、いつも忘れてしまいます。いずれにせよ、これでピクセルが表示されます。そのあとに、もう 1 つ大事な行があります。無限ループです。普通は無限ループは避けるべきものですが、この場合、`main()` から戻ったあとに何が起きるかはかなり未定義です。戻る*先*がほとんどないからです。なので、そうなる可能性は避けたほうがいいのです。
 
-And that's about it. While the Spartan purity of the code does appeal to a part of me, I will stress again that this is *not* the right way to program in C. Save the raw numbers for assembly please.
+説明はこれくらいです。このコードの質実剛健な潔さに惹かれる自分もいますが、もう一度強調しておきます。これは C の正しいプログラミングのやり方では*ありません*。生の数値は、アセンブリのためにとっておいてください。
 
-## Your second first GBA program {#sec-second}
+## 2 つ目の最初の GBA のプログラム {#sec-second}
 
-So, let's start over again and do it *right* this time. Or at least more right than before. There are a number of simple ways to improve the legibility of the code. Here is the list of things we'll do.
+では、最初からやり直して、今度は*正しく*やってみましょう。少なくとも、前よりは正しく。コードを読みやすくする簡単な方法はいくつもあります。これからやることを挙げます。
 
--   First and foremost is the use of **named literals**, that is to say #defined names for the constants. The numbers that went into the display control will get proper names, as will the colors that we plotted.
--   We'll also use #define for the **memory mapping**: the display control and VRAM will then work more like normal variables.
--   We'll also create some **typedefs**, both for ease of use and to indicate conceptual types. For instance, a 16-bit color is essentially a halfword like any other, but if you typedef it as, say, `COLOR`, everyone will know that it's not a normal halfword, but has something to do with colors.
--   Finally, instead of plotting pixels with an array access, which could still mean anything, we'll use a **subroutine** for it instead.
+-   何よりもまず、**名前付きの定数**を使います。つまり、定数に #define で名前を付けます。ディスプレイ制御に入れた数値にも、描いた色にも、ちゃんとした名前を付けます。
+-   **メモリマッピング**にも #define を使います。これで、ディスプレイ制御と VRAM を、普通の変数のように扱えるようになります。
+-   **typedef** もいくつか作ります。使いやすくするためと、概念上の型を示すためです。たとえば、16 ビットの色は本質的にはほかと同じただのハーフワードですが、たとえば `COLOR` という名前で typedef しておけば、それが普通のハーフワードではなく、色に関係するものだと誰にでも分かります。
+-   最後に、まだ何を意味するのか分からない配列のアクセスでピクセルを描く代わりに、そのための**サブルーチン**を使います。
 
-Naturally, this will expand the total lines of code a bit. Quite a bit, in fact. But it is well worth it. The code is actually a two-parter. The actual code, the thing that has all the functionality of the first demo, can be found in *second.c*. All the items discussed above, the typedefs, #defines and inlines, are put in *toolbox.h*.
+当然、コードの行数は少し増えます。実際には、かなり増えます。でも、それだけの価値は十分にあります。コードは 2 つに分かれています。最初のデモのすべての機能を持つ本体のコードは、*second.c* にあります。上で挙げたもの、つまり typedef、#define、インライン関数は、*toolbox.h* に入れてあります。
 
 ```c
 // toolbox.h: 
@@ -176,23 +176,23 @@ int main()
 }
 ```
 
-As you can see, the number of lines in *toolbox.h* is actually much larger than that of the real code. This may seem like a bit of a waste now, but this is only because it's such a small demo. None of the contents of *toolbox.h* is actually compiled, so there is no cost in terms of memory use. In fact, if it did it wouldn't belong in a header file, but that's a discussion I'll go into [another time](bitmaps.html#ssec-data-hdr). Right now, let's see what we actually have in *toolbox.h*
+見てのとおり、*toolbox.h* の行数のほうが、本体のコードよりずっと多くなっています。今は少し無駄に見えるかもしれませんが、それはこれがとても小さなデモだからにすぎません。*toolbox.h* の中身は、実際にはどれもコンパイルされないので、メモリの使用量という点では何の負担もありません。実際、もしコンパイルされるものなら、ヘッダーファイルに置くべきではないのですが、その話は[また別の機会](bitmaps.html#ssec-data-hdr)にします。では、*toolbox.h* に実際に何が入っているのかを見ていきましょう。
 
-### The toolbox {#ssec-2nd-toolbox}
+### 道具箱（toolbox） {#ssec-2nd-toolbox}
 
-#### Types and typedefs
+#### 型と typedef
 
-First of all, we create some shorthand notations of commonly used types. No matter what anyone says, **brevity is a virtue**. For example, unsigned types are very common and writing out the full names (e.g, ‘`unsigned short`’) serves little purpose. The shorthand ‘`u16`’ is just much more convenient. Besides convenience, it also gives better information on the size of the variable, which is also of great importance here.
+まず、よく使う型の短い呼び名を作ります。誰が何と言おうと、**簡潔さは美徳**です。たとえば、符号なしの型はとてもよく使うので、毎回フルネーム（たとえば ‘`unsigned short`’）を書くのはほとんど意味がありません。‘`u16`’ という短い名前のほうが、ずっと便利です。便利なだけでなく、変数の大きさについての情報も分かりやすくなります。これもここでは、とても大事なことです。
 
-I've also added a <dfn>conceptual typedef</dfn>. While it's true that, in principle, an int is an int no matter what it's used for, it is helpful if you can tell what its supposed use is from its type. In this case, I have a `COLOR` alias for `u16` when I want to indicate a particular halfword contains color information.
+<dfn>概念上の typedef</dfn> も 1 つ足しました。原則として、int は何に使おうと int ですが、それが何に使われるものなのかを型から分かるようにすると役に立ちます。ここでは、あるハーフワードが色の情報を持っていることを示したいときのために、`u16` の別名として `COLOR` を用意しています。
 
-#### Memory map defines
+#### メモリマップの define
 
-To be able to work directly specific addresses in memory, you'll have to cast them to pointers or arrays and work with those. In this demo's case, the addresses we're interested in are `0600:0000` (VRAM) and `0400:0000` (the display control register). In the first demo I did the casts manually, but it's better to use names for them so that you don't have to remember all the numbers and also because nobody else would have any clue to what's going on.
+メモリの特定のアドレスを直接扱うには、それをポインタや配列にキャストして使う必要があります。このデモで扱いたいアドレスは、`0600:0000`（VRAM）と `0400:0000`（ディスプレイ制御のレジスタ）です。最初のデモではキャストを手で書きましたが、名前を付けたほうがいいです。数値を全部覚えておく必要がなくなりますし、そうしないと、ほかの人には何が起きているのか見当もつかないからです。
 
-For the IO registers I'm using the official names, which are recognized by all parties. The display control is known as REG_DISPCNT, and is defined as the word at `0400:0000`. Note that neither the name nor the type are set in stone: you could as easily have called it “BOO” and even used a halfword pointer. The full list of register #defines can be found in libtonc's *tonc_memmap.h*.
+IO レジスタには、誰もが知っている公式の名前を使っています。ディスプレイ制御は REG_DISPCNT と呼ばれ、`0400:0000` にあるワードとして定義されています。なお、名前も型も、絶対にこうでなければならないわけではありません。“BOO” と名付けても構いませんし、ハーフワードのポインタを使っても構いません。レジスタの #define の全一覧は、libtonc の *tonc_memmap.h* にあります。
 
-For those who aren't as familiar with pointers as you should (boy, are you gonna be in trouble <kbd>:P</kbd>), here is the structure of the REG_DISPCNT #define. I'm using `vu32` as a typedef for ‘volatile u32’ here.
+ポインタに本来あるべきほど慣れていない人のために（いやあ、これから苦労しますよ <kbd>:P</kbd>）、REG_DISPCNT の #define の構造を示しておきます。ここでは、‘volatile u32’ の typedef として `vu32` を使っています。
 
 ```c
 #define REG_DISPCNT *((volatile u32*)(MEM_IO+0x0000)) 
@@ -202,44 +202,44 @@ For those who aren't as familiar with pointers as you should (boy, are you gonna
 <table class="table-data" width="90%">
 <col align="right">
 <tr>
-  <th width=130>code	<th>type	<th>description
+  <th width=130>コード	<th>種類	<th>説明
 <tr>
   <td><code>MEM_IO+0x0000</code>
-  <td>Address
-  <td>MEM_IO=<code>0x04000000</code>, so this is address 0400:0000
+  <td>アドレス
+  <td>MEM_IO=<code>0x04000000</code> なので、これはアドレス 0400:0000
 <tr>
   <td><code>(vu32*)0x04000000</code>
-  <td>pointer
-  <td>A pointer to an unsigned int of the volatile persuasion
-    (ignore this last part for now)
+  <td>ポインタ
+  <td>volatile な unsigned int へのポインタ
+    （最後の部分は今は気にしないでください）
 <tr>
   <td><code>*(vu32*)0x04000000</code>
-  <td>&lsquo;variable&rsquo;
-  <td>By <dfn>dereferencing</dfn> the pointer (the &lsquo;*&rsquo; 
-    unary operator), we access the contents of the pointer. Id est, 	
-	the whole thing becomes usable as a variable.
+  <td>&lsquo;変数&rsquo;
+  <td>ポインタを<dfn>参照外し</dfn>する（単項演算子の &lsquo;*&rsquo;）
+    ことで、ポインタの指す中身にアクセスします。つまり、	
+	全体が変数として使えるようになります。
 </table>
 </div>
 
-So for all intents and purposes, REG_DISPCNT is a variable just like any other. You can assign values to it, read its contents, perform bit operations on it and so forth. Which is good, because that's just the way we want to use that register.
+というわけで、事実上、REG_DISPCNT はほかと同じただの変数です。値を代入したり、中身を読んだり、ビット演算をしたりできます。これは好都合です。このレジスタは、まさにそうやって使いたいのですから。
 
-A similar procedure is carried out for VRAM, only this is still in its pointer form in the end. Because of that, `vid_mem` works as an *array*, not a variable. Again, this is exactly how we want things. Please be careful with the definition, though: all the parentheses there are **required**! Because of the operator precedence between casts and arrays, leaving out the outer parentheses pair gives compilation errors.
+VRAM にも同じような手順を踏みますが、こちらは最後までポインタの形のままです。そのため、`vid_mem` は変数ではなく*配列*として働きます。これも、まさに望んでいるとおりです。ただし、定義には気をつけてください。そこにあるかっこは全部**必須**です！ キャストと配列の演算子の優先順位のせいで、外側のかっこを省くとコンパイルエラーになります。
 
-#### IO register and their bits
+#### IO レジスタとそのビット
 
-The IO registers (not to be confused with the CPU registers) are a collection of switches in the form of bitfields that control various operations of the GBA. The IO registers can be found in the `0400:0000` range of memory, and are usually clumped into words or halfwords according to personal preference. To get anything done, you have to set specific bits of the IO registers. While you can try to remember all the numerical values of these bits, it's more convenient to use #defines instead.
+IO レジスタ（CPU のレジスタと混同しないでください）は、ビットフィールドの形をしたスイッチの集まりで、GBA のさまざまな動作を制御します。IO レジスタは、メモリの `0400:0000` の範囲にあり、好みに応じて、たいていワードかハーフワードの単位にまとめられています。何かをするには、IO レジスタの特定のビットを立てる必要があります。これらのビットの数値を全部覚えようとしてもいいのですが、#define を使うほうが便利です。
 
-The toolbox header lists a number of the #defines I use for REG_DISPCNT. The full list can be found in *tonc_memdef.h* of libtonc, and the register itself is described in the [video](video.html) chapter. For now, we only need DCNT_MODE3 and DCNT_BG2. The former sets the video mode to mode 3, which is simplest of the 3 available [bitmap modes](bitmaps.html), and the latter activates background 2. Out of a total of four, bg 2 is the only one available in the bitmap modes and you have to switch it on if you want anything to show up. You have to admit that these names are a lot more descriptive than `0x0003` and `0x0400`, right? <!-- If not, you are _banned_ from programming :P -->
+toolbox のヘッダーには、REG_DISPCNT に使う #define をいくつか載せています。全一覧は libtonc の *tonc_memdef.h* にあり、レジスタそのものは[ビデオ](video.html)の章で説明します。今のところ必要なのは、DCNT_MODE3 と DCNT_BG2 だけです。前者はビデオモードをモード 3 にします。モード 3 は、3 つある[ビットマップモード](bitmaps.html)の中で一番簡単なものです。後者は背景 2 を有効にします。全部で 4 つある背景のうち、ビットマップモードで使えるのは背景 2 だけで、何かを表示したいなら、これを有効にする必要があります。これらの名前のほうが、`0x0003` や `0x0400` よりずっと分かりやすいことは認めてもらえますよね？ <!-- If not, you are _banned_ from programming :P -->
 
-I've also added a list of useful color defines, even though I'm not using them in *second.c*. They may or may not be useful in the future, though, so it's good to have them around.
+*second.c* では使っていませんが、便利な色の define の一覧も足しておきました。この先役に立つかどうかは分かりませんが、手元にあると便利です。
 <br>  
-Creating the register #defines is probably the biggest part of header files. As a rough estimate, there are 100 registers with 16 bits each, so that would be 1600 #defines. That's a lot. The exact number may be smaller, but it is still large. Because the names of the #defines in and of themselves aren't important, you can expect different naming schemes for different people. I am partial to my own set of names, other older GBA coders may use PERN's names and more recent ones may use libgba's, which comes with devkitARM. Take your pick.
+レジスタの #define を作るのは、たぶんヘッダーファイルで一番大きな部分です。大ざっぱに見積もって、16 ビットのレジスタが 100 個あるので、#define は 1600 個になります。たくさんですね。実際の数はもっと少ないかもしれませんが、それでも多いです。#define の名前そのものは重要ではないので、人によって名前の付け方が違うことを覚悟しておいてください。私は自分の名前の付け方が気に入っていますが、昔からの GBA のプログラマは PERN の名前を、もっと最近の人は devkitARM に付いてくる libgba の名前を使うかもしれません。好きなものを選んでください。
 
-#### Macros and inline functions
+#### マクロとインライン関数
 
-You can also create #defines that work a little like functions. These are called <dfn>macros</dfn>. I'm not using them here, but there are plenty to be found in libtonc's headers. Like all #defines, macros are part of the preprocessor, not the compiler, which means that the debugger never sees them and they can have many hidden errors in them. For that reason, they have been depreciated in favor of [<dfn>inline functions</dfn>](http://gcc.gnu.org/onlinedocs/gcc-4.0.2/gcc/Inline.html). They have all the benefits of macros (i.e., integrated into the functions that call them so that they're fast), but are still function-like in syntax and resolved at compile time. At least that's the theory, in practice they're not *quite* as speedy as macros, but often preferable anyway.
+関数に少し似た働きをする #define も作れます。これを<dfn>マクロ</dfn>といいます。ここでは使っていませんが、libtonc のヘッダーにはたくさんあります。ほかの #define と同じく、マクロはコンパイラではなくプリプロセッサの機能です。そのため、デバッガからは決して見えず、隠れた誤りをたくさん抱えることがあります。その理由から、マクロは [<dfn>インライン関数</dfn>](http://gcc.gnu.org/onlinedocs/gcc-4.0.2/gcc/Inline.html)に取って代わられるようになりました。インライン関数は、マクロの利点（呼び出し元の関数に組み込まれるので速い）をすべて持ちながら、書き方は関数のようで、コンパイル時に解決されます。少なくとも、理屈ではそうです。実際には、マクロ*ほど*は速くないのですが、それでもたいていはこちらのほうが好まれます。
 
-One inline function I'm using is `m3_plot()`, which, as you may have guessed, is used to plot pixels in mode 3. In mode 3, VRAM is just a matrix of 16bit colors, so all we have to do to plot a pixel is enter a halfword in the right array element. `m3_plot()` looks exactly like a normal function, but because the ‘`static inline`’ in front of it makes it an inline function. Note that inlining is only a recommendation to the compiler, not a commandment, and it only works if optimizations are switched on.
+私が使っているインライン関数の 1 つが `m3_plot()` です。想像がつくかもしれませんが、モード 3 でピクセルを描くためのものです。モード 3 の VRAM は 16 ビットの色の行列にすぎないので、ピクセルを描くには、配列の正しい要素にハーフワードを入れるだけです。`m3_plot()` は普通の関数とまったく同じに見えますが、前に付いている ‘`static inline`’ によって、インライン関数になります。なお、インライン化はコンパイラへのお願いにすぎず、命令ではありません。また、最適化を有効にしているときにしか働きません。
 
 ```c
 // Mode 3 plotter as macro ...
@@ -250,33 +250,33 @@ static inline void m3_plot(int x, int y, COLOR clr)
 {   vid_mem[y*SCREEN_WIDTH+x]= clr;  }
 ```
 
-The second inline function is `RGB15()`, which creates a 16bit color from any given red, green and blue values. The GBA uses 16bit colors for its graphics – or actually 15bit colors in a 5.5.5 BGR format. That's 32 shades of red in the first (lowest) 5 bits, 32 greens in bits 5 to 9, and 32 blues in 10-14. The `RGB15()` inline takes care of all the shifting and masking to make that happen.
+2 つ目のインライン関数は `RGB15()` です。与えられた赤、緑、青の値から、16 ビットの色を作ります。GBA はグラフィックに 16 ビットの色を使います。実際には、5.5.5 の BGR 形式の 15 ビットの色です。最初の（一番下の）5 ビットに 32 段階の赤、ビット 5〜9 に 32 段階の緑、ビット 10〜14 に 32 段階の青が入ります。`RGB15()` のインライン関数が、そのためのシフトとマスクを全部引き受けてくれます。
 
-### The working code {#ssec-2nd-src}
+### 動くコード {#ssec-2nd-src}
 
-Making use of the contents of *toolbox.h* makes the code of the demo much more understandable.
+*toolbox.h* の中身を使うと、デモのコードはずっと分かりやすくなります。
 
-The first line in `main()` sets a few bits in the display control, commonly known as REG_DISPCNT. I use `DCNT_MODE3` to set the video mode to mode 3, and activate background 2 with `DCNT_BG2`. This translates to `0x0403` as before, but this method gives a better indication of what's happening than entering the raw number. Using a variable-like #define instead of the raw dereferenced pointer is also preferable; especially as the latter is sure to wig out people new to C.
+`main()` の最初の行は、REG_DISPCNT としてよく知られるディスプレイ制御のビットをいくつか立てます。`DCNT_MODE3` でビデオモードをモード 3 にし、`DCNT_BG2` で背景 2 を有効にしています。これは前と同じ `0x0403` になりますが、生の数値を入れるより、何が起きているのかがよく分かります。参照外ししたポインタをそのまま書くより、変数のような #define を使うほうがいいのも同じです。特に前者は、C を始めたばかりの人を確実に混乱させます。
 
-So how do I know what bit does what to create the #defines in the first place? Simple, I looked them up in [GBATEK](https://problemkaputt.de/gbatek.htm), the essential reference to GBA programming. For every IO register I use in these pages I'll give a description of the bits and a list of #defines as they're defined in libtonc. The formats for these descriptions were given in the [preface](intro.html#ssec-note-reg), and the table for REG_DISPCNT can be found in the [video chapter](video.html#sec-vid-regs).
+では、#define を作るために、どのビットが何をするのかを、そもそもどうやって知ったのでしょうか？ 簡単です。GBA プログラミングに欠かせない資料、[GBATEK](https://problemkaputt.de/gbatek.htm) で調べました。このページで使う IO レジスタについては、毎回、ビットの説明と、libtonc で定義されている #define の一覧を載せます。この説明の形式は[はじめに](intro.html#ssec-note-reg)で示しました。REG_DISPCNT の表は、[ビデオの章](video.html#sec-vid-regs)にあります。
 
-Actually plotting the pixels is now done with the inline function `m3_plot()`, which is formatted much the same way as every kind of pixel plotter in existence: 2 coordinates and the color. Much better than raw memory access, even though it works exactly the same way. The colors themselves are now created with an inline too: `RGB15` takes 3 numbers for the red, green and blue components and ties them together to form a valid 16-bit color.
+実際にピクセルを描くのは、今度はインライン関数の `m3_plot()` で行います。世の中のどんなピクセル描画の関数ともほぼ同じ形で、2 つの座標と色を受け取ります。動きはまったく同じでも、生のメモリアクセスよりずっといいです。色そのものも、今度はインライン関数で作ります。`RGB15` は赤、緑、青の成分の 3 つの数値を受け取り、それをまとめて正しい 16 ビットの色にします。
 
-Finally, there is an endless loop to prevent the program from ever ending. But aren't endless loops bad? Well usually yes, but not here. Remember what happens when PC programs end: control is kicked back to the operating system. Well, we don't *have* an operating system. So what happens after `main()` returns is undefined. It is possible to see what happens by looking at a file called *ctrs0.S*, which comes with your dev-kit, but that's not a thing for beginners so at the moment my advice is to simply not let it happen. Ergo, endless loop. For the record, there are better ways of stopping GBA programs, but this one's the easiest. And now we've reached the end of the demo.
+最後に、プログラムが終わらないようにするための無限ループがあります。でも、無限ループは悪いものではなかったでしょうか？ 普通はそうですが、ここでは違います。PC のプログラムが終わるとどうなるかを思い出してください。制御が OS に返されます。でも、私たちには OS が*ない*のです。なので、`main()` から戻ったあとに何が起きるかは未定義です。開発キットに付いてくる *ctrs0.S* というファイルを見れば、何が起きるかは分かりますが、それは初心者向けの話ではありません。なので、今のところは、単にそうさせないことをおすすめします。ゆえに、無限ループです。ちなみに、GBA のプログラムを止めるもっといい方法もありますが、これが一番簡単です。これで、デモはおしまいです。
 
-#### Better, no?
+#### よくなったでしょう？
 
-And that is what proper code looks like. As a basic rule, try to avoid raw numbers: nobody except you will know what they mean, and after a while you may forget them yourself as well. Typedefs (and enums and structs) can work wonders in structuring code, so can subroutines (functions, inline functions and macros). Basically, every time you notice you are repeating yourself (copy&paste coding), it might be time to think about creating some subs to replace that code.
+これが、きちんとしたコードの姿です。基本的なルールとして、生の数値は避けるようにしてください。その意味はあなた以外の誰にも分かりませんし、しばらくたてば、あなた自身も忘れてしまうかもしれません。typedef（と enum と構造体）は、コードを構造化するのにすばらしく役立ちます。サブルーチン（関数、インライン関数、マクロ）も同じです。基本的には、同じことを繰り返している（コピー&ペーストでコードを書いている）と気づいたら、そのコードを置き換えるサブルーチンを作ることを考える時期かもしれません。
 
-These are just a few basic guidelines. If you need more, you can find some more [here](https://web.archive.org/web/20110624025547/http://www.jetcafe.org/~jim/c-style.html), for example. Google is your friend. Now, if you've followed any classes on C, you should already know these things. If not, you have been cheated. Books and tutorials may sometimes skip these topics, so it may be necessary to browse around for more guidelines on programming styles. That's all they are, by the way: *guidelines*. While the rules are usually sensible, there's no need to get fascist about them. Sometimes the rules won't quite work for your situation; in that case feel free to break them. But please keep in mind that these guidelines have been written for a reason: more often than not you will benefit from following them.
+これらは、基本的な指針のほんの一部です。もっと知りたければ、たとえば[こちら](https://web.archive.org/web/20110624025547/http://www.jetcafe.org/~jim/c-style.html)にもう少しあります。Google はあなたの味方です。C の授業を受けたことがあるなら、こういうことはもう知っているはずです。知らないなら、だまされていたのです。本やチュートリアルはこうした話題を飛ばすこともあるので、プログラミングのスタイルについての指針を、もっと探してみる必要があるかもしれません。ちなみに、それはあくまで*指針*です。ルールはたいてい理にかなっていますが、それに狂信的になる必要はありません。ルールが自分の状況にうまく合わないこともあります。その場合は、遠慮なく破ってください。でも、これらの指針には理由があって書かれていることを忘れないでください。たいていは、従ったほうが得をします。
 
-### First demo v3? {#ssec-2nd-v3}
+### 最初のデモ v3？ {#ssec-2nd-v3}
 
-There are many ways that lead to Rome. You've already seen two ways of coding that essentially do the same thing, though one was easily superior. But sometimes things aren't so clear cut. In many cases, there are a number of equally valid ways of programming. The obvious example is the names you give your identifiers. No one's forcing you to a particular set of names because it's not the names that are important, it's what they stand for. Another point of contention is whether you use macros, functions, arrays or what not for dealing with the memory map. In most cases, there's no difference in the compiled code.
+すべての道はローマに通じます。本質的に同じことをする 2 つのコードの書き方を、すでに見てきました。もっとも、片方は明らかに優れていましたが。でも、いつもそこまではっきりしているとは限りません。多くの場合、同じくらい正しいプログラミングのやり方がいくつもあります。分かりやすい例が、識別子に付ける名前です。大事なのは名前ではなく、それが表すものなので、特定の名前を使うよう強制する人はいません。もう 1 つ意見が分かれるのが、メモリマップを扱うのに、マクロ、関数、配列などのどれを使うかです。ほとんどの場合、コンパイルされたコードに違いはありません。
 
-The code below shows yet another way of plotting the 3 pixels. In this case, I am using the color #defines rather than the RGB inline, but more importantly I'm using an array typedef `M3LINE` with which I can map VRAM as a matrix so that each pixel is represented by a matrix element. Yes, you can do that, and in some way it's even better than using an inline or macro because you're not limited to just setting pixels; getting, masking and what not are all perfectly possible with a matrix, but if you were to go the subroutine way, you'd have to create more for each type of action.
+下のコードは、3 つのピクセルを描く、さらに別のやり方です。ここでは、RGB のインライン関数ではなく色の #define を使っていますが、もっと大事なのは、配列の typedef の `M3LINE` を使っていることです。これを使うと、VRAM を行列として対応づけられるので、各ピクセルが行列の 1 つの要素になります。ええ、そういうこともできるのです。しかも、ある意味では、インライン関数やマクロを使うよりも優れています。ピクセルを置くことだけに限られないからです。行列なら、値の取得やマスクなども問題なくできます。サブルーチンのやり方でそれをしようとすると、操作の種類ごとにサブルーチンを増やす必要があります。
 
-As you can see, there's all kinds of ways of getting something done, and some are more practical than others. Which one is appropriate for your situation is pretty much up to you; it's just part of software design.
+見てのとおり、何かを実現するやり方はいろいろあり、ほかより実用的なやり方もあります。どれが自分の状況に合うかは、ほぼあなた次第です。それも、ソフトウェア設計の一部なのです。
 
 ```c
 #include "toolbox.h"
@@ -301,72 +301,72 @@ int main()
 }
 ```
 
-## General notes on GBA programming {#sec-notes}
+## GBA プログラミングについての一般的な注意 {#sec-notes}
 
-Console programming is substantially different from PC programming, especially for something like the GBA. There is no operating system, no complex API to learn, it's just you against the memory. You need to have intimate knowledge of the GBA memory sections to make things work, and good pointer and bit-operation skills are a must. Also remember that you don't have a 2GHz CPU, half a gig of RAM and a GPU that can do a gazillion polygons per second. It's just a 16 MHz CPU with 96kB video memory. And *no* floating point support or even hardware division. These are all things you need to be aware of when designing your GBA software.
+ゲーム機のプログラミングは、PC のプログラミングとはかなり違います。GBA のようなものなら、なおさらです。OS もなければ、覚えるべき複雑な API もありません。あなたとメモリとの一騎打ちです。うまく動かすには、GBA のメモリ領域を詳しく知っておく必要があり、ポインタとビット演算をうまく扱えることは必須です。それから、2GHz の CPU も、500MB の RAM も、1 秒に何億ものポリゴンを描ける GPU もないことを覚えておいてください。あるのは、16 MHz の CPU と、96kB のビデオメモリだけです。浮動小数点数のサポートも、ハードウェアの割り算すら*ありません*。GBA のソフトウェアを設計するときは、こうしたことすべてを意識しておく必要があります。
 <br>  
-Another thing that you need to remember is that the GBA has a tendency to do things just a tiny bit different than you may expect. The primary example of this is the matrix used for [affine transformations](affine.html) like rotation and scaling. All of the popular tutorials give the wrong matrix for a rotation-scale transformation, even though the reference documents give the correct description of each element. Other good examples are the end result of trying to [write a single byte to VRAM](bitmaps.html#ssec-intro-details), the fact that [bits for key-states](keys.html#ssec-reg-keys) are actually *set* when the button's unpressed instead of the other way around, or what the timer register [REG_TMxD](timers.html#ssec-reg-tmxd) *really* does.
+もう 1 つ覚えておいてほしいのは、GBA は、あなたが期待するのとはほんの少し違うやり方で物事をする傾向がある、ということです。その代表例が、回転や拡大縮小のような[アフィン変換](affine.html)に使う行列です。参考資料には各要素の正しい説明が書かれているのに、人気のあるチュートリアルはどれも、回転と拡大縮小の変換に間違った行列を載せています。ほかのよい例としては、[VRAM に 1 バイトだけ書き込もうとした](bitmaps.html#ssec-intro-details)ときの結果、[キーの状態を表すビット](keys.html#ssec-reg-keys)が、ボタンを押したときではなく、押していないときに*立つ*こと、そしてタイマーのレジスタ [REG_TMxD](timers.html#ssec-reg-tmxd) が*本当は*何をするのか、などがあります。
 
-I've tried to be complete in my explanations of all these things, but I'm positive I've missed a thing or two. If you encounter problems, you're probably not the first one. There are plenty of FAQs and forums where you can find the solution. If that fails, it never hurts to ask. If any of my information is incorrect or incomplete, please don't hesitate to tell me.
+こうしたことを全部、漏れなく説明しようとしましたが、きっと 1 つや 2 つは見落としているはずです。問題にぶつかったら、たぶんあなたが最初ではありません。解決策が見つかる FAQ やフォーラムはたくさんあります。それでもだめなら、聞いてみて損はありません。私の情報に間違いや足りないところがあれば、遠慮なく教えてください。
 
-### GBA Good/bad practices {#ssec-notes-bad}
+### GBA でのよい習慣、悪い習慣 {#ssec-notes-bad}
 
-For some reason, there are a lot of bad programming practices among the GBA development community. The main reason for this is probably that people just copy-paste from tutorial code, most of which use these practices. Here's a short list of things to avoid, and things to adopt.
+なぜか、GBA の開発コミュニティには、悪いプログラミングの習慣がたくさんあります。その一番の理由は、たぶん、みんながチュートリアルのコードをコピー&ペーストしていて、そのほとんどがこうした習慣を使っているからでしょう。避けるべきことと、取り入れるべきことを、手短に挙げます。
 
--   **Don't believe everything you read**. Bottom line: people make mistakes. Sometimes, the information that is given is incorrect or incomplete. Sometimes the code doesn't work; sometimes it does, but it's inefficient or inconsistent or just contains practices that will come back to bite you later on. This is true for most (if not all) older tutorials. Don't automatically assume you're doing it wrong: there is a chance it's the source material.
+-   **読んだものを何でも信じないこと**。要するに、人は間違えるものです。示された情報が間違っていたり、足りなかったりすることもあります。コードが動かないこともあれば、動いても非効率だったり、一貫性がなかったり、あとで痛い目にあう習慣が入っていたりすることもあります。これは、（全部とは言わないまでも）ほとんどの古いチュートリアルに当てはまります。自分のやり方が間違っていると決めつけないでください。元の資料のほうが間違っている可能性もあります。
 
-    Unfortunately, if you're new to programming you might not recognize the bad and adopt the standards exhibited by some sources. *Do not learn C programming from GBA tutorials!* I'd almost extend that suggestion to on-line tutorials in general, especially short ones. Books are usually more accurate and provide a better insight into the material. (But again, [not always.](http://www.coranac.com/documents/taptngba/))
+    残念ながら、プログラミングを始めたばかりだと、悪いものを見分けられず、資料に示された基準をそのまま取り入れてしまうかもしれません。*GBA のチュートリアルで C のプログラミングを学ばないでください！* この助言は、オンラインのチュートリアル全般、特に短いものにまで広げたいくらいです。本のほうがたいてい正確で、内容をより深く理解させてくれます。（でもやはり、[いつもそうとは限りません。](http://www.coranac.com/documents/taptngba/)）
 
--   **RTFAQ / RTFR**. Read the [gbadev forum FAQ](https://gbadev.net/forum-archive/thread/14/418.html). Should go without saying. It covers a lot of common problems. Additionally, read the fuckin reference, by which I mean [GBATEK](https://problemkaputt.de/gbatek.htm), which covers just about everything.
+-   **RTFAQ / RTFR**。[gbadev のフォーラムの FAQ](https://gbadev.net/forum-archive/thread/14/418.html) を読んでください。言うまでもないことです。よくある問題がたくさん扱われています。それから、そのいまいましいリファレンスを読んでください。つまり [GBATEK](https://problemkaputt.de/gbatek.htm) のことで、ほぼすべてが載っています。
 
--   **Makefiles are good**. Many tutorials use batchfiles for building projects. This is a very easy method, I agree, but in the long run, it's very inefficient, Windows only and is prone to maintainability problems. Makefiles are better for Real World projects, even though there may be a hurdle setting them up initially. Fortunately, you don't have to worry about it that much, because DevkitPro comes with a **template makefile/project** (see `${DEVKITPRO}/examples/gba/template`) where all you need to do is say in which directories the source/header/data files are kept. The makefiles I use for the advanced and lab projects are an adaptation of these.
+-   **makefile はよいもの**。多くのチュートリアルは、プロジェクトのビルドにバッチファイルを使っています。とても簡単な方法なのは認めますが、長い目で見ると、とても非効率で、Windows でしか使えず、保守の問題も起きやすいです。最初に用意するのに少し手間がかかるかもしれませんが、現実のプロジェクトには makefile のほうが向いています。幸い、そこまで心配する必要はありません。DevkitPro には **makefile とプロジェクトのテンプレート**（`${DEVKITPRO}/examples/gba/template` を見てください）が付いていて、ソース、ヘッダー、データのファイルがどのディレクトリにあるかを書くだけで済むからです。私が advanced と lab のプロジェクトで使っている makefile も、これを手直ししたものです。
 
--   **Thumb-code is good**. The standard sections for code (ROM and EWRAM) have 16bit buses. ARM instructions will clog the bus and can seriously slow down performance. Thumb instructions fit better here. Thumb code is often smaller too. Note that because of the 32bit bus of IWRAM, there is no penalty for ARM code there.
+-   **Thumb コードはよいもの**。コードを置く標準の領域（ROM と EWRAM）は、16 ビットのバスです。ARM の命令はバスを詰まらせ、性能を大きく落とすことがあります。ここには Thumb の命令のほうが合っています。Thumb コードは、たいてい小さくもなります。なお、IWRAM は 32 ビットのバスなので、そこでは ARM コードでも不利になりません。
 
--   **Enabling interworking, optimizations and warnings are good.** Interworking (`-mthumb-interwork`) allows you to use switch between ARM and Thumb code; you may want this if you have a few high-performance routines in ARM/IWRAM that you want to call from ROM code. Optimizations (`-O`*`#`*) make GCC not be an idiot when compiling C into machine code (I'm serious: without them the output is attrociously bad in every way). It produces faster code, and usually smaller as well. Warnings `-Wall` should be enabled because you *will* do stupid things that will produce compilable output, but won't do what you expected. Warnings are reminders that something funky may be going on.
+-   **インターワーク、最適化、警告を有効にするのはよいこと**。インターワーク（`-mthumb-interwork`）を有効にすると、ARM と Thumb のコードを行き来できるようになります。ROM のコードから呼び出したい高性能なルーチンが ARM/IWRAM にいくつかある場合に必要になるでしょう。最適化（`-O`*`#`*）を有効にすると、GCC が C を機械語にコンパイルするときに、まぬけなことをしなくなります（本気です。最適化なしだと、出力はあらゆる点でひどいものです）。より速いコードができ、たいていは小さくもなります。警告 `-Wall` は有効にしておくべきです。あなたは*必ず*、コンパイルは通るけれど期待どおりには動かない、ばかげたことをするからです。警告は、何かおかしなことが起きているかもしれないと知らせてくれるものです。
 
--   **32bit variables are good**. Every CPU has a ‘native’ datatype, also known as the **word**, or in C-speak, the `int`. Generally speaking, the CPU is better equipped to deal with that datatype than any other. The GBA is called a 32bit machine because the CPU's native datatype is 32-bit. The instruction sets are optimised for word-sized chunks. It *likes* words, so you'd better feed it words unless you have no other choice.
+-   **32 ビットの変数はよいもの**。どの CPU にも「ネイティブ」なデータ型があり、**ワード**、C の言葉でいえば `int` と呼ばれます。一般に、CPU はほかのどのデータ型より、そのデータ型をうまく扱えます。GBA が 32 ビット機と呼ばれるのは、CPU のネイティブなデータ型が 32 ビットだからです。命令セットはワードの大きさのまとまりに最適化されています。GBA はワードが*好き*なので、ほかに選択肢がない場合を除いて、ワードを与えてあげましょう。
 
-    In a very real way, the 32bit integer is the *only* datatype the GBA has. The rest are essentially emulated, which carries a small performance penatly (2 extra shift instructions for bytes and halfwords). Do **not** use `u8` or `u16` for loop-indices for example, doing so can cut the speed of a loop *in half*! (The belief that using smaller types means lower memory-use only holds for aggregates and maybe globals; for local variables it actually *costs* memory). Likewise, if you have memory to copy or fill, using words can be about twice as fast as halfwords. Just be careful when casting, because an ARM CPU is very picky when it comes to [alignment](bitmaps.html#ssec-data-align).
+    実際のところ、32 ビットの整数は、GBA が持つ*唯一*のデータ型です。ほかは本質的に模倣されているだけで、少し性能が落ちます（バイトとハーフワードには、追加のシフト命令が 2 つ必要です）。たとえば、ループの添字に `u8` や `u16` を使っては**いけません**。そうすると、ループの速さが*半分*になることがあります！（小さな型を使えばメモリの使用量が減るという考えが当てはまるのは、配列や構造体などのまとまったデータと、場合によってはグローバル変数だけです。ローカル変数では、実はかえってメモリを*使います*。）同じように、メモリをコピーしたり埋めたりするとき、ワード単位で行うと、ハーフワード単位よりおよそ 2 倍速くなります。ただし、キャストするときは気をつけてください。ARM の CPU は、[アラインメント](bitmaps.html#ssec-data-align)にとてもうるさいからです。
 
--   **Data in header files is *bad*, very bad**. I'll go in a little detail about it when talking about [data](bitmaps.html#ssec-data-hdr). And see also [here](https://gbadev.net/forum-archive/thread/4/2605.html) and [here](https://gbadev.net/forum-archive/thread/14/3687.html).
+-   **ヘッダーファイルにデータを置くのは*悪い*、とても悪いこと**。これについては、[データ](bitmaps.html#ssec-data-hdr)の話をするときに少し詳しく説明します。[こちら](https://gbadev.net/forum-archive/thread/4/2605.html)と[こちら](https://gbadev.net/forum-archive/thread/14/3687.html)も見てください。
 
-Those are points where other GBA tutorials often err. It's not an exclusive list, but the main points are there I think. There are also a few things on (C) programming in general that I'd like to mention here.
+ここまでが、ほかの GBA のチュートリアルがよく間違えている点です。これで全部ではありませんが、主な点は押さえていると思います。ほかに、（C の）プログラミング全般について、ここで触れておきたいことがいくつかあります。
 
--   **Know the language; know the system**. It should go without saying that if you're programming in a certain language or on a certain system, you should know a little (and preferably a lot) about both. However, I have seen a good deal of code that was problematic simply because the author apparently didn't know much about either. As I said in the beginning of this section, the GBA has a few interesting quirks that you need to know about when programming for it. That, of course, is what Tonc is all about. Some things stem from lack of C skills – the ‘int’-thing is an example of this. Another *very* common problem is correct memory and pointer use, something that I will cover a little later and also in the section on [data](bitmaps.html#sec-data). With C, you have different kinds of datatypes, pointers, the preprocessor and bit-operators at your disposal. Learn what they do and how to use them effectively.
+-   **言語を知り、システムを知ること**。ある言語や、あるシステムでプログラミングをするなら、その両方について少し（できればたくさん）知っておくべきなのは、言うまでもありません。でも、作者がどちらもよく知らなかったらしいというだけで問題を抱えたコードを、私はかなりたくさん見てきました。この節の最初で言ったとおり、GBA には、プログラミングするときに知っておくべき面白い癖がいくつかあります。もちろん、それを説明するのが Tonc の目的です。C の技術が足りないことから来る問題もあります。さっきの「int」の件がその例です。もう 1 つ*とても*よくある問題は、メモリとポインタを正しく使うことです。これについては、少しあとと、[データ](bitmaps.html#sec-data)の節でも扱います。C では、さまざまな種類のデータ型、ポインタ、プリプロセッサ、ビット演算子を使えます。それらが何をするのか、どうすれば効果的に使えるのかを学んでください。
 
--   **Think first, code later**. *Don't* open up an editor, type some code and hope it works correctly. It won't. How can it, if you haven't even defined what ‘correctly’ means? Think of what you want to do first, then what you need to get it done and *then* try to implement it.
+-   **まず考えて、書くのはそのあと**。エディタを開いてコードを打ち込み、正しく動くことを祈る、ということは*しないでください*。動きません。「正しく」が何を意味するのかすら決めていないのに、どうして正しく動くでしょうか？ まず何をしたいのかを考え、次にそれを実現するために何が必要かを考え、*それから*実装してみてください。
 
-    A lot of programming (for me anyway) is not done in a text editor at all. For example, for anything involving math (which can include graphics as well), it's better to make a diagram of the situation. I have pages of diagrams and equations for the [affine transformation](affine.html) and [mode 7](mode7.html), just to see what what going on. Pen and paper are your friends here.
+    （少なくとも私にとっては）プログラミングの多くは、テキストエディタの中では行われません。たとえば、数学が関わることなら（グラフィックも含まれることがあります）、状況を図にしたほうがいいです。私は、何が起きているのかを確かめるためだけに、[アフィン変換](affine.html)と [Mode 7](mode7.html) について何ページにもわたる図と式を書きました。ここでは、紙とペンがあなたの味方です。
 
--   **Learn to generalize and simplify**. This is actually not about programming, but problem-solving in general. Specific problems are often special cases of more general problems. For example, 2D math is a subset of multi-dimensional math; vector analysis and transformations such as rotations and scaling are parts of linear algebra. If you know the general solution, you can always (well, *often*, at any rate) work down to the specific case. However, what is often taught (in school, but in universities as well) are the specific solutions, not the general ones. While using the special case solutions are often faster in use, they won't work at all if the case is *just* a little different than the example in the book. If you'd learned the general solution – better yet, how to arrive at the general solution – you'd stand a much better change of solving the task at hand.
+-   **一般化と単純化を学ぶこと**。これは実はプログラミングというより、問題解決全般の話です。特定の問題は、もっと一般的な問題の特殊な場合であることがよくあります。たとえば、2 次元の数学は多次元の数学の一部ですし、ベクトル解析や、回転や拡大縮小などの変換は、線形代数の一部です。一般的な解き方を知っていれば、いつでも（まあ、少なくとも*たいていは*）特定の場合まで落とし込めます。でも、（学校で、そして大学でも）よく教えられるのは、一般的な解き方ではなく、特定の場合の解き方です。特殊な場合の解き方を使うほうが速いことも多いのですが、状況が本の例と*ほんの少し*違うだけで、まったく使えなくなります。一般的な解き方を学んでいれば、さらに言えば、一般的な解き方にたどり着く方法を学んでいれば、目の前の課題を解ける見込みはずっと高くなります。
 
-    A related issue is simplification. For example, if you have long expressions in a set of equations (or algorithms), you can group them to together under a new name. This means less writing, less writing and a lower risk of making a mistake somewhere.
+    これに関連するのが単純化です。たとえば、一連の式（やアルゴリズム）に長い式があるなら、それを新しい名前でまとめられます。そうすれば、書く量も減り、どこかで間違える危険も減ります。
 
--   **Learn basic optimization strategies**. By this I don't mean that you should know every trick in the book, but there are a few things that you can use in writing code that can speed things up (sometimes even significantly) without cost to readbility and maintainability. In fact, sometimes the code actually becomes easier to read because of it. A few examples:
+-   **基本的な最適化の戦略を学ぶこと**。教科書に載っているあらゆる技を知っておくべきだ、という意味ではありません。でも、読みやすさや保守のしやすさを損なわずに、コードを速くできる（ときには大幅に）書き方がいくつかあります。実際、そのおかげでコードがかえって読みやすくなることもあります。いくつか例を挙げます。
 
-    -   **Use a better algorithm**. Okay, so this one may not always be simple, but it's still very true.
-    -   **Use ints**. The `int` is loosely defined as the native datatype. Processors tend to perform better when they deal with their native datatype.
-    -   **Use temporary variables for common expressions**. If you use a long expression more than a few times, consider dumping it in a temp. This means less writing for you, and less reading for everyone. It can also make your code faster because you don't need to evaluate the entire expression all the time. This is especially true for global variables, which have to be reloaded after each function-call because the values may have changed.
-    -   **Use pointers**. Pointers have the reputation of being dangerous, but they're a *very* powerful tool if used correctly. Pointer arithmetic is usually faster than indexing because it's closer to hardware, and by assigning temp pointers to deeply nested structure expressions (see above), you can greatly reduce the length of the expressions, which makes things easier on the compiler and the reader alike.
-    -   **Precalculate.** This is related to the previous two points. If you have a loop in which things don't depend on the loop-variable, precalculate that part before the loop. Also, to avoid (complex) calculations, you could dump the data in a [Look-up Table](fixed.html#sec-lut) and simply grab a value from there.
-    -   **Avoid branches**. Things that redirect program flow (ifs, loops, switches) generally cost more than other operations such as arithmetic. Sometimes it's possible to effectively do the branch with arithmetic (for example, `(int)x>>1` gives −1 or 0, depending on the sign of *x*)
+    -   **よりよいアルゴリズムを使う**。まあ、これはいつも簡単とは限りませんが、それでも真実です。
+    -   **int を使う**。`int` は、ざっくり言えばネイティブなデータ型として定義されています。プロセッサは、ネイティブなデータ型を扱うときのほうが性能を発揮しやすいものです。
+    -   **共通する式には一時変数を使う**。長い式を何度か使うなら、一時変数に入れることを考えてください。あなたが書く量も、みんなが読む量も減ります。毎回式全体を評価しなくて済むので、コードが速くなることもあります。これは特にグローバル変数に当てはまります。関数を呼ぶたびに値が変わっているかもしれないので、呼び出しのあとに読み込み直す必要があるからです。
+    -   **ポインタを使う**。ポインタは危険だという評判がありますが、正しく使えば*とても*強力な道具です。ポインタの計算は、ハードウェアに近いので、たいていは添字を使うより速いです。また、深く入れ子になった構造体の式に一時的なポインタを割り当てれば（上を参照）、式の長さを大きく減らせます。そうすると、コンパイラにとっても読む人にとっても楽になります。
+    -   **前もって計算しておく**。これは前の 2 つの点に関係しています。ループの中に、ループ変数に依存しない部分があるなら、その部分はループの前に計算しておきましょう。また、（複雑な）計算を避けるために、データを[ルックアップテーブル](fixed.html#sec-lut)に入れておき、そこから値を取ってくるだけにすることもできます。
+    -   **分岐を避ける**。プログラムの流れを変えるもの（if、ループ、switch）は、一般に算術演算などのほかの操作より負担が大きいです。算術演算で、実質的に分岐と同じことができる場合もあります（たとえば、`(int)x>>1` は *x* の符号によって −1 か 0 になります）。
 
-    There are many more optimization techniques, of course. Wikipedia has a nice [overview](https://en.wikipedia.org/wiki/Optimization_(computer_science)), and you can find pages discussing particular techniques [here](https://web.archive.org/web/20090719211007/http://www.abarnett.demon.co.uk:80/tutorial.html)<span class="emphasis">\[b0rked\]</span> and [there](http://linuxgazette.net/issue71/joshi.html). Some of these techniques will be done by the compiler anyway, but not always.
+    もちろん、最適化の手法はほかにもたくさんあります。Wikipedia にはよい[概要](https://en.wikipedia.org/wiki/Optimization_(computer_science))があり、特定の手法を扱ったページは[こちら](https://web.archive.org/web/20090719211007/http://www.abarnett.demon.co.uk:80/tutorial.html)<span class="emphasis">\[リンク切れ\]</span>や[あちら](http://linuxgazette.net/issue71/joshi.html)にあります。これらの手法のいくつかは、どのみちコンパイラがやってくれますが、いつもとは限りません。
 
--   **Learn to optimize *later***. Also known as “premature optimization is the root of all evil”. Optimization should be done in the final stages, when most code is in pace and you can actually tell where optimization is necessary (if it's necessary at all). However, this does *not* mean you should actually strive for the slowest solution in the early phases. Often there is a cleaner and/or faster (sometimes even *much* faster) algorithm then the trivial one, which will come to you with just a small amount of thought. This isn't optimization, it's simply a matter of not being stupid. A few of the points mentioned above fall in this category.
+-   **最適化は*あとで*すること**。「早すぎる最適化は諸悪の根源」としても知られています。最適化は最後の段階、つまりほとんどのコードができあがり、どこに最適化が必要なのか（そもそも必要なのか）が実際に分かるようになってから行うべきです。ただし、だからといって、初めのうちは一番遅いやり方を目指すべきだ、という意味では*ありません*。少し考えれば思いつく、当たり前のやり方より整理されていて速い（ときには*ずっと*速い）アルゴリズムがあることも多いです。それは最適化ではなく、単にまぬけなことをしない、というだけの話です。上で挙げた点のいくつかは、これに当たります。
 
--   **There are always exceptions**. There is no programming guideline that doesn't have its exception. Except maybe this one.
+-   **例外は必ずある**。例外のないプログラミングの指針はありません。たぶんこれ以外は。
 
-I'll leave it at that for now. Entire books have been written on how to code efficiently. Resources are available on the web as well: search for things like “optimization”, “coding standards” or “coding guidelines” should give you more than enough. Also look up [Design Pattern](https://en.wikipedia.org/wiki/Software_design_pattern) and [Anti-pattern](https://en.wikipedia.org/wiki/Anti-pattern). Also fun are books and sites that show how *not* to code. Sometimes these are even more useful. [Worse than Failure](http://worsethanfailure.com/Default.aspx) is one of these (in particular the codeSOD category); The programming section of [Computer stupidities](http://www.rinkworks.com/stupid/cs_programming.shtml) is also nice. If you want to see why the use of global variables is generally discouraged, do a search for ‘alpha’ in the latter page.
+今はこれくらいにしておきます。効率よくコードを書く方法については、何冊もの本が書かれています。Web にも資料があります。「optimization」「coding standards」「coding guidelines」などで検索すれば、十分すぎるほど見つかるはずです。[デザインパターン](https://en.wikipedia.org/wiki/Software_design_pattern)と[アンチパターン](https://en.wikipedia.org/wiki/Anti-pattern)も調べてみてください。どう書いては*いけない*かを示す本やサイトも面白いです。そちらのほうが役に立つことさえあります。[Worse than Failure](http://worsethanfailure.com/Default.aspx)（特に codeSOD のカテゴリ）がその 1 つで、[Computer stupidities](http://www.rinkworks.com/stupid/cs_programming.shtml) のプログラミングの節もいいです。グローバル変数を使うのが一般に勧められない理由を知りたければ、後者のページで「alpha」を検索してみてください。
 
-### A few examples of good/bad practices {#ssec-bad-example}
+### よい習慣、悪い習慣の例 {#ssec-bad-example}
 
-Here are a few examples of code that, while functional, could be improved in terms of speed, amount of code and/or maintainability.
+ここでは、動きはするものの、速さ、コードの量、保守のしやすさの点で改善できるコードの例を、いくつか示します。
 
-#### Ints versus non-ints
+#### int とそれ以外
 
-Above, I noted that use of non-ints can be problematic. Because this bad habit is particularly common under GBA and NDS code (both homebrew *and* commercial), I'd like to show you an example of this.
+上で、int 以外の型を使うと問題になりうると書きました。この悪い癖は、GBA と NDS のコード（自作ソフト*でも*市販のソフトでも）で特によく見られるので、その例をお見せします。
 
 <pre><code class="language-c hljs">// Force a number into range [min, max&gt;
 #define CLAMP(x, min, max)   \
@@ -393,15 +393,15 @@ void pal_brightness(u16 *pal, <span class="rem wavy">u16</span> size, <span clas
 }
 </code></pre>
 
-This routine brightens or darkens a palette by adding a brightness-factor to the color components, each of which is then clamped to the range \[0,31⟩ to avoid funky errors. The basic algorithm is sound, even the implementation is, IMHO, pretty good. What isn't good, however is the datatypes used. Using `s8` and `u16` here adds an extra shift-pair practically every time any variable is used! The loop itself compiles to about 90 Thumb instructions. In contrast, when using `int`s for everything except `pal` the loop is only 45 instructions long. Of course the increase in size means an increase in time as well: the int-only version is 78% faster than the one given above. To repeat that: **the code has doubled in size and slowed down by 78% *just* by using the wrong datatype**!
+このルーチンは、色の成分に明るさの係数を足して、パレットを明るくしたり暗くしたりします。おかしな誤りを避けるために、各成分は範囲 \[0,31⟩ に収められます。基本のアルゴリズムは正しく、実装も、私の意見ではかなりよいものです。でも、よくないのは、使っているデータ型です。ここで `s8` と `u16` を使うと、変数を使うほぼたびに、シフトの組が余分に入ります！ ループ自体は、Thumb の命令で約 90 個にコンパイルされます。対して、`pal` 以外の全部に `int` を使うと、ループは 45 命令しかありません。もちろん、大きさが増えれば時間も増えます。int だけの版は、上の版より 78% 速くなります。もう一度言います。**間違ったデータ型を使った*だけ*で、コードの大きさは 2 倍になり、78% 遅くなった**のです！
 <br>  
-I'll admit that this example is particularly nasty because there is a lot of arithmetic in it. Most functions would incur a smaller penalty. However, there is no reason for losing that performance in the first place. There is no benefit of using `s8` and `u16`; it does not increase redability – all it does is cause bloat and slow-down. **Use 32-bit variables when you can, the others only when you have to**.
+この例は、算術演算が多いので、特にひどいことは認めます。ほとんどの関数では、もっと小さな損失で済むでしょう。でも、そもそも性能を失う理由がありません。`s8` と `u16` を使う利点は何もありません。読みやすくもなりません。コードを膨らませ、遅くするだけです。**できるときは 32 ビットの変数を使い、それ以外の型は必要なときだけ使ってください**。
 <br>  
-Now, before this becomes another [goto](https://www.xkcd.com/292/) issue, non-ints do have their place. Variables can be divided into two groups: worker variables (things in registers) and memory variables. Local variables and function parameters are worker variables. These should be 32-bit. Items that are in memory (arrays, globals, structs, and what not) could benefit from being as small as possible. Of course, memory variables still have to be loaded into registers before you can do anything with them. An explicit local variable may be useful here, but it depends on the case at hand.
+さて、これがまた別の [goto](https://www.xkcd.com/292/) 論争になる前に言っておくと、int 以外の型にもちゃんと出番はあります。変数は、作業用の変数（レジスタに入るもの）と、メモリ上の変数の 2 つに分けられます。ローカル変数と関数の引数は作業用の変数です。これらは 32 ビットにするべきです。メモリにあるもの（配列、グローバル変数、構造体など）は、できるだけ小さくしたほうが得をすることがあります。もちろん、メモリ上の変数も、何かをする前にはレジスタに読み込む必要があります。そこで明示的なローカル変数を使うと役に立つこともありますが、それは場合によります。
 
-#### Pointer problems
+#### ポインタの問題
 
-One of the most common mistakes GBA neophytes make is mixing up array/pointer sizes when copying data. [Data is data](bitmaps.html#sec-data), but you can access it in different ways. For example, here's code that copies bitmap-data from an array into VRAM.
+GBA の初心者がよくする間違いの 1 つが、データをコピーするときに、配列やポインタの大きさを取り違えることです。[データはデータ](bitmaps.html#sec-data)ですが、いろいろなやり方でアクセスできます。たとえば、ビットマップのデータを配列から VRAM にコピーするコードを見てみましょう。
 
 ```c
 // An array representing a 240x160@16 bitmap, converted 
@@ -424,11 +424,11 @@ int main()
 }
 ```
 
-The `fooBitmap` array represents some bitmap. In order to display that bitmap on the screen, you need to copy its data into VRAM. That's simple enough: we have `vid_mem` from before, and we can copy from `fooBitmap` to VRAM by copying elements using a simple for-loop.
+`fooBitmap` 配列は、あるビットマップを表しています。そのビットマップを画面に表示するには、データを VRAM にコピーする必要があります。それは簡単そうに見えます。前に作った `vid_mem` があるので、単純な for ループで要素をコピーすれば、`fooBitmap` から VRAM にコピーできます。
 
-However, it's not quite as simple as that. `vid_mem` is an `u16` array; so defined because in mode 3 each pixel is an 16-bit color. But `fooBitmap` is a byte-array: *two* elements of this array represent *one* color, and copying bytes-to-halfwords leaves the top-byte of each pixel empty, giving a very skewed result. Such a source-destination is incredibly common, partly because people don't know how pointers and arrays represent memory, but also because they don't pay attention to the datatype.
+でも、それほど単純ではありません。`vid_mem` は `u16` の配列です。モード 3 では各ピクセルが 16 ビットの色なので、そう定義されています。でも、`fooBitmap` はバイトの配列です。この配列の *2 つ*の要素が *1 つ*の色を表しています。バイトをハーフワードにコピーすると、各ピクセルの上位のバイトが空になり、まったくおかしな結果になります。こうしたコピー元とコピー先の食い違いは、信じられないほどよくあります。ポインタと配列がメモリをどう表すのかを知らないせいもありますが、データ型に注意を払っていないせいでもあります。
 
-Here's a version that would work:
+動く版は次のとおりです。
 
 ```c
 // An array representing a 240x160@16 bitmap, converted 
@@ -453,11 +453,11 @@ int main()
 }
 ```
 
-By ensuring the source and destinations are of the same type, the copying leaves no gaps. Note that the underlying data hasn't changed – only how it's used. There are actually a lot more things you need to know about how to use data and memory, which will be covered in a later chapter.
+コピー元とコピー先を同じ型にすれば、すき間なくコピーできます。中のデータそのものは何も変わっておらず、使い方が変わっただけだという点に注意してください。データとメモリの使い方については、ほかにも知っておくべきことがたくさんあります。それは、あとの章で扱います。
 
-#### Simplification
+#### 単純化
 
-Consider the following function (basically taken from the Rinkworks site mentioned earlier):
+次の関数を考えてみましょう（基本的には、さっき挙げた Rinkworks のサイトから取ってきたものです）。
 
 ```c
 int foo(int x)
@@ -476,7 +476,7 @@ int foo(int x)
 }
 ```
 
-What this function does is this: if *x* is between 1 and 7, return that number, otherwise return 0. The thing to note is that the case-value and the return code are the same, so instead of the switch-block you could have just returned *x*.
+この関数がしていることは、こうです。*x* が 1 から 7 のあいだならその数を返し、そうでなければ 0 を返す。注目すべきは、case の値と返す値が同じだということです。なので、switch のブロックの代わりに、*x* をそのまま返せばよかったのです。
 
 ```c
 int foo(int x)
@@ -488,9 +488,9 @@ int foo(int x)
 }
 ```
 
-Simplifications like this often present themselves if you just think about what you're doing for a little while, rather than just entering code. Now, this would should be rather obvious, but more difficult switch-blocks can often be replaced by something like this as well. For example, if there is a simple mathematical relation between the input and the return value (some addition or multiplication, for example), you can just use that relation. Even if there is not such a simple relation, there can be possibilities. If you're returning constants, you could put those constants in a table and use *x* as an index.
+こうした単純化は、ただコードを打ち込むのではなく、自分が何をしているのかを少し考えるだけで、見えてくることがよくあります。これはかなり明らかな例ですが、もっと難しい switch のブロックも、たいていは同じように置き換えられます。たとえば、入力と返す値のあいだに単純な数学的な関係（足し算や掛け算など）があるなら、その関係をそのまま使えます。そこまで単純な関係がなくても、手はあります。定数を返しているなら、その定数を表に入れて、*x* を添字に使えばいいのです。
 <br>  
-The above is a simplification in terms of the algorithm used. Another kind of simplification is in readability. Of course, everybody has their own ideas about what's readable. Personally, I prefer to keep my statements short, especially in the place where the action happens. The next function is an example of bounding circle collision detection. Basically, you have two circles at points **p**<sub>1</sub> = (*x*<sub>1</sub>, *y*<sub>1</sub>) and **p**<sub>2</sub> = (*x*<sub>2</sub>, *y*<sub>2</sub>) and radii *r*<sub>1</sub> and *r*<sub>2</sub>. The distance between these two points can be calculated with the [Pythagorean theorem](https://en.wikipedia.org/wiki/Pythagorean_theorem). If this distance is smaller than the sum of the two radii, the circles overlap. A function that checks whether the player sprite hits any of the enemy sprites could look something like this:
+上は、使うアルゴリズムの面での単純化でした。もう 1 つの単純化は、読みやすさの面です。もちろん、何が読みやすいかについては、誰もがそれぞれの考えを持っています。私個人は、特に実際の処理が行われるところでは、文を短くしておくのが好きです。次の関数は、外接円による当たり判定の例です。基本的には、点 **p**<sub>1</sub> = (*x*<sub>1</sub>, *y*<sub>1</sub>) と **p**<sub>2</sub> = (*x*<sub>2</sub>, *y*<sub>2</sub>) に、半径 *r*<sub>1</sub> と *r*<sub>2</sub> の 2 つの円があります。この 2 点のあいだの距離は、[ピタゴラスの定理](https://en.wikipedia.org/wiki/Pythagorean_theorem)で計算できます。この距離が 2 つの半径の和より小さければ、円は重なっています。プレイヤーのスプライトが敵のスプライトのどれかに当たっているかを調べる関数は、たとえば次のようになるでしょう。
 
 ```c
 // Some basic structs and a sprite array.
@@ -530,7 +530,7 @@ int player_collision()
 }
 ```
 
-Personally, I have a hard time reading what actually goes on inside the if-statement there. Because the expression is 6 lines long, I actually have to sit down and parse what it actually does, and hope that the parentheses are all correct, etc. Now, note that a number of things are used multiple times here: the `gSprites` accesses (6× for the player, 6× for the enemy) and then the positions as well. These can all be accessed with less code by using pointers and other local variables. Also, the player's attributes are [loop invariant](https://en.wikipedia.org/wiki/Loop-invariant_code_motion) (they don't change during the loop), so they can be loaded outside the loop.
+私には、この if 文の中で実際に何が起きているのか、とても読み取りにくいです。式が 6 行もあるので、腰を据えて、実際に何をしているのかを読み解き、かっこが全部正しいことを祈る、などしなければなりません。さて、ここではいくつかのものが何度も使われていることに注目してください。`gSprites` へのアクセス（プレイヤーに 6 回、敵に 6 回）と、さらに位置もです。これらは全部、ポインタやほかのローカル変数を使えば、もっと少ないコードでアクセスできます。また、プレイヤーの属性は[ループ不変](https://en.wikipedia.org/wiki/Loop-invariant_code_motion)（ループのあいだに変わらない）なので、ループの外で読み込めます。
 
 ```c
 int player_collision()
@@ -557,41 +557,41 @@ int player_collision()
 }
 ```
 
-There may not have been a real change in the number of lines, but the lines themselves are shorter and easier to read. Also, instead of a 6-line `if`-expression, it now fits on a single line and you can actually see what it does. Personally, I'd call that a win.
+行数はたいして変わっていないかもしれませんが、1 行 1 行が短くなって、読みやすくなっています。それに、6 行あった `if` の式が 1 行に収まり、何をしているのかが実際に見て分かるようになりました。私に言わせれば、これは勝ちです。
 
-## Testing your code on a real GBA {#sec-testing}
+## 実機の GBA でコードを試す {#sec-testing}
 
-If you're just starting GBA programming, chances are you're using the emulators that are out there, and will be content with those. However, if you look through the forums you'll see many people urging you to test on hardware regularly. They are absolutely right.
+GBA プログラミングを始めたばかりなら、たぶん世の中にあるエミュレータを使っていて、それで満足しているでしょう。でも、フォーラムを見て回ると、定期的に実機で試すよう強く勧める人がたくさんいます。その人たちはまったく正しいです。
 
-Now, it isn't that the emulators are bad. On the contrary, in fact; the most popular emulators have things like tile, map and memory viewers that are essential to debugging. An emulator like VBA is very, very good, but not quite perfect. Take the Tonc demos, for example: they run the same on VBA as on a real GBA in all cases ... mostly. For one thing, timing is a real issue on most of them (the exception here is no$gba, which I've never seen off the mark by more than 2%, usually a lot less). Also, in a few rare occasions (like in [*cbb_demo*](regbg.html#sec-demo) and [*win_demo*](gfx.html#sec-win)) there were small but important differences between GBA and emulator outputs, and if you've never tested on the real thing, you'd never know.
+エミュレータが悪いわけではありません。それどころか、人気のあるエミュレータには、タイル、マップ、メモリのビューアのような、デバッグに欠かせない機能があります。VBA のようなエミュレータはとてもとても優秀ですが、完璧ではありません。たとえば Tonc のデモは、VBA でも実機の GBA でも、どれも同じように動きます……だいたいは。まず、ほとんどのデモでタイミングが実際に問題になります（例外は no$gba で、私の見た限り、ずれは 2% 以内、たいていはもっと少ないです）。また、ごくまれに（[*cbb_demo*](regbg.html#sec-demo) や [*win_demo*](gfx.html#sec-win) など）、GBA とエミュレータの出力に、小さいけれど大事な違いがありました。本物で試したことがなければ、決して気づかなかったでしょう。
 
-One other thing that is very different is the colors. Since it's not back-lit the GBA screen is much darker than a PC monitor. Or maybe that's just my room `;)`. Also, on an emulator you have the luxury of scaling your view; the real GBA is always 3" screen. There's world of difference, trust me on this. Take that *first.gba* example I showed above: the pixels are so tiny it's almost impossible to see on a real GBA! Even an 8x8 tile is pretty small. Also, the use of a keyboard in an emu is *nothing* like holding a real GBA in your hands.
+もう 1 つ大きく違うのは、色です。GBA の画面はバックライトがないので、PC のモニタよりずっと暗いです。それとも、私の部屋が暗いだけかもしれませんが `;)`。また、エミュレータでは画面を拡大するという贅沢ができますが、本物の GBA は常に 3 インチの画面です。これは天と地ほど違います。信じてください。上で見せた *first.gba* の例を考えてみてください。ピクセルがとても小さいので、本物の GBA ではほとんど見えません！ 8x8 のタイルでさえ、かなり小さいです。それに、エミュレータでキーボードを使うのは、本物の GBA を手に持つのとは*まったく*違います。
 
-And, of course, the whole idea of creating something that works on a console has an air of coolness that defies description. Well, almost anyway. The word is [progasm](http://www.catb.org/~esr/jargon/html/P/progasm.html). Says it all really, doesn't it?
+そしてもちろん、ゲーム機で動くものを作るということ自体に、言葉にできないかっこよさがあります。まあ、ほぼ言葉にできない、ですが。その言葉は [progasm](http://www.catb.org/~esr/jargon/html/P/progasm.html) です。これですべてを言い表していますよね？
 
-### Multiboot & linkers {#ssec-testing-hw}
+### マルチブートとリンカ {#ssec-testing-hw}
 
-OK, so now you know you should test on hardware, how do you do it? After all, you can't exactly plug a GBA into your PC like a USB memory stick or a printer? Well, yes you can ... with the right equipment. The two most common ways are a <dfn>multiboot cable</dfn> or a <dfn>flash linker</dfn>.
+さて、実機で試すべきだと分かったところで、どうやって試せばいいのでしょうか？ 結局のところ、USB メモリやプリンタのように、GBA を PC につなぐことはできませんよね？ いいえ、できます……適切な機材があれば。よくある方法は 2 つで、<dfn>マルチブートケーブル</dfn>か<dfn>フラッシュリンカ</dfn>です。
 
-#### Flash Card & Linker
+#### フラッシュカードとリンカ
 
-A flash card is a GBA cart with a difference: it is completely rewritable. There are a number of different sets available: different sized carts (64Mbit to 1024Mbit), USB or Parallel port versions; sets that use a separate linker (where you have to take the cart out of the GBA, write to it, and reinsert) or ones that write directly to the cart or transfer through the multiboot port. Ideally you'd use one of these. However, they can be rather pricy ($60 - $200 (and up?)) and generally only available through online stores, which also means shipping and taxes and such.
+フラッシュカードは、ひと味違う GBA のカートリッジで、中身を完全に書き換えられます。いろいろな種類があります。カートリッジの容量（64Mbit から 1024Mbit）の違い、USB 版かパラレルポート版か、別のリンカを使うもの（カートリッジを GBA から抜いて書き込み、また挿す必要がある）か、カートリッジに直接書き込むものや、マルチブートのポートを通して転送するものか、などです。理想を言えば、これらのどれかを使うのがいいです。でも、かなり高価なこともあり（60〜200 ドル（以上？））、たいていはネットショップでしか手に入らないので、送料や税金などもかかります。
 
-#### Multimedia cards
+#### マルチメディアカード
 
-A solution that's becoming more and more popular is using standard multimedia cards (eg. SD, CompactFlash) and an adapter like [GBAMP](https://web.archive.org/web/20050629010032/http://www.movieadvance.com/) and [SuperCard](https://web.archive.org/web/20060424132515/http://eng.supercard.cn:80/). Memory cards can be very cheap (like $10) and bought in most electronics stores; the adapters are genereally $25 and up.
+だんだん人気が出てきている方法が、標準的なマルチメディアカード（SD、コンパクトフラッシュなど）と、[GBAMP](https://web.archive.org/web/20050629010032/http://www.movieadvance.com/) や [SuperCard](https://web.archive.org/web/20060424132515/http://eng.supercard.cn:80/) のようなアダプタを使うことです。メモリカードはとても安く（10 ドルくらい）、ほとんどの電器店で買えます。アダプタは、たいてい 25 ドル以上です。
 
-:::warning SuperCard vs waitstates
+:::warning SuperCard とウェイトステート
 
-There is one small technical problem with SuperCards: they use slow memory that doesn't support 3/1 ROM waitstates. This is a faster setting than the default 4/2 and anything that uses the former simply won't run. This shouldn't be a problem with most homebrew things, but a handful of binaries will fail and you wouldn't be able to make use of the speed-up yourself either.
+SuperCard には、技術的な小さな問題が 1 つあります。遅いメモリを使っているので、ROM のウェイトステート 3/1 に対応していないのです。これは標準の 4/2 より速い設定で、これを使うものはまったく動きません。ほとんどの自作ソフトでは問題にならないはずですが、一部のバイナリは動かず、自分でこの高速化を使うこともできません。
 
 :::
 
-#### Multiboot cable
+#### マルチブートケーブル
 
-The other way is a multiboot cable. This is a cable that plugs into the GBA multiboot port (like multiplayer games do) and one of the PC ports, usually the parallel port. These are a lot cheaper than a flash kit. You can even build one yourself <kbd>:)</kbd>! You can find the instructions and necessary software to build an Xboo communication cable on [www.devkitpro.org](https://devkitpro.org/), which works like a charm. Basically all you need to do is connect one end of the link cable to a male parallel port cable. If you shop around you should be able to get all you need for as little as $5.
+もう 1 つの方法は、マルチブートケーブルです。GBA のマルチブートのポート（対戦ゲームで使うもの）と、PC のポートの 1 つ（たいていはパラレルポート）につなぐケーブルです。フラッシュの一式よりずっと安いです。自作することもできます <kbd>:)</kbd>！ Xboo という通信ケーブルを作るための手順と必要なソフトウェアが [www.devkitpro.org](https://devkitpro.org/) にあり、これが見事に動きます。基本的には、通信ケーブルの片方の端を、オスのパラレルポートのケーブルにつなぐだけです。探し回れば、必要なものを 5 ドルほどでそろえられるはずです。
 
-But, like always, there's no such thing as a free lunch. What happens in a multiboot game is that the code is written to EWRAM. That's how you can use one cart in a multiplayer game. The multiboot cable is the same thing, only with the PC as the host. The trouble is that EWRAM is only 256kb in size; you won't be able to fit an entire game on it. And, of course, it runs always through your computer, so unless you have a laptop, forget about taking it outside to show off to your friends.
+でも、いつものことながら、ただより高いものはありません。マルチブートのゲームでは、コードが EWRAM に書き込まれます。だから、1 本のカートリッジで対戦ゲームができるのです。マルチブートケーブルも同じことで、PC が親機になるだけです。問題は、EWRAM の大きさが 256kb しかないことです。ゲーム全体は収まらないでしょう。それにもちろん、常に PC を通して動くので、ノートパソコンでもない限り、外に持ち出して友達に自慢するのはあきらめてください。
 
 <div class="cblock">
 <table>
@@ -600,24 +600,24 @@ But, like always, there's no such thing as a free lunch. What happens in a multi
 <td>
 <div class="cpt" style="width:192px;">
   <img src="./img/hardware/efa.jpg" id="fig:efa" alt="" width=192><br>
-  <b>{*@fig:efa}</b>: efa flash card.
+  <b>{*@fig:efa}</b>: efa のフラッシュカード。
 </div>
 <td>
 <div class="cpt" style="width:192px;">
   <img src="./img/hardware/sc.jpg" id="fig:sc" alt="" width=192><br>
-  <b>{*@fig:sc}</b>: SuperCard, compact flash version.
+  <b>{*@fig:sc}</b>: SuperCard のコンパクトフラッシュ版。
 </div>
 <td>
 <div class="cpt" style="width:224px;">
   <img src="./img/hardware/xboo.jpg" id="fig:xboo" alt="" width=224><br>
-  <b>{*@fig:xboo}</b>: xboo multiboot cable.
+  <b>{*@fig:xboo}</b>: Xboo のマルチブートケーブル。
 </div>
 </tbody>
 </table>
 </div>
 
-### Compiling for real hardware {#ssec-testing-hwbuild}
+### 実機向けにコンパイルする {#ssec-testing-hwbuild}
 
-This is almost the same as for emulators. The only real things you have to worry about are a) that you can only use the binary after the `objcopy` treatment, and b) that you need to have a valid GBA header, which it usually doesn't. If the intro screen shows “Game Boy” as normal, but the “Nintendo” at the bottom is garbled, you have a bad header. To get a valid header, use a program called `gbafix.exe`. This is originally by [darkfader](https://www.darkfader.net/main/), but you can also find it at [www.devkitpro.org](https://devkitpro.org/). I already mentioned the extra steps for a multiboot game earlier.
+これは、エミュレータ向けとほとんど同じです。実際に気をつけるべきことは、a) `objcopy` の処理をしたあとのバイナリしか使えないこと、b) 正しい GBA のヘッダーが必要なこと、の 2 つだけです。たいていは、ヘッダーが正しくなっていません。起動画面の「Game Boy」は普通に表示されるのに、下の「Nintendo」が崩れていたら、ヘッダーが正しくありません。正しいヘッダーにするには、`gbafix.exe` というプログラムを使います。もともとは [darkfader](https://www.darkfader.net/main/) さんが作ったものですが、[www.devkitpro.org](https://devkitpro.org/) でも入手できます。マルチブートのゲームのための追加の手順は、前に述べたとおりです。
 
-Flash kits usually come with software that can take care of all this stuff for you (or so I'm told, I don't have one). The Xboo zip-file also has a little app that sends your binary to the GBA.
+フラッシュの一式には、たいていこうしたことを全部やってくれるソフトウェアが付いてきます（と聞いています。私は持っていないので）。Xboo の zip ファイルにも、バイナリを GBA に送る小さなアプリが入っています。

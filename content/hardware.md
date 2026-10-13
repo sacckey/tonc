@@ -1,16 +1,16 @@
-# 1. GBA Hardware
+# 1. GBA のハードウェア
 
 <!-- toc -->
 
-## Meet the GBA {#sec-intro}
+## GBA にご対面 {#sec-intro}
 
-The Nintendo Game Boy Advance (GBA) is a portable games console. As if you didn't know already. The CPU is a 32-bit ARM7tdmi chip running at 16.78 MHz. It has a number of distinct memory areas (like work RAM, IO and video memory) which we will look into shortly. The games are stored on <dfn>Game Paks</dfn>, consisting of ROM for code and data, and fairly often some RAM for saving game info. The GBA has a 240x160 LCD screen capable of displaying 32768 colors (15 bits).
+任天堂のゲームボーイアドバンス（GBA）は、携帯型のゲーム機です。言われなくても知っていますよね。CPU は 32 ビットの ARM7tdmi チップで、16.78 MHz で動きます。ワーク RAM、IO、ビデオメモリなど、いくつかの別々のメモリ領域を持っていて、これらはすぐあとで見ていきます。ゲームは <dfn>Game Pak</dfn>（ゲームパック）に入っています。Game Pak には、コードとデータのための ROM と、多くの場合、ゲームの情報をセーブするための RAM が入っています。GBA には 240x160 の液晶画面があり、32768 色（15 ビット）を表示できます。
 
-Unfortunately, the screen is not back-lit, which made a lot of people very angry and has generally been regarded as a bad move. So, in 2003 Nintendo launched the GBA SP, a sort of GBA 2.0, which features a fold-up screen reminiscent of the old Game & Watch games (remember those? You do? Boy, you are *old*! (For the record, I still have mine too <kbd>:)</kbd> )). Then came the final GBA version, the Game Boy Micro, a very, very small GBA which easily fits in everyone's pockets. The differences the GBA, GBA-SP and Micro are mainly cosmetic, though, they're the same thing from a programming point of view.
+残念ながら、画面にはバックライトがありませんでした。これには多くの人がとても腹を立て、一般に悪い判断だったと考えられています。そこで任天堂は、2003年に GBA SP を発売しました。いわば GBA 2.0 で、昔のゲーム＆ウオッチを思わせる、折りたたみ式の画面が特徴です（覚えていますか？ 覚えている？ いやあ、あなたも*年*ですね！（ちなみに、私もまだ自分のを持っています <kbd>:)</kbd> ））。そして最後の GBA として、ゲームボーイミクロが出ました。誰のポケットにも簡単に収まる、とてもとても小さな GBA です。GBA、GBA SP、ミクロの違いは主に見た目だけで、プログラミングの視点からは同じものです。
 
-The original Game Boy took the world by storm in 1989. Not bad for a monochrome handheld console, eh? Later the Game Boy Color was released which finally put some color on the aging machine, but it was still very much a simple Game Boy. The true successor was the GBA, released in 2001. The GBA is backward compatible with the Game Boy, so you can play all the old GB games as well.
+初代ゲームボーイは、1989年に世界を席巻しました。白黒の携帯ゲーム機にしては悪くないでしょう？ その後、ゲームボーイカラーが発売され、古くなった本体にようやく色が付きましたが、中身はまだまだ単純なゲームボーイのままでした。本当の後継機は、2001年に発売された GBA です。GBA はゲームボーイと互換性があるので、昔のゲームボーイのゲームもすべて遊べます。
 
-In terms of capabilities the GBA is a lot like the Super NES (SNES): 15-bit color, multiple background layers and hardware rotation and scaling. And shoulder buttons, of course. A cynic might look at the enormous amount of SNES ports and say that the GBA *is* a SNES, only portable. This is true, but you can hardly call that a bad thing.
+性能の面では、GBA はスーパーファミコン（SNES）によく似ています。15 ビットカラー、複数の背景レイヤー、ハードウェアによる回転と拡大縮小があります。もちろん、L/R ボタンもあります。スーパーファミコンからの移植作の多さを見て、皮肉屋なら「GBA は持ち運べるスーパーファミコン*そのもの*だ」と言うかもしれません。それは事実ですが、悪いこととはとても言えません。
 
 <div class="cblock">
   <table>
@@ -20,14 +20,14 @@ In terms of capabilities the GBA is a lot like the Super NES (SNES): 15-bit colo
           <div class="cpt" style="width:288px;">
             <img src="./img/hardware/gba.jpg" id="fig:gba" alt="original GBA" width=288>
             <br>
-            <b>{*@fig:gba}</b>: original GBA.
+            <b>{*@fig:gba}</b>: 初代 GBA。
           </div>
         </td>
         <td rowspan=2>
           <div class="cpt" style="width:256px;">
             <img src="./img/hardware/gba-sp.jpg" id="fig:gba-sp" alt="GBA-SP" width=256>
             <br>
-            <b>{*@fig:gba-sp}</b>: GBA-SP.
+            <b>{*@fig:gba-sp}</b>: GBA SP。
           </div>
         </td>
       </tr>
@@ -35,52 +35,52 @@ In terms of capabilities the GBA is a lot like the Super NES (SNES): 15-bit colo
   </table>
 </div>
 
-## GBA specs and capabilities {#sec-specs}
+## GBA の仕様と性能 {#sec-specs}
 
-Below is a list of the specifications and capabilities of the GBA. This is not a full list, but these are the most important things you need to know.
+以下は、GBA の仕様と性能の一覧です。すべてを網羅してはいませんが、知っておくべき最も大事なことはここに入っています。
 
-- Video
-    - 240x160 pixel, 15-bit color LCD screen. The original GBA screen was not backlit, but the SP's and Micro's are.
-    - 3 [bitmap modes](bitmaps.html) and 3 [tilemap modes](regbg.html) and [sprites](regobj.html).
-    - 4 individual tilemap layers (backgrounds) and 128 sprites (objects).
-    - [Affine transformations](affine.html) (rotate/scale/shear) on 2 backgrounds and 32 objects.
-    - [Special graphic effects](gfx.html): mosaic, additive blend, fade to white/black.
-- Sound
-    - 6 channels total
-    - 4 tone generators from the original Game Boy: 2 square wave, 1 general wave and one noise generator.
-    - 2 'DirectSound' channels for playing samples and music.
-- Miscellaneous
-    - 10 buttons (or [keys](keys.html)): 4-way directional pad, Select/Start, fire buttons A/B, shoulder buttons L/R.
-    - 14 hardware interrupts.
-    - 4-player multiplayer mode via a multiboot cable.
-    - Optional infrared, solar and gyroscopic interfaces. Other interfaces have also been made by some.
-    - Main programming platforms: C/C++ and assembly, though there are tools for Pascal, Forth, Lua and others as well. Easy to start with, yet hard to truly master.
+- 映像
+    - 240x160 ピクセル、15 ビットカラーの液晶画面。初代 GBA の画面にはバックライトがありませんでしたが、SP とミクロにはあります。
+    - 3 つの[ビットマップモード](bitmaps.html)と、3 つの[タイルマップモード](regbg.html)、そして[スプライト](regobj.html)。
+    - 4 つの独立したタイルマップのレイヤー（背景）と、128 個のスプライト（オブジェクト）。
+    - 2 つの背景と 32 個のオブジェクトに対する[アフィン変換](affine.html)（回転、拡大縮小、せん断）。
+    - [特殊なグラフィック効果](gfx.html): モザイク、加算合成、白や黒へのフェード。
+- 音
+    - 全部で 6 チャンネル
+    - 初代ゲームボーイから受け継いだ 4 つの音源: 矩形波が 2 つ、任意の波形が 1 つ、ノイズが 1 つ。
+    - サンプルや音楽を再生するための、2 つの「DirectSound」チャンネル。
+- その他
+    - 10 個のボタン（または[キー](keys.html)）: 十字キー、セレクト/スタート、A/B ボタン、L/R ボタン。
+    - 14 個のハードウェア割り込み。
+    - マルチブートケーブルによる、4 人までの通信プレイ。
+    - オプションで、赤外線、太陽光センサー、ジャイロセンサーのインターフェース。ほかのインターフェースを作った人もいます。
+    - 主なプログラミング環境: C/C++ とアセンブリ。ただし、Pascal、Forth、Lua などのツールもあります。始めるのは簡単ですが、本当に極めるのは難しいです。
 
-From a programming point of view, the GBA (or any other console for that matter) is totally different from a PC. There is no operating system, no messing with drivers and hardware incompatibilities; it's bits as far as the eye can see. Well, PCs are also just bits, but that's several layers down; on consoles it's just you, the CPU and memory. Basically, it's the [Real Programmer](http://www.catb.org/~esr/jargon/html/R/Real-Programmer.html)'s dream.
+プログラミングの視点から見ると、GBA（というより、どのゲーム機も）は PC とはまったく違います。OS もありませんし、ドライバやハードウェアの非互換性に悩まされることもありません。見渡す限り、ビットだけの世界です。まあ、PC もビットにすぎないのですが、それは何層も下の話です。ゲーム機では、あなたと CPU とメモリしかありません。言ってみれば、[真のプログラマ](http://www.catb.org/~esr/jargon/html/R/Real-Programmer.html)の夢の世界です。
 
-To get anything done, you use <dfn>memory-mapped IO</dfn>. Specific areas of memory are mapped directly to hardware functions. In the first demo, for example, we will write the number `0x0403` to memory address `0400:0000h`. This tells the GBA to enable background 2 and set the graphics mode to 3. What this actually *means* is, of course, what this tutorial is for <kbd>:)</kbd>.
+何かをするには、<dfn>メモリマップド IO</dfn> を使います。メモリの特定の領域が、ハードウェアの機能に直接対応づけられているのです。たとえば最初のデモでは、メモリのアドレス `0400:0000h` に、数値 `0x0403` を書き込みます。これで GBA に、背景 2 を有効にして、グラフィックのモードを 3 にするよう指示します。これが実際に何を*意味する*のかを説明するのが、もちろんこのチュートリアルの役目です <kbd>:)</kbd>。
 
 ### CPU {#ssec-cpu}
 
-As said, the GBA runs on a ARM7tdmi RISC chip at 16.78 MHz (2<sup>24</sup> cycles/second). It is a 32-bit chip that can run on two different instruction sets. First, there's is <dfn>ARM code</dfn>, which is a set of 32-bit instructions. Then there's <dfn>Thumb</dfn>, which uses 16-bit instructions. Thumb instructions are a subset of the ARM instruction set; since the instructions are shorter, the code can be smaller, but their power is also reduced. It is recommended that normal code be Thumb code in ROM, and for time-critical code to be ARM code and put in IWRAM. Since all tonc-demos are still rather simple, most (but not all) code is Thumb code.
+前に述べたとおり、GBA は 16.78 MHz（毎秒 2<sup>24</sup> サイクル）で動く ARM7tdmi という RISC チップで動いています。2 種類の命令セットで動ける 32 ビットのチップです。1 つ目は <dfn>ARM コード</dfn>で、32 ビットの命令の集まりです。2 つ目は <dfn>Thumb</dfn> で、16 ビットの命令を使います。Thumb の命令は ARM の命令セットの一部です。命令が短いのでコードを小さくできますが、そのぶん能力も落ちます。普通のコードは Thumb コードにして ROM に置き、時間に厳しいコードは ARM コードにして IWRAM に置くのがおすすめです。tonc のデモはどれもまだかなり単純なので、（すべてではありませんが）ほとんどのコードは Thumb コードです。
 
-For more information on the CPU, go to [www.arm.com](http://www.arm.com) or to the [assembly chapter](asm.html)
+CPU についての詳しい情報は、[www.arm.com](http://www.arm.com) か、[アセンブリの章](asm.html)を見てください。
 
-## Memory Sections {#sec-memory}
+## メモリ領域 {#sec-memory}
 
-This section lists the various memory areas. It's basically a summary of the [GBATEK](https://problemkaputt.de/gbatek.htm) section on memory.
+この節では、さまざまなメモリ領域を一覧にします。基本的には、[GBATEK](https://problemkaputt.de/gbatek.htm) のメモリの節の要約です。
 
 <div class="cblock">
   <table class="table-data">
     <col span=8 valign="top">
     <thead>
       <tr>
-        <th>area</th>
-        <th>start</th>
-        <th>end</th>
-        <th>length</th>
-        <th>port-size</th>
-        <th>description</th>
+        <th>領域</th>
+        <th>開始</th>
+        <th>終了</th>
+        <th>大きさ</th>
+        <th>ポートの幅</th>
+        <th>説明</th>
       </tr>
     </thead>
     <tbody>
@@ -90,7 +90,7 @@ This section lists the various memory areas. It's basically a summary of the [GB
         <td><code>0000:03FF</code></td>
         <td>16 KB</td>
         <td>32 bit</td>
-        <td>Bios memory. You can execute it, but not read it (i.o.w, touch, don't look)</td>
+        <td>BIOS のメモリ。実行はできますが、読むことはできません（言い換えると、触ってもいいけど見てはだめ）。</td>
       </tr>
       <tr>
         <th>EWRAM</th>
@@ -98,7 +98,7 @@ This section lists the various memory areas. It's basically a summary of the [GB
         <td><code>0203:FFFFh</code></td>
         <td>256 KB</td>
         <td>16 bit</td>
-        <td>External work RAM. Is available for your code and data. If you're using a multiboot cable, this is where the downloaded code goes and execution starts (normally execution starts at ROM). Due to the 16-bit port, you want this section's code to be Thumb code.</td>
+        <td>外部ワーク RAM。コードとデータに使えます。マルチブートケーブルを使う場合は、ダウンロードしたコードがここに置かれ、ここから実行が始まります（普通は ROM から実行が始まります）。ポートが 16 ビットなので、ここに置くコードは Thumb コードにするのがよいでしょう。</td>
       </tr>
       <tr>
         <th>IWRAM</th>
@@ -106,7 +106,7 @@ This section lists the various memory areas. It's basically a summary of the [GB
         <td><code>0300:7FFFh</code></td>
         <td>32 KB</td>
         <td>32 bit</td>
-        <td>This is also available for code and data. The 32-bit bus and the fact it's embedded in the CPU make this the fastest memory section. The 32-bit bus means that ARM instructions can be loaded at once, so put your ARM code here.</td>
+        <td>ここもコードとデータに使えます。32 ビットのバスを持ち、CPU に内蔵されているので、最も速いメモリ領域です。32 ビットのバスなら ARM の命令を一度に読み込めるので、ARM コードはここに置きましょう。</td>
       </tr>
       <tr>
         <th>IO RAM</th>
@@ -114,7 +114,7 @@ This section lists the various memory areas. It's basically a summary of the [GB
         <td><code>0400:03FFh</code></td>
         <td>1 KB</td>
         <td>32 bit</td>
-        <td>Memory-mapped IO registers. These have nothing to do with the CPU registers you use in assembly so the name can be a bit confusing. Don't blame me for that. This section is where you control graphics, sound, buttons and other features.</td>
+        <td>メモリマップド IO のレジスタ。アセンブリで使う CPU のレジスタとは何の関係もないので、名前が少し紛らわしいかもしれません。でも、それは私のせいではありません。グラフィック、音、ボタンなどの機能は、この領域で制御します。</td>
       </tr>
       <tr>
         <th>PAL RAM</th>
@@ -122,7 +122,7 @@ This section lists the various memory areas. It's basically a summary of the [GB
         <td><code>0500:03FFh</code></td>
         <td>1 KB</td>
         <td>16 bit</td>
-        <td>Memory for two palettes contaning 256 entries of 15-bit colors each. The first is for backgrounds, the second for sprites.</td>
+        <td>2 つのパレットのためのメモリ。それぞれ 15 ビットの色を 256 個持っています。1 つ目は背景用、2 つ目はスプライト用です。</td>
       </tr>
       <tr>
         <th>VRAM</th>
@@ -130,7 +130,7 @@ This section lists the various memory areas. It's basically a summary of the [GB
         <td><code>0601:7FFFh</code></td>
         <td>96 KB</td>
         <td>16 bit</td>
-        <td>Video RAM. This is where the data used for backgrounds and sprites are stored. The interpretation of this data depends on a number of things, including video mode and background and sprite settings.</td>
+        <td>ビデオ RAM。背景とスプライトに使うデータは、ここに置かれます。このデータがどう解釈されるかは、ビデオモードや、背景とスプライトの設定など、いくつかのことで決まります。</td>
       </tr>
       <tr>
         <th>OAM</th>
@@ -138,26 +138,26 @@ This section lists the various memory areas. It's basically a summary of the [GB
         <td><code>0700:03FFh</code></td>
         <td>1 KB</td>
         <td>32 bit</td>
-        <td>Object Attribute Memory. This is where you control the sprites.</td>
+        <td>Object Attribute Memory（オブジェクト属性メモリ）。スプライトはここで制御します。</td>
       </tr>
       <tr>
         <th>PAK ROM</th>
         <td><code>0800:0000h</code></td>
-        <td>var</td>
-        <td>var</td>
+        <td>可変</td>
+        <td>可変</td>
         <td>16 bit</td>
-        <td>Game Pak ROM. This is where the game is located and execution starts, except when you're running from a multiboot cable. This size is variable, but the limit is 32 MB. It's a 16-bit bus, so Thumb code is preferable over ARM code here.</td>
+        <td>Game Pak の ROM。ゲームはここにあり、マルチブートケーブルから動かす場合を除いて、ここから実行が始まります。大きさはまちまちですが、上限は 32 MB です。16 ビットのバスなので、ここでは ARM コードより Thumb コードのほうが向いています。</td>
       </tr>
       <tr>
         <th>Cart RAM</th>
         <td><code>0E00:0000h</code></td>
-        <td>var</td>
-        <td>var</td>
+        <td>可変</td>
+        <td>可変</td>
         <td>8 bit</td>
-        <td>This is where saved data is stored. Cart RAM can be in the form of SRAM, Flash ROM or EEPROM. Programatically they all do the same thing: store data. The total size is variable, but 64 KB is a good indication.</td>
+        <td>セーブデータはここに保存されます。Cart RAM には、SRAM、フラッシュ ROM、EEPROM のどれかが使われます。プログラムから見れば、どれもデータを保存するという同じ役割です。合計の大きさはまちまちですが、64 KB くらいが目安です。</td>
       </tr>
     </tbody>
   </table>
 </div>
 
-The various RAM sections (apart from Cart RAM) are zeroed at start-up by BIOS. The ones you will most frequently deal with are IO, PAL, VRAM, and OAM. For simple games and demos it will usually suffice to load your graphics data into PAL and VRAM at the start and use IO and OAM to take care of the actual interaction. The layout of these two sections is quite complex and almost impossible to figure out on your own (almost, because emulator builders obviously have done just that). With this in mind, reference sheets like [GBATEK](https://problemkaputt.de/gbatek.htm) and the [CowBite Spec](http://www.cs.rit.edu/~tjh8300/CowBite/CowBiteSpec.htm) are unmissable documents. In theory this is all you need to get you started, but in practice using one or more tutorials (such as this one) with example code will save a lot of headaches.
+（Cart RAM を除く）さまざまな RAM 領域は、起動時に BIOS によってゼロで埋められます。一番よく扱うことになるのは、IO、PAL、VRAM、OAM です。簡単なゲームやデモなら、たいていは、最初にグラフィックのデータを PAL と VRAM に読み込んでおき、実際のやり取りは IO と OAM で行えば十分です。この 2 つの領域の配置はかなり複雑で、自力で解き明かすのはほぼ不可能です（「ほぼ」なのは、エミュレータを作った人たちが、まさにそれをやってのけたからです）。そう考えると、[GBATEK](https://problemkaputt.de/gbatek.htm) や [CowBite Spec](http://www.cs.rit.edu/~tjh8300/CowBite/CowBiteSpec.htm) のような資料は、欠かせない文書です。理屈の上では、始めるのにはこれで十分ですが、実際には、（このチュートリアルのような）サンプルコード付きのチュートリアルを 1 つ以上使うと、たくさんの頭痛の種を避けられます。

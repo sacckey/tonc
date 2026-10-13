@@ -1,77 +1,77 @@
-# 8. Regular sprites
+# 8. 通常のスプライト
 
 <!-- toc -->
 
-## Sprite introduction {#sec-intro}
+## スプライトの紹介 {#sec-intro}
 
 <div class="cpt_fr" style="width:64px">
 <img src="./img/metr/std.png" id="fig:metr" 
   alt="a metroid.">
-<b>{*@fig:metr}</b>. Metroid. Rawr.
+<b>{*@fig:metr}</b>. メトロイド。がおー。
 </div>
 
-According to Webster's, a sprite is “an imaginary being or spirit, as a fairy, elf, or goblin”. Right, glad that's cleared up. For games, though, when referring to a sprite one is usually talking about “a \[small\] animated object that can move freely from the background” (PERN). Primary examples are game characters, but status objects like scores and life bars are often sprites as well. {*@fig:metr} on the right shows a sprite of everybody's favorite vampire jellyfish, the metroid. I will use this sprite in the demo at the end of this chapter.
+ウェブスター辞典によると、スプライトとは「妖精、エルフ、ゴブリンのような、想像上の存在や精霊」です。なるほど、はっきりしてよかった。でもゲームの場合、スプライトと言えば普通は「背景から自由に動かせる、［小さな］アニメーションするオブジェクト」（PERN）のことです。代表例はゲームのキャラクターですが、スコアや体力ゲージのような状態を表すものも、よくスプライトで作られます。右の {*@fig:metr} は、みんな大好き、吸血するクラゲのメトロイドのスプライトです。このスプライトは、この章の最後のデモで使います。
 
-Sprites are a little trickier to use than a bitmap background, but not by much. You just have to pay a little more attention to what you're doing. For starters, the graphics have to be grouped into 8×8 tiles; make sure your graphics converter can do that. Aside from the obvious actions such as enabling sprites in the display control and loading up the graphics and palette, you also have to set-up the attributes of the sprites correctly in OAM. Miss any of these steps and you'll see nothing. These things and more will be covered in this chapter.
+スプライトはビットマップの背景より少し扱いが難しいですが、それほどではありません。自分のしていることに、もう少し注意を払う必要があるだけです。まず、グラフィックは 8×8 のタイルにまとめる必要があります。グラフィックの変換ツールがそれをできることを確かめてください。ディスプレイ制御でスプライトを有効にする、グラフィックとパレットを読み込む、といった分かりやすい作業のほかに、OAM にスプライトの属性を正しく設定する必要もあります。どれか 1 つでも抜けると、何も表示されません。この章では、こうしたことなどを扱います。
 
-:::tip Essential Sprite Steps
+:::tip スプライトに欠かせない手順
 
 
-There are 3 things that you have to do right to get sprites to show up:
+スプライトを表示させるために、正しくやらなければならないことが 3 つあります。
 
--   Load the graphics and palette into object VRAM and palette.
--   Set attributes in OAM to use the appropriate tiles and set the right size.
--   Switch on objects in `REG_DISPCNT`, and set the mapping mode there too.
-
-:::
-
-:::tip Sprites aren't objects
-
-Or something like that. I know it sounds weird, but the more I think about it, the more I realize that sprites and objects shouldn't be considered interchangeable. The term ‘object’, is a hardware feature, controlled in OAM. Right now, I think that ‘sprite’ is more of a conceptual term, and should be reserved for actors, like playing characters, monsters, bullets, etc. These can in fact be built up of multiple hardware objects, or even use a background.
-
-You could also thing of it in this way: objects are *system* entities linked to the console itself, and sprites are *game* entities, living in the game world. The difference may be subtle, but an important one.
-
-This is merely my opinion, and I can't say how right I am in this. Tonc still switches back and forth between the two words because it's too late to do anything about it now. Mea culpa. I'd love to hear the opinion of others on the subject, so feel free to speak your mind if you want.
+-   グラフィックとパレットを、オブジェクトの VRAM とパレットに読み込む。
+-   OAM の属性を設定して、適切なタイルを使い、正しい大きさにする。
+-   `REG_DISPCNT` でオブジェクトを有効にし、そこでマッピングモードも設定する。
 
 :::
 
-## Sprite image data and mapping mode {#sec-tiles}
+:::tip スプライトはオブジェクトではない
 
-Like I said in the [sprite and background overview](objbg.html), sprites are composed of a number of 8×8-pixel mini-bitmaps called tiles, which come in two types: 4bpp (s-tiles, 32 bytes long) and 8bpp (d-tiles, 64 bytes long). The tiles available for sprites are stored in <dfn>object VRAM</dfn>, or <dfn>OVRAM</dfn> for short. OVRAM is 32 KiB long and is mapped out by the last two charblocks of `tile_mem`, which are also known as the lower (block 4, starting at `0601:0000h`) and higher (block 5, `0601:4000h`) sprite blocks. Counting always starts at the lower sprite-block and is *always* done in 32 byte offsets, meaning that sprite-tile #1 is at `0601:0020h`, no matter what the bit depth is (see table 8.1). With 4000h bytes per charblock, a quick calculation will show you that there are 512 tiles in each charblock, giving a total range of 1024. However, since the [bitmap](bitmaps.html) modes extend into the lower sprite block, you can only use the higher sprite block (containing tiles 512 to 1023) in modes 3-5.
+あるいは、そのようなものです。変に聞こえるのは分かっていますが、考えれば考えるほど、スプライトとオブジェクトは同じものとみなすべきではないと気づきます。「オブジェクト」という言葉は、OAM で制御するハードウェアの機能のことです。今の私の考えでは、「スプライト」はもっと概念的な言葉で、プレイヤーのキャラクター、モンスター、弾など、登場するもののためにとっておくべきです。それらは、実際には複数のハードウェアのオブジェクトで組み立てられていることもあれば、背景を使っていることさえあります。
 
-It may seem that calculating those tile addresses can be annoying, and it would be if you had to do it manually. That's why I have mapped the whole of VRAM with a charblock/tile matrix called `tile_mem`, as discussed in the [overview](objbg.html#ssec-img-cbb). Need tile #123 of OVRAM? That'd be `tile_mem[4][123]`. Need its address? Use the address operator: `&tile_mem[4][123]`. Quick, easy, safe.
+こう考えることもできます。オブジェクトはゲーム機そのものに結び付いた*システム*の存在で、スプライトはゲームの世界に住む*ゲーム*の存在です。違いは微妙かもしれませんが、大事な違いです。
 
-Also, don't forget that the sprites have their own palette which starts at `0500:0200h` (right after the background palette). If you are certain you've loaded your tiles correctly but nothing shows up, it's possible you filled the wrong palette.
+これは私の意見にすぎず、どこまで正しいかは分かりません。Tonc では今も 2 つの言葉を行ったり来たりしていますが、今さらどうしようもないからです。私の落ち度です。この件についてほかの人の意見もぜひ聞きたいので、言いたいことがあれば遠慮なくどうぞ。
+
+:::
+
+## スプライトの画像データとマッピングモード {#sec-tiles}
+
+[スプライトと背景の概要](objbg.html)で言ったとおり、スプライトは、タイルと呼ばれる 8×8 ピクセルの小さなビットマップをいくつも組み合わせてできています。タイルには 2 種類あり、4bpp（s タイル、32 バイト）と 8bpp（d タイル、64 バイト）です。スプライトに使えるタイルは、<dfn>オブジェクト VRAM</dfn>、略して <dfn>OVRAM</dfn> に入っています。OVRAM の大きさは 32 KiB で、`tile_mem` の最後の 2 つのキャラブロックに対応しています。これらは、下のスプライトのブロック（ブロック 4、`0601:0000h` から）と上のスプライトのブロック（ブロック 5、`0601:4000h`）とも呼ばれます。数え始めるのは常に下のスプライトのブロックからで、*常に* 32 バイト単位で数えます。つまり、ビット深度に関係なく、スプライトのタイル #1 は `0601:0020h` にあります（表 8.1 を参照）。キャラブロック 1 つあたり 4000h バイトなので、ちょっと計算すれば、各キャラブロックにはタイルが 512 個あり、全部で 1024 個の範囲になることが分かります。ただし、[ビットマップ](bitmaps.html)モードは下のスプライトのブロックにまで広がっているので、モード 3〜5 では上のスプライトのブロック（タイル 512〜1023 が入っています）しか使えません。
+
+タイルのアドレスを計算するのは面倒に思えるかもしれません。手でやるなら、実際に面倒です。だからこそ私は、[概要](objbg.html#ssec-img-cbb)で説明したように、VRAM 全体を `tile_mem` という、キャラブロックとタイルの行列に対応づけたのです。OVRAM のタイル #123 が必要ですか？ それなら `tile_mem[4][123]` です。そのアドレスが必要ですか？ アドレス演算子を使って `&tile_mem[4][123]` です。速くて、簡単で、安全です。
+
+また、スプライトには専用のパレットがあり、`0500:0200h`（背景のパレットのすぐあと）から始まることを忘れないでください。タイルを正しく読み込んだはずなのに何も表示されないなら、違うパレットを埋めているのかもしれません。
 
 <div class="lblock">
 <table id="tbl:obj-tids" class="table-data">
 <caption align="bottom">
-  <b>{*@tbl:obj-tids}</b>: tile counting for sprites, 
-  always per 32 bytes. (You can use odd numbers for 8bpp tiles, but 
-  be sure you fill the VRAM accordingly.)
+  <b>{*@tbl:obj-tids}</b>: スプライトのタイルの数え方。
+  常に 32 バイトごと。（8bpp のタイルに奇数の番号も使えますが、
+  それに合わせて VRAM を埋めるようにしてください。）
 </caption>
 <tr>
-  <th>memory 0601:<th>0000<th>0020 <th>0040<th>0060 <th>0080<th>0100 <th>...
+  <th>メモリ 0601:<th>0000<th>0020 <th>0040<th>0060 <th>0080<th>0100 <th>...
 <tr>
-  <th>4bpp tile <td>0      <td>1  <td>2    <td>3  <td>4    <td>5 <td>&nbsp;
+  <th>4bpp のタイル <td>0      <td>1  <td>2    <td>3  <td>4    <td>5 <td>&nbsp;
 <tr>
-  <th>8bpp tile <td colspan=2>0   <td colspan=2>2 <td colspan=2>4<td>&nbsp;
+  <th>8bpp のタイル <td colspan=2>0   <td colspan=2>2 <td colspan=2>4<td>&nbsp;
 </table>
 </div>
 
-:::warning Bitmap modes and Object VRAM
+:::warning ビットマップモードとオブジェクト VRAM
 
-Only the higher sprite block is available for sprites in modes 3-5. Indexing still starts at the lower block, though, so the tile range is 512-1023.
+モード 3〜5 では、スプライトに使えるのは上のスプライトのブロックだけです。ただし、インデックスは下のブロックから数えるので、タイルの範囲は 512〜1023 です。
 
 :::
 
-### The sprite mapping mode {#ssec-map}
+### スプライトのマッピングモード {#ssec-map}
 
-Sprites aren't limited to a single tile. In fact, most sprites are larger (see {*@tbl:obj-size} for a list of the available sizes for GBA sprites). Larger sprites simply use multiple tiles, but this may present a problem. For backgrounds, you choose each tile explicitly with the tile-map. In the case of sprites, you have two options: 1D and 2D mapping. The default is 2D mapping, and you can switch to 1D mapping by setting `REG_DISPCNT{6}`.
+スプライトは 1 つのタイルに限られません。実際、ほとんどのスプライトはもっと大きいです（GBA のスプライトで使える大きさの一覧は {*@tbl:obj-size} を参照）。大きなスプライトは単純に複数のタイルを使いますが、これが問題になることがあります。背景では、タイルマップで各タイルを明示的に選びます。スプライトの場合は、1D マッピングと 2D マッピングの 2 つの選択肢があります。デフォルトは 2D マッピングで、`REG_DISPCNT{6}` をセットすると 1D マッピングに切り替わります。
 
-How do these work? Consider the example sprite of {@fig:obj-map}a, showing the metroid of {@fig:metr} divided into tiles. In 2D mapping, you're interpreting the sprite charblocks as one big bitmap of 256×256 pixels and the sprite a rectangle out of that bitmap (still divided into tiles, of course). In this case, each tile-row of a sprite is at a 32-tile offset. This is shown in {@fig:obj-map}b. On the other hand, you can also consider the charblocks as one big array of tiles, and the tiles of every sprite are consecutive. This is shown in {@fig:obj-map}c. The numbers in {@fig:obj-map}a show the difference between 1D and 2D mapping. Assuming we start at tile 0, the red and cyan numbers follow 2D and 1D mapping, respectively.
+これらはどう働くのでしょうか？ {@fig:obj-map}a のスプライトの例を考えてみてください。{@fig:metr} のメトロイドを、タイルに分けて示したものです。2D マッピングでは、スプライトのキャラブロックを 256×256 ピクセルの 1 つの大きなビットマップとして解釈し、スプライトをそのビットマップから切り出した四角形として扱います（もちろん、まだタイルに分かれています）。この場合、スプライトのタイルの各行は、32 タイルずつずれた位置にあります。これを {@fig:obj-map}b に示します。一方、キャラブロックを 1 つの大きなタイルの配列とみなし、各スプライトのタイルを連続させることもできます。これを {@fig:obj-map}c に示します。{@fig:obj-map}a の数字は、1D マッピングと 2D マッピングの違いを示しています。タイル 0 から始めるとすると、赤の数字が 2D マッピング、シアンの数字が 1D マッピングに従っています。
 
-From a GBA-programming viewpoint, it is easier to use 1D mapping, as you don't have to worry about the offset of each tile-row when storing sprites. However, actually *creating* sprites is easier in 2D mode. I mean, do you *really* want to edit a bitmap tile by tile? That's what I thought. Of course, it should be the exporting tool's job to convert your sprites from 2D to 1D mapping for you. You can do this with [Usenti](https://www.coranac.com/projects/#usenti) too.
+GBA のプログラミングの観点からは、スプライトを入れるときにタイルの各行のずれを気にしなくて済むので、1D マッピングのほうが使いやすいです。でも、実際にスプライトを*作る*のは、2D モードのほうが簡単です。だって、ビットマップをタイル 1 つずつ*本気で*編集したいですか？ そうでしょう。もちろん、スプライトを 2D から 1D マッピングに変換するのは、出力ツールの仕事であるべきです。[Usenti](https://www.coranac.com/projects/#usenti) でもできます。
 
 <div class="lblock">
 <table id="fig:obj-map"
@@ -80,30 +80,30 @@ From a GBA-programming viewpoint, it is easier to use 1D mapping, as you don't h
 <td>
   <div class="cpt" style="width:200px">
   <img src="./img/metr/tile_1d2d.png" alt="a metroid divided into tiles">
-  <b>{*@fig:obj-map}a</b>: zoomed out version of 
-  {*@fig:metr}, divided into tiles; colored numbers 
-    indicate mapping mode: red for 2D, cyan for 1D.
+  <b>{*@fig:obj-map}a</b>: {*@fig:metr} を拡大して
+  タイルに分けたもの。色付きの数字は
+    マッピングモードを表す。赤が 2D、シアンが 1D。
   </div>
 <td>
   <div class="cpt" style="width:297px">
   <img src="./img/metr/tile_2d.png" alt="2d mapping">
-  <b>{*@fig:obj-map}b</b>: how 
-    {@fig:obj-map}a should be stored in memory when 
-	using 2D mapping.
+  <b>{*@fig:obj-map}b</b>: 2D マッピングを使う場合に、
+    {@fig:obj-map}a をメモリにどう入れるべきか。
+	
   </div>
   <br>
   <div class="cpt" style="width:296px">
   <img src="./img/metr/tile_1d.png" alt="1d mapping">
-  <b>{*@fig:obj-map}c</b>: how 
-    {@fig:obj-map}a should be stored in memory when using 
-	1D mapping.
+  <b>{*@fig:obj-map}c</b>: 1D マッピングを使う場合に、
+    {@fig:obj-map}a をメモリにどう入れるべきか。
+	
   </div>
 </table>
 </div>
 
-:::note Object data conversion via CLI
+:::note コマンドラインでのオブジェクトのデータの変換
 
-Some command-line interfaces can tile bitmaps for use with objects (and tilemaps). In some cases, they can also convert images with multiple sprite-frames to a set of object tiles in 1D object mapping mode. If *foo.bmp* is a 64×16 bitmap with 4 16×16 objects, here's how you can convert it to 8×8 4bpp tiles using gfx2gba and grit (flags for 1D mapping are given in brackets)
+コマンドラインのツールの中には、オブジェクト（とタイルマップ）で使えるように、ビットマップをタイル化できるものがあります。場合によっては、複数のスプライトのフレームを含む画像を、1D のオブジェクトマッピングモード用のオブジェクトのタイルの組に変換することもできます。*foo.bmp* が、16×16 のオブジェクトを 4 つ含む 64×16 のビットマップだとすると、gfx2gba と grit を使って 8×8 の 4bpp のタイルに変換するには、次のようにします（1D マッピングのためのフラグはかっこの中です）。
 
 ```sh
 # gfx2gba
@@ -117,21 +117,21 @@ Some command-line interfaces can tile bitmaps for use with objects (and tilemaps
     grit foo.bmp -gB4 [-Mw 2 -Mh 2]
 ```
 
-Two notes on the 1D mapping flags here. First, gfx2gba can only meta-tile (-T) square objects; for something like 16×8 objects you'd need to do the 1D mapping yourself. Second, grit's meta-tiling flags (`-Mw` and `-Mh`) can be anything, and use tile units, not pixels.
+ここでの 1D マッピングのフラグについて、注意が 2 つあります。まず、gfx2gba は正方形のオブジェクトしかメタタイル化（-T）できません。16×8 のオブジェクトのようなものは、自分で 1D マッピングにする必要があります。次に、grit のメタタイル化のフラグ（`-Mw` と `-Mh`）は任意の値にでき、単位はピクセルではなくタイルです。
 
 :::
 
-:::note Size units: tiles vs pixels
+:::note 大きさの単位: タイルとピクセル
 
-The default unit for bitmap dimensions is of course the pixel, but in tiled graphics it is sometimes more useful to use tiles as the basic unit, that is, the pixel size divided by 8. This is especially true for backgrounds. In most cases the context will suffice to indicate which one is meant, but at times I will denote the units with a ‘p’ for pixels or ‘t’ for tiles. For example, a 64x64p sprite is the same as a 8×8t sprite.
+ビットマップの大きさのデフォルトの単位は、もちろんピクセルです。でも、タイルのグラフィックでは、タイル、つまりピクセルの大きさを 8 で割ったものを基本の単位にするほうが便利なことがあります。特に背景ではそうです。ほとんどの場合、どちらの意味かは文脈で分かりますが、ときどき、ピクセルなら「p」、タイルなら「t」を付けて単位を示します。たとえば、64x64p のスプライトは 8×8t のスプライトと同じです。
 
 :::
 
-## Sprite control: Object Attribute Memory {#sec-oam}
+## スプライトの制御: Object Attribute Memory {#sec-oam}
 
-Much unlike in the bitmap modes, you don't have to draw the sprites yourself: the GBA has special hardware that does it for you. This can get the sprites on screen faster than you could ever achieve programmatically. There are still limits, though: there is a limit to the amount of sprite pixels you can cram in one scanline. About 960, if the fora are anything to go by.
+ビットマップモードとは大違いで、スプライトは自分で描く必要がありません。GBA には、それをやってくれる専用のハードウェアがあります。これを使えば、プログラムでは決して達成できないほど速く、スプライトを画面に出せます。それでも限界はあります。1 本のスキャンラインに詰め込めるスプライトのピクセルの数には上限があるのです。フォーラムの話を信じるなら、約 960 です。
 
-So you don't have to draw the sprites yourself; however, you *do* need to tell the GBA how you want them. This is what the <dfn>Object Attribute Memory </dfn> –OAM for short– is for. This starts at address `0700:0000h` and is 1024 bytes long. You can find two types of structures in OAM: the <dfn>OBJ_ATTR</dfn> struct for regular sprite attributes, and the <dfn>OBJ_AFFINE</dfn> struct containing the transformation data. The definitions of these structures can be found below. Note that names may vary from site to site.
+なので、スプライトを自分で描く必要はありません。ただし、どう表示したいかを GBA に伝える必要は*あります*。そのためのものが <dfn>Object Attribute Memory </dfn>（オブジェクト属性メモリ）――略して OAM――です。これはアドレス `0700:0000h` から始まり、大きさは 1024 バイトです。OAM には 2 種類の構造体があります。通常のスプライトの属性のための <dfn>OBJ_ATTR</dfn> 構造体と、変換のデータを含む <dfn>OBJ_AFFINE</dfn> 構造体です。これらの構造体の定義は、下のとおりです。名前はサイトによって違うことがあるので注意してください。
 
 <div id="cd-oam-structs">
 
@@ -158,17 +158,17 @@ typedef struct OBJ_AFFINE
 ```
 </div>
 
-There are a few interesting things about these structures. First, you see a lot of `fill`er fields. Second, if you would take 4 `OBJ_ATTR` structures and lay them over one `OBJ_AFFINE` structure, as done in {@tbl:obj-weave}, you'd see that the fillers of one would exactly cover the data of the other, and vice versa. This is no coincidence: OAM is in fact a weave of `OBJ_ATTR`s and `OBJ_AFFINE`s. Why would Nintendo use a weave instead of simply having one section of attributes and one for transform data? That's a good question and deserves a good answer. When I have one, I'll tell you (I'm guessing it's a data-alignment thing). Also, note that the elements of the `OBJ_AFFINE` are *signed* shorts. I've gone through a world of hurt with the `obj_aff` code because I used `u16` instead of `s16`. With 1024 bytes at our disposal, we have room for 128 `OBJ_ATTR` structures and 32 `OBJ_AFFINE`s. The rest of this file will explain regular sprites that only use `OBJ_ATTR`. I want to give the [affine transformation matrix](affine.html) the full mathematical treatment it deserves and will save [affine sprites](affobj.html) for later.
+これらの構造体には、面白い点がいくつかあります。まず、`fill`（詰め物）のフィールドがたくさんあります。次に、{@tbl:obj-weave} のように、`OBJ_ATTR` 構造体 4 つを `OBJ_AFFINE` 構造体 1 つに重ねると、一方の詰め物が、もう一方のデータをぴったり覆っていることが分かります。逆も同じです。これは偶然ではありません。OAM は実は、`OBJ_ATTR` と `OBJ_AFFINE` を織り交ぜたものなのです。なぜ任天堂は、属性の領域と変換データの領域を 1 つずつ持つのではなく、織り交ぜる方式を使ったのでしょうか？ よい質問で、よい答えに値します。答えが見つかったらお教えします（データのアラインメントの関係だろうと推測しています）。また、`OBJ_AFFINE` の要素は*符号付き*の short であることに注意してください。私は `s16` ではなく `u16` を使ったせいで、`obj_aff` のコードでひどく痛い目にあいました。使えるのは 1024 バイトなので、`OBJ_ATTR` 構造体なら 128 個、`OBJ_AFFINE` なら 32 個分の場所があります。このファイルの残りでは、`OBJ_ATTR` だけを使う通常のスプライトを説明します。[アフィン変換の行列](affine.html)は、それにふさわしい数学的な扱いをきちんとしたいので、[アフィンスプライト](affobj.html)はあとにとっておきます。
 
 <div class="lblock">
 <table id="tbl:obj-weave"
   class="reg" border=1 frame=void cellpadding=4 cellspacing=0>
 <caption align= bottom>
   <b>{*@tbl:obj-weave}</b>: 
-  memory interlace of OBJ_ATTR and 
-  OBJ_AFFINE structures.
+  OBJ_ATTR と OBJ_AFFINE の構造体の、
+  メモリ上での織り交ぜ方。
  </caption>
-<tr align="left"><th>mem (u16)<th>0<th>3<th>4<th>7<th>8<th>b<th>c<th>f
+<tr align="left"><th>メモリ（u16）<th>0<th>3<th>4<th>7<th>8<th>b<th>c<th>f
 <tr><th>OBJ_ATTR
   <td>0 1 2<td>&nbsp;<td>0 1 2<td>&nbsp;
   <td>0 1 2<td>&nbsp;<td>0 1 2<td>&nbsp;
@@ -178,19 +178,19 @@ There are a few interesting things about these structures. First, you see a lot 
 </table>
 </div>
 
-:::tip Force alignment on OBJ_ATTRs
+:::tip OBJ_ATTR にアラインメントを強制する
 
-As of devkitARM r19, there are new rules on struct alignments, which means that structs may not always be word aligned, and in the case of `OBJ_ATTR` structs (and others), means that `struct` copies like the one in `oam_update()` later on, will not only be slow, they may actually break. For that reason, I will force word-alignment on many of my structs with `ALIGN4`, which is a macro for `__attribute__((aligned(4)))`. For more on this, see the section on [data alignment](bitmaps.html#ssec-data-align).
+devkitARM r19 から、構造体のアラインメントに新しい規則ができました。そのため、構造体が常にワードの境界に揃うとは限らなくなりました。`OBJ_ATTR` 構造体（などの）場合、あとで出てくる `oam_update()` の中のような `struct` のコピーは、遅くなるだけでなく、実際に壊れることがあります。そのため、私は多くの構造体に `ALIGN4` でワードのアラインメントを強制します。これは `__attribute__((aligned(4)))` のマクロです。詳しくは、[データのアラインメント](bitmaps.html#ssec-data-align)の節を見てください。
 
 :::
 
-## Object attributes: OBJ_ATTR {#sec-oam-entry}
+## オブジェクトの属性: OBJ_ATTR {#sec-oam-entry}
 
-The basic control for every sprite is the `OBJ_ATTR` structure. It consists of three 16-bit attributes for such qualities as size, shape, position, base tile and more. Each of the three attributes is covered below.
+各スプライトの基本的な制御は、`OBJ_ATTR` 構造体で行います。大きさ、形、位置、基点のタイルなどを決める、16 ビットの属性 3 つでできています。3 つの属性をそれぞれ下で説明します。
 
-### Attribute 0 {#ssec-obj-attr0}
+### 属性 0 {#ssec-obj-attr0}
 
-The first attribute controls a great deal, but the most important parts are for the *y* coordinate, and the shape of the sprite. Also important are whether or not the sprite is transformable (an affine sprite), and whether the tiles are considered to have a bit depth of 4 (16 colors, 16 sub-palettes) or 8 (256 colors / 1 palette).
+最初の属性は多くのことを制御しますが、一番大事なのは *y* 座標とスプライトの形の部分です。スプライトが変形できるか（アフィンスプライトか）どうか、タイルのビット深度を 4（16 色、16 サブパレット）とみなすか 8（256 色 / 1 パレット）とみなすかも大事です。
 
 <div class="reg">
 <table class="table-reg" id="tbl-oe-attr0"
@@ -213,75 +213,75 @@ The first attribute controls a great deal, but the most important parts are for 
   <col class="bits" width=40>
   <col class="bf" width="8%">
   <col class="def" width="12%">
-<tr align="left"><th>bits<th>name<th>define<th>description
+<tr align="left"><th>ビット<th>名前<th>define<th>説明
 <tbody valign="top">
 <tr class="bg0">	
   <td>0-7<td class="rclr0">Y
   <td><i>ATTR0_Y#</i>
-  <td><b>Y coordinate</b>. Marks the top of the sprite.
+  <td><b>Y 座標</b>。スプライトの上端を表す。
 <tr class="bg1">	
   <td>8-9<td class="rclr3">OM
   <td>ATTR0_REG, ATTR0_AFF, ATTR0_HIDE, ATTR0_AFF_DBL.
     <i>ATTR0_MODE#</i>
-  <td><b>(Affine) object mode</b>. Use to hide the sprite or govern 
-    affine mode.
+  <td><b>（アフィン）オブジェクトモード</b>。スプライトを隠したり、
+    アフィンモードを制御したりするのに使う。
     <ul>
-      <li><b>00</b>. Normal rendering.
-      <li><b>01</b>. Sprite is an affine sprite, using affine matrix
-        specified by <code>attr1{9-D}</code>
-      <li><b>10</b>. Disables rendering (hides the sprite)
-      <li><b>11</b>. Affine sprite using double rendering area. See 
-        <a href="affobj.html">affine sprites</a> for more.
+      <li><b>00</b>。通常の描画。
+      <li><b>01</b>。アフィンスプライト。<code>attr1{9-D}</code> で
+        指定したアフィン行列を使う
+      <li><b>10</b>。描画しない（スプライトを隠す）
+      <li><b>11</b>。描画範囲を 2 倍にしたアフィンスプライト。詳しくは
+        <a href="affobj.html">アフィンスプライト</a>を参照。
     </ul>   
 <tr class="bg0">	
   <td>A-B<td class="rclr4">GM
   <td>ATTR0_BLEND, ATTR0_WIN. <i>ATTR0_GFX#</i>
-  <td><b>Gfx mode</b>. Flags for special effects.
+  <td><b>グラフィックモード</b>。特殊効果のフラグ。
     <ul>
-      <li><b>00</b>. Normal rendering.
-      <li><b>01</b>. Enables alpha blending. Covered 
-        <a href="gfx.html#sec-blend">here</a>.
-      <li><b>10</b>. Object is part of the object window. The sprite 
-        itself isn't rendered, but serves as a mask for bgs and other 
-        sprites. (I think, haven't used it yet)
-      <li><b>11</b>. Forbidden.
+      <li><b>00</b>。通常の描画。
+      <li><b>01</b>。半透明合成を有効にする。
+        <a href="gfx.html#sec-blend">こちら</a>で扱う。
+      <li><b>10</b>。オブジェクトはオブジェクトウィンドウの一部になる。スプライト
+        自体は描画されず、背景やほかのスプライトのマスクとして
+        働く。（と思います。まだ使ったことがありません）
+      <li><b>11</b>。使用禁止。
     </ul>
 <tr class="bg1">	
   <td>C<td class="rclr5">Mos
   <td>ATTR0_MOSAIC
-  <td>Enables mosaic effect. Covered <a href="gfx.html#sec-mos">here</a>. 
+  <td>モザイク効果を有効にする。<a href="gfx.html#sec-mos">こちら</a>で扱う。
 <tr class="bg0">	
   <td>D<td class="rclr2">CM
   <td>ATTR0_4BPP, ATTR0_8BPP
-  <td><b>Color mode</b>. 16 colors (4bpp) if cleared; 
-    256 colors (8bpp) if set.    
+  <td><b>カラーモード</b>。消えていれば 16 色（4bpp）、
+    立っていれば 256 色（8bpp）。    
 <tr class="bg1">	
   <td>E-F<td class="rclr1">Sh
   <td>ATTR0_SQUARE, ATTR0_WIDE, ATTR0_TALL. <i>ATTR0_SHAPE#</i>
-  <td><b>Sprite shape</b>. This and the sprite's size 
-    (<code>attr1{E-F}</code>) determines the sprite's real size, see 
-    <a href="#tbl-obj-size">table 8.4</a>.
+  <td><b>スプライトの形</b>。これとスプライトの大きさ
+    （<code>attr1{E-F}</code>）で、スプライトの実際の大きさが決まる。
+    <a href="#tbl-obj-size">表 8.4</a> を参照。
 </tbody>
 </table>
 </div>
 
-Two extra notes on attribute 0. First, `attr0` contains the ***y*** coordinate; `attr1` contains the ***x*** coordinate. For some reason I keep messing these two up; if you find your sprite is moving left when it should be moving up, this may be why. Second, the affine and gfx modes aren't always named as such. In particular, `attr0{9}` is simply referred to as *the* double-size flag, even though it only works in that capacity if bit 8 is set too. If it isn't, then it hides the sprite. I think that it's actually taken out of the object rendering stage entirely leaving more time for the others, but I'm not 100% sure of that.
+属性 0 について、追加の注意が 2 つあります。まず、`attr0` には ***y*** 座標が入り、`attr1` には ***x*** 座標が入ります。なぜか私はこの 2 つをよく取り違えます。上に動くはずのスプライトが左に動いていたら、これが原因かもしれません。次に、アフィンモードとグラフィックモードは、いつもそう呼ばれているとは限りません。特に、`attr0{9}` は単に*例の*倍サイズのフラグと呼ばれますが、その役割を果たすのはビット 8 も立っている場合だけです。立っていなければ、スプライトを隠します。そのとき、スプライトは実際にオブジェクトの描画の段階から完全に外されて、ほかのスプライトのための時間が増えるのだと思いますが、100% の確信はありません。
 
 <div class="lblock">
 <table id="tbl:obj-size"
   class="reg" border=1 cellpadding=2 cellspacing=0>
 <caption align="bottom">
-  <b>{*@tbl:obj-size}</b>: GBA sprite sizes
+  <b>{*@tbl:obj-size}</b>: GBA のスプライトの大きさ
 </caption>
-<tr><td>shape\size <th>00    <th>01    <th>10    <th>11
+<tr><td>形\大きさ <th>00    <th>01    <th>10    <th>11
 <tr><th>00<td>8×8  <td>16×16 <td>32×32 <td>64×64
 <tr><th>01<td>16×8 <td>32×8 <td>32×16 <td>64×32
 <tr><th>10<td>8×16 <td>8×32 <td>16×32 <td>32×64
 </table></div>
 
-### Attribute 1 {#ssec-obj-attr1}
+### 属性 1 {#ssec-obj-attr1}
 
-The primary parts of this attribute are the *x* coordinate and the size of the sprite. The role of bits 9 to 13 depend on whether or not this is a affine sprite (determined by `attr0{8}`). If it is, these bits specify which of the 32 `OBJ_AFFINE`s should be used. If not, they hold flipping flags.
+この属性の主な部分は、*x* 座標とスプライトの大きさです。ビット 9〜13 の役割は、アフィンスプライトかどうか（`attr0{8}` で決まります）によって変わります。アフィンスプライトなら、これらのビットは、32 個の `OBJ_AFFINE` のどれを使うかを指定します。そうでなければ、反転のフラグを持ちます。
 
 <div class="reg">
 <table class="table-reg" id="tbl-oe-attr1">
@@ -306,39 +306,39 @@ The primary parts of this attribute are the *x* coordinate and the size of the s
   <col class="bits" width=40>
   <col class="bf" width="8%">
   <col class="def" width="12%">
-<tr align="left"><th>bits<th>name<th>define<th>description
+<tr align="left"><th>ビット<th>名前<th>define<th>説明
 <tbody valign="top">
 <tr class="bg0">	
   <td>0-8<td class="rclr0">X
   <td><i>ATTR1_X#</i>
-  <td><b>X coordinate</b>. Marks left of the sprite.
+  <td><b>X 座標</b>。スプライトの左端を表す。
 <tr class="bg1">	
   <td>9-D<td class="rclr3">AID
   <td><i>ATTR1_AFF#</i>
-  <td><b>Affine index</b>. Specifies the <code>OAM_AFF_ENTY</code> this 
-    sprite uses. Valid <i>only</i> if the affine flag 
-    (<code>attr0</code>{8}) is set.
+  <td><b>アフィンのインデックス</b>。このスプライトが使う <code>OAM_AFF_ENTY</code> を
+    指定する。アフィンのフラグ（<code>attr0</code>{8}）が
+    立っているときに<i>だけ</i>有効。
 <tr class="bg0">	
   <td>C-D<td class="rclr2">HF, VF
   <td>ATTR1_HFLIP, ATTR1_VFLIP. <i>ATTR1_FLIP#</i>
-  <td><b>Horizontal/vertical flipping</b> flags. Used <i>only</i> if 
-    the affine flag (<code>attr0</code>) is clear; otherwise they're 
-    part of the affine index.
+  <td><b>水平・垂直反転</b>のフラグ。アフィンのフラグ（<code>attr0</code>）が
+    消えているときに<i>だけ</i>使われる。そうでなければ、
+    アフィンのインデックスの一部になる。
 <tr class="bg1">	
   <td>E-F<td class="rclr1">Sz
   <td><i>ATTR1_SIZE#</i>
-  <td><b>Sprite size</b>. Kinda. Together with the shape bits
-    (<code>attr0</code>{E-F}) these determine the sprite's real size, 
-    see {@tbl:obj-size}.
+  <td><b>スプライトの大きさ</b>。のようなもの。形のビット
+    （<code>attr0</code>{E-F}）と合わせて、スプライトの実際の大きさが決まる。
+    {@tbl:obj-size} を参照。
 </tbody>
 </table>
 </div>
 
-I'll say it here too: `attr0` contains *y*, `attr1` contains *x*. Note that bits 12 and 13 have a double role as either flipping flags or affine index. And if you are wondering if you can still flip affine sprites, the answer is yes: simply use negative scales in the matrix.
+ここでも言っておきます。`attr0` には *y* が、`attr1` には *x* が入ります。ビット 12 と 13 は、反転のフラグかアフィンのインデックスかの、2 つの役割を持つことに注意してください。そして、アフィンスプライトでも反転できるのかと思っているなら、答えは「できる」です。行列で負の拡大率を使えばいいのです。
 
-### Attribute 2 {#ssec-obj-attr2}
+### 属性 2 {#ssec-obj-attr2}
 
-This attribute tells the GBA which tiles to display and its background priority. If it's a 4bpp sprite, this is also the place to say what sub-palette should be used.
+この属性は、どのタイルを表示するかと、背景に対する優先度を GBA に伝えます。4bpp のスプライトなら、どのサブパレットを使うかもここで指定します。
 
 <div class="reg">
 <table class="table-reg" id="tbl-oe-attr2">
@@ -357,51 +357,51 @@ This attribute tells the GBA which tiles to display and its background priority.
   <col class="bits" width=40>
   <col class="bf" width="8%">
   <col class="def">
-<tr align="left"><th>bits<th>name<th>&nbsp;<th>description
+<tr align="left"><th>ビット<th>名前<th>&nbsp;<th>説明
 <tbody valign="top">
 <tr class="bg0">	
   <td>0-9<td class="rclr0">TID
   <td>ATTR2_ID#
-  <td>Base <b>tile index</b> of sprite. Note that in bitmap modes,
-    this must be 512 or higher.
+  <td>スプライトの基点の<b>タイルのインデックス</b>。ビットマップモードでは、
+    512 以上でなければならないことに注意。
 <tr class="bg1">	
   <td>A-B<td class="rclr2">Pr
   <td>ATTR2_PRIO#
-  <td><b>Priority</b>. Higher priorities are drawn first (and therefore 
-    can be covered by later sprites and backgrounds). Sprites cover 
-    backgrounds of the same priority, and for sprites of the 
-    same priority, the higher <code>OBJ_ATTR</code>s are drawn first.
+  <td><b>優先度</b>。優先度の値が大きいものほど先に描かれる（そのため、
+    あとのスプライトや背景に覆われることがある）。スプライトは、
+    同じ優先度の背景を覆う。同じ優先度の
+    スプライト同士では、番号の大きい <code>OBJ_ATTR</code> が先に描かれる。
 <tr class="bg0">	
   <td>C-F<td class="rclr1">PB
   <td>ATTR2_PALBANK#
-  <td><b>Palette bank</b> to use when in 16-color mode. Has no effect if
-	the color mode flag (<code>attr0</code>{C}) is set.
+  <td>16 色モードのときに使う<b>パレットバンク</b>。
+	カラーモードのフラグ（<code>attr0</code>{C}）が立っていれば効果はない。
 </tbody>
 </table>
 </div>
 
-### Attribute 3 {#ssec-obj-attr3}
+### 属性 3 {#ssec-obj-attr3}
 
-There is *no* attribute 3. Although the `OBJ_ATTR` struct does *have* a fourth halfword, this is only a filler. The memory in that filler actually belongs to the `OBJ_AFFINE`s. Nobody is to mistreat `attr3` in any way … if there's any affine sprite active.
+属性 3 は*ありません*。`OBJ_ATTR` 構造体には確かに 4 つ目のハーフワードが*あります*が、これは詰め物にすぎません。その詰め物のメモリは、実は `OBJ_AFFINE` のものです。`attr3` は、どんな形でも粗末に扱ってはいけません……有効なアフィンスプライトがあるならば。
 
-### OAM double buffering {#ssec-oam-buffer}
+### OAM のダブルバッファリング {#ssec-oam-buffer}
 
-You *could* write all your sprite data directly to the OAM at `0700:0000h`, but that might not always be the best move. If it's done during VDraw there's the possibility of tearing. Even worse, you might change the sprite's tile-index in mid-render so that the top is in one animation frame and the bottom is in another. Not a pretty sight. Actually, this isn't something to worry about because you *can't* update OAM during VDraw; it's locked then. What's often done is creating a separate buffer of OAM entries (also known as the <dfn>object shadow</dfn>) that can be modified at any time, and then copy that to the real OAM during VBlank. Here's my take on this.
+スプライトのデータを全部 `0700:0000h` の OAM に直接書き込むことも*できます*が、いつもそれが最善の手とは限りません。VDraw のあいだにやると、ティアリングが起きる可能性があります。さらに悪いことに、描画の途中でスプライトのタイルのインデックスを変えてしまい、上半分がアニメーションのあるフレームで、下半分が別のフレームになってしまうかもしれません。見られたものではありません。実際には、VDraw のあいだは OAM を更新*できない*（ロックされている）ので、これは心配しなくていいのですが。よく行われるのは、いつでも変更できる OAM のエントリの別のバッファ（<dfn>オブジェクトシャドウ</dfn>とも呼ばれます）を作っておき、VBlank のあいだにそれを本物の OAM にコピーすることです。私のやり方は次のとおりです。
 
 ```c
 OBJ_ATTR obj_buffer[128];
 OBJ_AFFINE *const obj_aff_buffer= (OBJ_AFFINE*)obj_buffer;
 ```
 
-I'm using 128 now, but I suppose you could use a lower number if you don't use all the sprites. Anyway, now you have a double buffer for both `OBJ_ATTR` and `OBJ_AFFINE` data, which is available at any given time. Just make sure you copy it to the *real* OAM when the time is right.
+今は 128 を使っていますが、スプライトを全部使わないなら、もっと小さな数でもいいでしょう。ともかく、これで `OBJ_ATTR` と `OBJ_AFFINE` の両方のデータのダブルバッファができ、いつでも使えます。ちょうどいいときに、*本物の* OAM にコピーするのを忘れないでください。
 
-## Bitfield macros (OAM or otherwise) {#sec-macro}
+## ビットフィールドのマクロ（OAM でも、それ以外でも） {#sec-macro}
 
-Setting and clearing individual bits is easy, but sometimes it's not too convenient to do it all yourself. This is especially true for field of bits like positions or palette banks, which would involve long statements with masks and shifts if you want to do it nicely. To improve on this a little bit, I have a number of macros that may shorted the amount of actual code. There are essentially three classes of macros here, but before I go into that, I have to explain a little bit more about the hashed (*foo*‘#”) defines in the attribute lists above.
+個々のビットを立てたり消したりするのは簡単ですが、全部自分でやるのは、あまり便利でないこともあります。特に、位置やパレットバンクのような複数のビットからなるフィールドでは、きれいにやろうとすると、マスクとシフトを使った長い文になってしまいます。これを少しでもよくするために、実際のコードの量を減らせるかもしれないマクロをいくつか用意しています。ここでのマクロは基本的に 3 種類ありますが、その話に入る前に、上の属性の一覧にあった、ハッシュ付きの（*foo*‘#”）define について、もう少し説明しておく必要があります。
 
-The hash means that for each of these, there will be three `#define`s with *foo* as their roots: *foo*`_MASK`, *foo*`_SHIFT`, and *foo*`(_n)`. These give the bitmask, bitshift and a bitfield set macro for the corresponding type.
+ハッシュは、それぞれについて、*foo* を元にした `#define` が 3 つあることを意味します。*foo*`_MASK`、*foo*`_SHIFT`、*foo*`(_n)` です。これらは、対応する種類のビットマスク、ビットシフト、そしてビットフィールドを設定するマクロを表します。
 
-For example, the one attached to the tile index, `ATTR2_ID#`. The tile index field has 10 bits and starts at bit 0. The corresponding defines therefore are:
+たとえば、タイルのインデックスに付いている `ATTR2_ID#` を見てみましょう。タイルのインデックスのフィールドは 10 ビットで、ビット 0 から始まります。なので、対応する define は次のとおりです。
 
 ```c
 // The 'ATTR2_ID#' from the attr2 list means these 3 #defines exist
@@ -410,9 +410,9 @@ For example, the one attached to the tile index, `ATTR2_ID#`. The tile index fie
 #define ATTR2_ID(n)        ((n)<<ATTR2_ID_SHIFT)
 ```
 
-Most GBA libraries out there have `#define`s like these, albeit with different names. The actual macro isn't 100% safe because it does no range checking, but it's short and sweet. Now, as far as Tonc's text is concerned, every time you see the hash in the define list for a register, it'll have these three `#define`s to go with that name.
+世の中のほとんどの GBA のライブラリには、名前は違っても、こうした `#define` があります。実際のマクロは範囲のチェックをしないので 100% 安全ではありませんが、短くて手軽です。さて、Tonc の本文では、レジスタの define の一覧にハッシュがあれば、その名前に対してこの 3 つの `#define` があるということです。
 
-I also have a second batch of macros you can use for setting and getting specific fields, which use the mask and shift names explained above. I'll admit the macros look horrible, but I assure you they make sense and can come in handy.
+特定のフィールドを設定したり取り出したりするのに使える、2 つ目の組のマクロもあります。上で説明したマスクとシフトの名前を使います。マクロの見た目がひどいのは認めますが、ちゃんと意味があって、役に立つこともあると保証します。
 
 <div id="cd-bitfield">
 
@@ -428,7 +428,7 @@ I also have a second batch of macros you can use for setting and getting specifi
 ```
 </div>
 
-Well, I did warn you. The `name` argument here is the *foo* from before. The preprocessor concatenation operator is use to create the full mask and shift names. Again using the tile-index as an example, these macros expand to the following:
+まあ、警告はしましたよ。ここでの `name` 引数は、さっきの *foo* です。プリプロセッサの連結演算子を使って、マスクとシフトの完全な名前を作っています。再びタイルのインデックスを例にすると、これらのマクロは次のように展開されます。
 
 ```c
 // Create bitfield:
@@ -447,9 +447,9 @@ BF_SET(attr2, id, ATTR2_ID);
 attr2= (attr2&~ATTR2_ID_MASK) | ((id<<ATTR2_ID_SHIFT) & ATTR2_ID_MASK);
 ```
 
-`BF_PREP()` can be used to prepare a bitfield for later insertion or comparison. `BF_GET()` gets a bitfield from a value, and `BF_SET()` sets a bitfield in a variable, without disturbing the rest of the bits. This is basically how bitfields normally work, except that true bitfields cannot be combined with OR and such.
+`BF_PREP()` は、あとで挿入したり比較したりするためのビットフィールドを用意するのに使えます。`BF_GET()` は値からビットフィールドを取り出し、`BF_SET()` はほかのビットを乱さずに、変数のビットフィールドを設定します。これは基本的に、ビットフィールドの普通の働き方そのものです。ただし、本物のビットフィールドは OR などで組み合わせることができません。
 
-The macros with a ‘2’ in their names work in a similar way, but do not apply shifts. These can be useful when you have already shifted `#define`s like `ATTR0_WIDE`, which can't use the other ones.
+名前に「2」が付いたマクロも同じように働きますが、シフトはしません。`ATTR0_WIDE` のような、すでにシフトされた `#define` があって、ほかのマクロを使えないときに役立ちます。
 
 ```c
 // Insert pre-shifted bitfield:
@@ -457,9 +457,9 @@ The macros with a ‘2’ in their names work in a similar way, but do not apply
 attr0= (attr0&~ATTR0_SHAPE_MASK) | (id & ATTR0_SHAPE_MASK);
 ```
 
-Note that none of these three have anything GBA specific in them; they can be used on any platform.
+この 3 つのどれにも、GBA 特有のものは何もないことに注意してください。どんなプラットフォームでも使えます。
 
-Finally, what I call my build macros. These piece together the various bit-flags into a single number in an orderly fashion, similar to HAM's tool macros. I haven't used them that often yet, and I'm not forcing you to, but on occasion they are useful to have around especially near initialization time.
+最後に、私が組み立てマクロと呼んでいるものです。これらは、HAM の道具のマクロのように、さまざまなビットのフラグを、整然と 1 つの数値にまとめます。まだそれほど使っていませんし、使うことを強制もしませんが、特に初期化のときなどには、手元にあると役立つことがあります。
 
 <div id="cd-oe-build">
 
@@ -485,24 +485,24 @@ Finally, what I call my build macros. These piece together the various bit-flags
 ```
 </div>
 
-Instead of doing ORring the bitflags together yourself, you can use these and perhaps save some typing. The order of arguments maybe annoying to remember for some, and the amount of safety checking may be a bit excessive (gee, ya think?!?), but if the numbers you give them are constants the operations are done at compile time so that's okay, and sometimes they really can be helpful. Or not <kbd>:P</kbd>. Like I said, I'm not forcing you to use them; if you think they're wretched pieces of code (and I admit they are) and don't want to taint your program with them, that's fine.
+ビットのフラグを自分で OR でまとめる代わりに、これを使えば少し入力の手間を省けるかもしれません。引数の順番を覚えるのが面倒な人もいるでしょうし、安全のためのチェックが少し過剰かもしれません（え、そう思う？！？）。でも、渡す数値が定数なら、演算はコンパイル時に行われるので問題ありませんし、本当に役立つこともあります。そうでもないかも <kbd>:P</kbd>。前に言ったとおり、使うことは強制しません。ひどいコードだと思って（それは認めます）、自分のプログラムを汚したくないなら、それで構いません。
 
-Note that with the exception of `bpp`, the arguments are all shifted by the macros, meaning that you should *not* use the `#define` flags from the lists, just small values like you'd use if they were separate variables rather than bits in a variable.
+`bpp` を除いて、引数はすべてマクロの中でシフトされることに注意してください。つまり、一覧にある `#define` のフラグは使わず*に*、ビットではなく別々の変数だったら使うような、小さな値を渡してください。
 
-## Demo time {#sec-obj-demo}
+## デモの時間 {#sec-obj-demo}
 
-Now, to actually use the bloody things. The code below is part of the *obj_demo*. It is the most complex I've shown yet, but if you take it one step at a time you'll be fine. Essentially, this demo places the tiles of a boxed metroid in the VRAM allotted for objects and then lets you screw around with various `OBJ_ATTR` bits like position and flipping flags. The controls are as follows:
+さて、いよいよこいつらを実際に使ってみましょう。下のコードは *obj_demo* の一部です。これまで見せた中で一番複雑ですが、1 歩ずつ進めば大丈夫です。基本的に、このデモは、枠付きのメトロイドのタイルをオブジェクト用の VRAM に置き、位置や反転のフラグなど、`OBJ_ATTR` のさまざまなビットをいじれるようにします。操作は次のとおりです。
 
-- Control Pad  
-  Moves the sprite. Note that if you move far enough off-screen, it'll come up on the other side.
-- A and B Buttons  
-  Flip the sprite horizontally or vertically, respectively.
-- Select Button  
-  Makes it glow. Well, makes it palette-swap, actually. Handy for damage-flashing.
-- Start Button  
-  Toggles between 1D and 2D mapping modes. {*@fig:obj-map}b and {@fig:obj-map}c should explain what happens. Since the sprite is in 1D mode, there's really not much to see when you switch to 2D mapping, but I had a few buttons to spare, so I thought why not.
-- L and R Buttons  
-  Decreases or increase the starting tile, respectively. Again, I had a few keys to spare.
+- 十字キー  
+  スプライトを動かします。画面の外に十分遠くまで動かすと、反対側から現れることに注意してください。
+- A ボタンと B ボタン  
+  それぞれ、スプライトを水平、垂直に反転します。
+- セレクトボタン  
+  光らせます。というか、実際にはパレットを入れ替えます。ダメージを受けたときの点滅に便利です。
+- スタートボタン  
+  1D と 2D のマッピングモードを切り替えます。何が起きるかは {*@fig:obj-map}b と {@fig:obj-map}c で分かるはずです。スプライトは 1D モード用なので、2D マッピングに切り替えても実はあまり見どころはないのですが、ボタンが少し余っていたので、せっかくだからと思いまして。
+- L ボタンと R ボタン  
+  それぞれ、最初のタイルを減らしたり増やしたりします。これもボタンが少し余っていたからです。
 
 ```c
 // Excerpt from toolbox.h
@@ -579,13 +579,13 @@ void oam_copy(OBJ_ATTR *dst, const OBJ_ATTR *src, uint count)
 }
 ```
 
-This is the basic utility code for the demo, and contains most of the things you'd actually like to have functions for. Note that the inline functions make good use of the bitfield macros shown earlier; if I hadn't done that, the code would be a good deal longer.
+これがデモの基本的な道具のコードで、関数にしておきたいもののほとんどが入っています。インライン関数が、前に見せたビットフィールドのマクロをうまく使っていることに注目してください。そうしていなかったら、コードはかなり長くなっていたでしょう。
 
-Another point that I need to make is that if I'd put everything into *toolbox.h*, the file would be pretty big, around 700 lines or so. And with future demos, it'd be a lot longer. With that in mind, I've started redistributing the contents a little: all the types go in *types.h*, everything to do with the memory map goes into *memmap.h*, all the register defines go into *memdef.h* and the input inlines and macros can be found in *input.h*. The rest is still in *toolbox.h*, but will find themselves redistributed in the end as well.
+もう 1 つ言っておくべきことがあります。全部を *toolbox.h* に入れていたら、ファイルはかなり大きく、700 行くらいになっていたでしょう。この先のデモでは、さらにずっと長くなります。そこで、中身を少し分け始めました。型は全部 *types.h* に、メモリマップに関するものは全部 *memmap.h* に、レジスタの define は全部 *memdef.h* に入れ、入力のインライン関数とマクロは *input.h* にあります。残りはまだ *toolbox.h* にありますが、これも最終的には分けられます。
 
-The two functions in *toolbox.c* need some more clarification as well I guess. In `oam_init()` I cast the objects to a word pointer and use that for setting things; again, this is simply because it's a lot faster. Because it may be used to initialixe something other than the real OAM, I copy the initialized buffer to OAM just in case.
+*toolbox.c* の 2 つの関数も、もう少し説明が必要でしょう。`oam_init()` では、オブジェクトをワードのポインタにキャストして、それを使って値を設定しています。これも単純に、そのほうがずっと速いからです。本物の OAM 以外のものを初期化するのに使われるかもしれないので、念のため、初期化したバッファを OAM にコピーしています。
 
-The other point concerns something of a very specific bug in the optimizer of the current compiler (devkitARM r19b). I expect this to be fixed in a later addition and the basic version here *should* work, but just in case it isn't, set the `#if` expression to 0 if you see OAM get corrupted. If you must know, the problem seems to be `struct` copying of OBJ_ATTRs in a `for` loop. Yes, it's that specific. Even though `struct` copying is legal and fast if they're word aligned, it seems GCC gets confused with 8-byte blocks in loops and uses `memcpy()` for each struct anyway, something that wouldn't work on OAM. Oh well.
+もう 1 つの点は、今のコンパイラ（devkitARM r19b）の最適化の、とても特定の不具合に関係しています。あとの版で直ると思いますし、ここにある基本の版で動く*はず*ですが、念のため、OAM が壊れるのを見たら `#if` の式を 0 にしてください。どうしても知りたいなら説明すると、問題は `for` ループの中での OBJ_ATTR の `struct` のコピーのようです。ええ、それくらい特定の条件です。ワードの境界に揃っていれば `struct` のコピーは合法で速いのに、GCC はループの中の 8 バイトのブロックで混乱して、構造体ごとに `memcpy()` を使ってしまうようです。それは OAM ではうまくいきません。まあ、仕方ありません。
 
 <div id="cd-obj-demo">
 
@@ -668,83 +668,83 @@ int main()
 ```
 </div>
 
-### Setting up sprites {#ssec-demo-init}
+### スプライトの準備 {#ssec-demo-init}
 
-Before any sprites show up, there are three things you have to do, although not necessarily in this order. They are: copying sprite graphics to VRAM, setting up OAM to use these graphics, and enabling sprites in the display control, `REG_DISPCNT`.
+スプライトが表示される前に、やらなければならないことが 3 つあります。この順番でなくても構いません。スプライトのグラフィックを VRAM にコピーすること、そのグラフィックを使うように OAM を設定すること、そしてディスプレイ制御の `REG_DISPCNT` でスプライトを有効にすることです。
 
-#### Display control
+#### ディスプレイ制御
 
-Starting with the last one, you enable sprites by setting bit 12 of `REG_DISPCNT`. Usually you'll also want to use 1D mapping, so set bit 6 as well. This is done at **point (2)** of the code.
+最後のものから始めると、スプライトを有効にするには `REG_DISPCNT` のビット 12 を立てます。普通は 1D マッピングも使いたいので、ビット 6 も立てます。これをしているのが、コードの **ポイント (2)** です。
 
-#### Hiding all sprites
+#### すべてのスプライトを隠す
 
-The other step performed here is a call to `oam_init()`. This isn't strictly necessary, but a good idea nonetheless. What `oam_init()` does is hide all the sprites. Why is this a good idea? Well, because a fully zeroed out OAM does *not* mean the sprites are invisible. If you check the attributes you'll see that this will mean that they're all 8×8-pixel sprites, using tile 0 for their graphics, located at (0,0). If the first tile isn't empty, you'll start with 128 versions of that tile in the top-left corner, which looks rather strange. So, make sure they're all invisible first. The demo also comes with `obj_hide()` and `obj_unhide()` functions, although they aren't used here.
+ここでするもう 1 つの手順は、`oam_init()` の呼び出しです。厳密には必要ありませんが、それでもやっておくのがいい考えです。`oam_init()` がするのは、すべてのスプライトを隠すことです。なぜこれがいい考えなのでしょうか？ OAM が全部ゼロでも、スプライトが見えなくなるわけでは*ない*からです。属性を確かめてみると、ゼロの状態では、全部が 8×8 ピクセルのスプライトで、グラフィックにタイル 0 を使い、(0,0) にあることになります。最初のタイルが空でなければ、左上の隅にそのタイルが 128 個並んだ状態で始まり、かなり奇妙に見えます。なので、まずは全部が見えないようにしておきましょう。デモには `obj_hide()` と `obj_unhide()` の関数も付いていますが、ここでは使っていません。
 
-#### Loading sprite graphics
+#### スプライトのグラフィックを読み込む
 
-The first thing to do (**point (1)**) is to store the sprite graphics in object VRAM. As I've already said a few times now, these graphics should be stored as 8×8-pixel tiles, not as a flat bitmap. For example, my sprite here is 64×64p in size, so to store it I've had to convert this to 8×8 separate tiles first. If you do *not* do this, your sprites will look very strange indeed.
+最初にやること（**ポイント (1)**）は、スプライトのグラフィックをオブジェクト VRAM に入れることです。もう何度か言ったとおり、このグラフィックは、平らなビットマップではなく、8×8 ピクセルのタイルとして入れる必要があります。たとえば、ここでのスプライトの大きさは 64×64p なので、入れるために、まず 8×8 の別々のタイルに変換する必要がありました。これをし*ないと*、スプライトは本当に奇妙な見た目になります。
 
-Exactly where you put these tiles is actually not all that relevant (apart from the obvious, like mapping mode, and tile alignment, of course). Object VRAM works as a texture pool and has nothing to do with the screen directly. You store the tiles that you want to be available there, and it is by manipulating the OAM attributes that the system knows which tiles you want to use and where you want them. There is no reason why sprite 0 couldn't start at tile 42, or why multiple sprites couldn't use the same tiles. This is also why `OAMData`, which is sometimes used for object VRAM, is such a misnomer: object VRAM has nothing to do with OAM. *Nothing*! If your headers use this name for <kbd>0601:0000</kbd>, or even <kbd>0601:4000</kbd>, change it. Please. And be careful where you put things in the bitmap modes, as you can't use tiles 0-511 there.
+これらのタイルを正確にどこに置くかは、実はそれほど重要ではありません（もちろん、マッピングモードやタイルのアラインメントのような当然のことは別です）。オブジェクト VRAM はテクスチャの置き場として働き、画面とは直接何の関係もありません。使えるようにしておきたいタイルをそこに入れておき、OAM の属性を操作することで、どのタイルをどこに使いたいかをシステムに伝えるのです。スプライト 0 がタイル 42 から始まってもいけない理由はありませんし、複数のスプライトが同じタイルを使ってもいけない理由もありません。だからこそ、オブジェクト VRAM に使われることのある `OAMData` という名前は、ひどい誤称なのです。オブジェクト VRAM は OAM とは何の関係もありません。*まったく*です！ ヘッダーで <kbd>0601:0000</kbd> や、まして <kbd>0601:4000</kbd> にこの名前を使っているなら、変えてください。お願いです。それから、ビットマップモードではタイル 0〜511 を使えないので、どこに置くかに気をつけてください。
 
-As I said, loading the sprites happens at **point (1)** in the code. If you paid attention to the [overview](objbg.html#ssec-img-cbb), you'll remember that `tile_mem[][]` is a two dimensional array, mapping charblocks and 4-bit tiles. You'll also remember that object VRAM is charblocks 4 and 5, so `&tile_mem[4][0]` points to the first tile in object VRAM. So I'm loading my boxed metroid into the first 64 tiles of object VRAM.
+前に言ったとおり、スプライトの読み込みは、コードの **ポイント (1)** で行います。[概要](objbg.html#ssec-img-cbb)を注意して読んでいれば、`tile_mem[][]` は、キャラブロックと 4 ビットのタイルに対応した 2 次元の配列だったことを覚えているでしょう。オブジェクト VRAM がキャラブロック 4 と 5 であることも覚えているはずなので、`&tile_mem[4][0]` はオブジェクト VRAM の最初のタイルを指します。つまり、私は枠付きのメトロイドを、オブジェクト VRAM の最初の 64 タイルに読み込んでいます。
 
-I am also loading its palette into the sprite palette. That's *sprite* palette (<kbd>0500:0200</kbd>), not background palette. Load it to the wrong place and you won't see anything.
+そのパレットも、スプライトのパレットに読み込んでいます。*スプライト*のパレット（<kbd>0500:0200</kbd>）であって、背景のパレットではありません。違う場所に読み込むと、何も見えません。
 
-:::tip Finding tile addresses
+:::tip タイルのアドレスを求める
 
-Use `tile_mem` or a macro to find the addresses to copy your tiles too, it's much more readable and maintainable than calculating them manually. You should not have any hard-coded VRAM addresses in your code, ever.
+タイルのコピー先のアドレスを求めるには、`tile_mem` かマクロを使ってください。手で計算するより、ずっと読みやすく、保守しやすいです。コードに VRAM のアドレスを決め打ちで書くことは、決してしないでください。
 
 :::
 
 :::danger OAMData
 
-Headers from other sites sometimes `#define OAMData` as part of VRAM. It is not. Rename it.
+ほかのサイトのヘッダーには、`#define OAMData` を VRAM の一部として定義しているものがあります。そうではありません。名前を変えてください。
 
 :::
 
-#### Setting attributes
+#### 属性を設定する
 
-Lastly, I'll set up one `OBJ_ATTR` so that it actually uses the metroid tiles. This is done at **point (3)**, using the `obj_set_attr()` inline function. All it does is three assignments to the attributes of the first argument, by the way, nothing spectacular. This just saves typing doing it this way rather than three separate statements. With this particular call, I tell this sprite that it's a 64×64 pixel (8×8 tile) sprite, and its starting tile is `tid`, which is 0. This means that it'll use the 64 tiles, starting at tile 0.
+最後に、`OBJ_ATTR` を 1 つ設定して、実際にメトロイドのタイルを使うようにします。これをしているのが **ポイント (3)** で、インライン関数の `obj_set_attr()` を使っています。ちなみに、この関数は最初の引数の属性に 3 回代入するだけで、特別なことは何もしていません。3 つの別々の文を書く代わりにこうすると、入力の手間が省けるだけです。この呼び出しで、このスプライトは 64×64 ピクセル（8×8 タイル）のスプライトで、最初のタイルは `tid`、つまり 0 だと伝えています。つまり、タイル 0 から始まる 64 個のタイルを使います。
 
-Note that the sprite I'm setting is actually part of the OAM buffer, not the real OAM. This means that even after I set the attributes there, nothing happens yet. To finalize the sprite I need to update the *real* OAM, which is done by a call to `oam_copy()` (**point (6)**). This carries two arguments: an index and a count denoting how many sprites to update, and which sprite to start at. I also have `obj_copy()`, which only copies attributes 0, 1 and 2, but *not* 3! This is necessary when you start using affine sprites, which may be copied incorrectly otherwise.
+設定しているスプライトは、実際には本物の OAM ではなく、OAM のバッファの一部であることに注意してください。つまり、そこで属性を設定しても、まだ何も起きません。スプライトを確定させるには、*本物の* OAM を更新する必要があります。それをしているのが `oam_copy()` の呼び出し（**ポイント (6)**）です。この関数は、何個のスプライトを更新するかと、どのスプライトから始めるかを表す、インデックスと個数の 2 つの引数を取ります。私は `obj_copy()` も用意していて、こちらは属性 0、1、2 だけをコピーし、3 はコピー*しません*！ これは、アフィンスプライトを使い始めたときに必要になります。そうしないと、正しくコピーされないことがあるからです。
 
-The previous steps are enough to get the metroid sprite on-screen. The story doesn't end there, of course. Here are a few things that you can do with sprites.
+ここまでの手順で、メトロイドのスプライトを画面に出すには十分です。もちろん、話はそこで終わりではありません。スプライトでできることを、いくつか紹介します。
 
-### Sprite positioning {#ssec-demo-pos}
+### スプライトの位置を決める {#ssec-demo-pos}
 
-The first order of business is usually to place it at some position on screen, or even off screen. To do this you have to update the bits for the *y* and *x* positions in attributes 0 and 1, respectively. One mistake I often seem to make is fill *x* into attr0 and *y* into attr1, when it should be the other way around. If your sprite moves strangely, this might be why.
+普通は、まず画面上の、あるいは画面の外の、ある位置にスプライトを置くことから始めます。そのためには、属性 0 と 1 にある *y* と *x* の位置のビットを、それぞれ更新する必要があります。私がよくしてしまうらしい間違いは、本当は逆なのに、*x* を attr0 に、*y* を attr1 に入れてしまうことです。スプライトの動きがおかしいなら、これが原因かもしれません。
 
-Note that these coordinates mark the **top-left** of the sprite. Also, the number of bits for the coordinates means we have 512 possible *x*-values and 256 *y*-values. The coordinate ranges wrap around, so you could also say that these are signed integers, with the ranges *x* ∈ \[-256, 255\] and *y* ∈ \[-128, 127\]. Yes, that would make the highest *y*-value smaller than the height of the screen, but thanks to the wrapping it all works out. Well, [almost](affobj.html#ssec-wrap). Anyway, thanks to the 2s-complement nature of integers, simply masking the *x* and *y* values by `0x01FF` and `0x00FF`, respectively, will give proper 9- and 8-bit signed values. You can do this manually, or use the `obj_set_pos()` function used at **point (4)**.
+これらの座標は、スプライトの**左上**を表すことに注意してください。また、座標のビット数から、*x* の値は 512 通り、*y* の値は 256 通りあることになります。座標の範囲は折り返すので、これらは範囲 *x* ∈ \[-256, 255\]、*y* ∈ \[-128, 127\] の符号付きの整数だと言うこともできます。そう、それだと *y* の最大値が画面の高さより小さくなってしまいますが、折り返しのおかげで、全部うまくいきます。まあ、[ほぼ](affobj.html#ssec-wrap)ですが。ともかく、整数が 2 の補数で表されるおかげで、*x* と *y* の値をそれぞれ `0x01FF` と `0x00FF` でマスクするだけで、正しい 9 ビットと 8 ビットの符号付きの値になります。これは手でやることもできますし、**ポイント (4)** で使っている `obj_set_pos()` 関数を使うこともできます。
 
-You might see code that clears the lower bits of the attributes and then directly ORRs in *x* and *y*. This is not a good idea, because negative values are actually represented by upper half of a datatype's range. −1 for example is all bits set (0xFFFFFFFF). Without masking off the higher bits, negative values would overwrite the rest of the attribute bits, which would be bad.
+属性の下位のビットを消してから、*x* と *y* を直接 OR で入れるコードを見かけるかもしれません。これはいい考えではありません。負の値は、実際にはデータ型の範囲の上半分で表されるからです。たとえば −1 は、全部のビットが立った状態（0xFFFFFFFF）です。上位のビットをマスクで消さないと、負の値が属性のほかのビットを上書きしてしまい、まずいことになります。
 
-:::warning Mask your coordinates
+:::warning 座標をマスクしてください
 
-If you're making a sprite positioning function or use someone else's **make sure** you mask off the bits in *x* and *y* before you insert them into the attributes. If not, negative values will overwrite the whole attribute.
+スプライトの位置を決める関数を作る、またはほかの人のものを使うなら、*x* と *y* を属性に入れる前に、ビットをマスクで切り落としているかを**必ず確かめて**ください。そうしないと、負の値が属性全体を上書きしてしまいます。
 
-This is bad
+これは悪い例です
 
 ```c
 obj->attr0= (obj->attr0 &~ 0x00FF) | (y);
 ```
 
-This is good:
+これはよい例です:
 
 ```c
 obj->attr0= (obj->attr0 &~ 0x00FF) | (y & 0x00FF);
 ```
 :::
 
-#### Position variables and using tribools
+#### 位置の変数と tribool の使い方
 
-Instead of using an `OBJ_ATTR` to store the sprite's position, it is better to keep them in separate variables, in this case `x` and `y`. This avoids having to mask coordinate fields all the time, but more importantly, the positions can extend beyond the size of the screen. As most game worlds aren't restricted to a single screen, this is an important point. Then, when the time is right, these are fed to `oam_set_pos()` to update the sprite.
+スプライトの位置を保存するのに `OBJ_ATTR` を使う代わりに、別の変数、ここでは `x` と `y` に保存しておくほうがいいです。そうすれば、座標のフィールドを毎回マスクする必要がなくなりますが、もっと大事なのは、位置が画面の大きさを超えられることです。ほとんどのゲームの世界は 1 画面に収まらないので、これは大事な点です。そして、ちょうどいいときに、これらを `oam_set_pos()` に渡してスプライトを更新します。
 
-Also, note the use of my [tribool key functions](keys.html#ssec-adv-tri) to update the positions. Input processing often follows a pattern of “key X pressed: increment, key opposite of Y pressed, decrement” The tribool functions bring that kind of code down from four lines to one, which makes the code easier to read (once you get over the initial hurdle). For example, `key_tri_horz()` returns +1 if ‘right’ is pressed, −1 if ‘left’ is pressed, and 0 if neither or both are pressed. `key_tri_vert()` does something similar for vertical movement and the line with `bit_tribool()` function makes a variant using `key_hit()` and R and L to increment or decrement the tile index.
+また、位置の更新に、私の [tribool のキーの関数](keys.html#ssec-adv-tri)を使っていることにも注目してください。入力の処理は、よく「キー X が押されたら増やし、Y の反対のキーが押されたら減らす」という形になります。tribool の関数を使うと、そういうコードが 4 行から 1 行になり、（最初のハードルを越えれば）コードが読みやすくなります。たとえば、`key_tri_horz()` は、「右」が押されていれば +1、「左」が押されていれば −1、どちらも押されていないか両方押されていれば 0 を返します。`key_tri_vert()` は縦の動きについて同じことをし、`bit_tribool()` 関数を使った行は、`key_hit()` と R、L を使ってタイルのインデックスを増やしたり減らしたりする変種です。
 
-### Other attrs {#ssec-demo-attr}
+### ほかの属性 {#ssec-demo-attr}
 
-Sprite coordinates are only two of the many sprite attributes that can be controlled with via specific OAM bits, even while the sprite is already active. Some of the obvious ones are flipping or mirroring it, which can be done using A and B here. Or, if you're using a 4bpp sprite, you can swap palettes so that all the colors change. Pressing Select in the demo switches from palette bank 0 to 1, which happens to have a grey to white gradient. Toggling between these palette banks quickly can make the sprite flash. You could also change the priorities in which the sprites are rendered, or toggle alpha blending, although I haven't done those things here.
+スプライトの座標は、スプライトがすでに表示されているあいだにも、OAM の特定のビットで制御できる、たくさんのスプライトの属性のうちの 2 つにすぎません。分かりやすいものとしては、反転や鏡像化があり、ここでは A と B でできます。また、4bpp のスプライトを使っているなら、パレットを入れ替えて、全部の色を変えられます。デモでセレクトを押すと、パレットバンク 0 から 1 に切り替わります。パレットバンク 1 には、たまたま灰色から白へのグラデーションが入っています。これらのパレットバンクを素早く切り替えれば、スプライトを点滅させられます。ほかにも、スプライトを描く優先度を変えたり、半透明合成を切り替えたりもできますが、ここではやっていません。
 
-Now, these things don't really change the overall image of the sprite. What you should realize though is that it *is* possible to do that. As I've already noted before, it's not true that the contents of VRAM *are* the sprite, rather that a sprite *uses* parts of VRAM to show something, anything, on screen. You could, for example, change the starting tile `tid` that the sprite uses, which in this case can be done using L and R. Not only is this legal, it's the standard practice for animation (although you can also overwrite VRAM for that – resetting the tile index is just faster). Understanding this is one of the points of moving from a user to a developer perspective: the user only sees the surface; the coder looks below it and sees what's really going on.
+さて、これらはスプライトの全体の画像を本当に変えるものではありません。でも、それを変えることも*できる*と気づいておくべきです。前にも言ったとおり、VRAM の中身がスプライト*である*わけではありません。スプライトは、何か（何でも）を画面に表示するために、VRAM の一部を*使っている*のです。たとえば、スプライトが使う最初のタイル `tid` を変えることもでき、ここでは L と R でできます。これは合法なだけでなく、アニメーションの標準的なやり方です（そのために VRAM を上書きすることもできますが、タイルのインデックスを設定し直すほうが速いです）。これを理解することが、ユーザーの視点から開発者の視点に移るときの要点の 1 つです。ユーザーには表面しか見えませんが、プログラマはその下を見て、本当に何が起きているのかが分かるのです。
 
-And that's it for regular sprites. Using multiple sprites isn't much different – seen one, seen them all. Basic animation shouldn't be problematic either, until you run out of VRAM to put them in. There are still a few regions left untouched like blending and mosaic, but I'll deal with those [later](gfx.html).
+通常のスプライトについては、これで以上です。複数のスプライトを使うのも、たいして違いはありません。1 つ見れば、全部見たようなものです。基本的なアニメーションも、置き場所の VRAM が足りなくなるまでは、問題にならないはずです。半透明合成やモザイクなど、まだ手を付けていない分野もいくつか残っていますが、それは[あとで](gfx.html)扱います。

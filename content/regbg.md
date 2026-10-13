@@ -1,16 +1,16 @@
-# 9. Regular tiled backgrounds
+# 9. 通常のタイル背景
 
 <!-- toc -->
 
-## Tilemap introduction {#sec-intro}
+## タイルマップの紹介 {#sec-intro}
 
-Tilemaps are the bread and butter for the GBA. Almost every commercial GBA game makes use of tile modes, with the bitmap modes seen only in 3D-like games that use ray-tracing. Everything else uses tiled graphics.
+タイルマップは、GBA の基本中の基本です。市販の GBA のゲームのほとんどすべてがタイルモードを使っていて、ビットマップモードが使われるのは、レイトレーシングを使う 3D のようなゲームだけです。それ以外は、すべてタイルのグラフィックを使っています。
 
-The reason why tilemaps are so popular is that they're implemented in hardware and require less space than bitmap graphics. Consider {@fig:map}a. This is a 512 by 256 image, which even at 8bpp would take up 128 KiB of VRAM, and we simply don't have that. If you were to make one big bitmap of a normal level in a game, you can easily get up to 1000×1000 pixels, which is just not practical. And *then* there's the matter of scrolling through the level, which means updating all pixels each frame. Even when your scrolling code is fully optimized that'd take quite a bit of time.
+タイルマップがこれほど広く使われている理由は、ハードウェアで実装されていて、ビットマップのグラフィックより少ない容量で済むからです。{@fig:map}a を考えてみてください。これは 512 × 256 の画像で、8bpp でも 128 KiB の VRAM を使ってしまいますが、そんな容量はありません。ゲームの普通のステージを 1 枚の大きなビットマップにすると、簡単に 1000×1000 ピクセルくらいになってしまい、とても実用的ではありません。*そのうえ*ステージをスクロールするには、毎フレーム全部のピクセルを更新する必要があります。スクロールのコードを最大限に最適化しても、かなりの時間がかかるでしょう。
 
-Now, notice that there are many repeated elements in this image. The bitmap seems to be divided into groups of 16×16 pixels. These are the <dfn>tiles</dfn>. The list of unique tiles is the <dfn>tileset</dfn>, which is given in {@fig:map}b. As you can see, there are only 16 unique tiles making up the image. To create the image from these tiles, we need a <dfn>tilemap</dfn>. The image is divided into a matrix of tiles. Each element in the matrix has a <dfn>tile index</dfn> which indicates which tile should be rendered there; the tilemap can be seen in {@fig:map}c.
+さて、この画像には同じ要素が何度も出てくることに注目してください。ビットマップは 16×16 ピクセルのまとまりに分かれているようです。これが<dfn>タイル</dfn>です。重複しないタイルの一覧が<dfn>タイルセット</dfn>で、{@fig:map}b に示します。見てのとおり、この画像を作っているのは、たった 16 個の異なるタイルです。これらのタイルから画像を作るには、<dfn>タイルマップ</dfn>が必要です。画像はタイルの行列に分けられます。行列の各要素は、そこにどのタイルを描くかを表す<dfn>タイルのインデックス</dfn>を持っています。タイルマップは {@fig:map}c で見られます。
 
-Suppose both the tileset and map used 8-bit entries, the sizes are 16×(16×16) = 4096 bytes for the tileset and 32×16 = 512 bytes for the tilemap. So that's 4.5 KiB for the whole scene rather than the 128 KiB we had before; a size reduction of a factor of 28.
+タイルセットとマップの両方が 8 ビットのエントリを使うとすると、大きさはタイルセットが 16×(16×16) = 4096 バイト、タイルマップが 32×16 = 512 バイトです。なので、場面全体で 4.5 KiB になり、前の 128 KiB と比べて 28 分の 1 の大きさになります。
 
 <div class="cblock">
 <table width=70% id="fig:map">
@@ -19,46 +19,46 @@ Suppose both the tileset and map used 8-bit entries, the sizes are 16×(16×16) 
 <td colspan=2 align="center">
   <div class="cpt" style="width:512px">
   <img src="./img/bgs/brin3-full.png" alt="Brinstar map">
-  <b>{*@fig:map}a</b>: image on screen.
+  <b>{*@fig:map}a</b>: 画面上の画像。
   </div>
 <tr>
 <td colspan=2>
-  The tile mapping process. Using the tileset of 
-  {@fig:map}b, and the tile map of 
-  {@fig:map}c, the end-result is 
-  {@fig:map}a. 
+  タイルマッピングの過程。
+  {@fig:map}b のタイルセットと、
+  {@fig:map}c のタイルマップを使うと、最終的な結果は
+  {@fig:map}a になる。
 <tr>
 <td>
   <div class="cpt" style="width:48px">
   <img src="./img/bgs/brin3-meta-2x.png" height=264
     alt="(meta)tileset for the map"><br>
-  <b>{*@fig:map}b</b>: the tile set.
+  <b>{*@fig:map}b</b>: タイルセット。
   </div>		
 <td>
   <div class="cpt" style="width:528px">
   <img src="./img/bgs/brin3-map-2x.png" width=528
 	alt="Superimposed tile-map"><br>
-  <b>{*@fig:map}c</b>: the tile map (with the proper 
-    tiles as a backdrop).
+  <b>{*@fig:map}c</b>: タイルマップ（対応する
+    タイルを背後に表示）。
   </div>
 </tbody>
 </table></div>
 
-That's basically how tilemaps work. You don't define the whole image, but group pixels together into tiles and describe the image in terms of those groups. In the {@fig:map}, the tiles were 16×16 pixels, so the tilemap is 256 times smaller than the bitmap. The unique tiles are in the tileset, which can (and usually will) be larger than the tilemap. The size of the tileset can vary: if the bitmap is highly variable, you'll probably have many unique tiles; if the graphics are nicely aligned to tile boundaries already (as it is here), the tileset will be small. This is why tile-engines often have a distinct look to them.
+基本的に、タイルマップはこうして働きます。画像全体を定義するのではなく、ピクセルをタイルにまとめ、そのまとまりを使って画像を表すのです。{@fig:map} では、タイルは 16×16 ピクセルだったので、タイルマップはビットマップの 256 分の 1 の大きさです。重複しないタイルはタイルセットに入っていて、タイルセットはタイルマップより大きくなることもあります（そして、普通はそうなります）。タイルセットの大きさはまちまちです。ビットマップの変化が激しければ、たぶんたくさんの異なるタイルができます。グラフィックがすでにタイルの境界にきれいに揃っていれば（ここでのように）、タイルセットは小さくなります。タイルエンジンのゲームに独特の見た目があることが多いのは、このためです。
 
-### Tilemaps for the GBA {#ssec-intro-gba}
+### GBA のタイルマップ {#ssec-intro-gba}
 
-In the tiled video-modes (0, 1 and 2) you can have up to four backgrounds that display tilemaps. The size of the maps is set by the control registers and can be between 128×128 and 1024×1024 pixels. The size of each tile is always 8×8 pixels, so {@fig:map} isn't *quite* the way it'd work on the GBA. Because accessing the tilemaps is done in units of tiles, the map sizes correspond to 16×16 to 128×128 tiles.
+タイルのビデオモード（0、1、2）では、タイルマップを表示する背景を最大 4 つ持てます。マップの大きさは制御のレジスタで設定し、128×128 から 1024×1024 ピクセルまでです。各タイルの大きさは常に 8×8 ピクセルなので、{@fig:map} は GBA での働き方と*完全に*同じではありません。タイルマップへのアクセスはタイル単位で行うので、マップの大きさは 16×16 から 128×128 タイルに当たります。
 
-Both the tiles and tilemaps are stored in VRAM, which is divided into <dfn>charblocks</dfn> and <dfn>screenblocks</dfn>. The tileset is stored in the charblocks and the tilemap goes into the screenblocks. In the common vernacular, the word “tile” is used for both the graphical tiles and the entries of the tilemaps. Because this is somewhat confusing, I'll use the term <dfn>screen entry</dfn> (<dfn>SE</dfn> for short) as the items in the screenblocks (i.e., the map entries) and restrict tiles to the tileset.
+タイルもタイルマップも VRAM に入っていて、VRAM は<dfn>キャラブロック</dfn>と<dfn>スクリーンブロック</dfn>に分かれています。タイルセットはキャラブロックに入り、タイルマップはスクリーンブロックに入ります。一般的な言い方では、「タイル」という言葉は、グラフィックのタイルとタイルマップのエントリの両方に使われます。これは少し紛らわしいので、私はスクリーンブロックの中の要素（つまりマップのエントリ）には<dfn>スクリーンエントリ</dfn>（略して <dfn>SE</dfn>）という言葉を使い、タイルという言葉はタイルセットに限ることにします。
 
-64 KiB of VRAM is set aside for tilemaps (`0600:0000h`-`0600:FFFFh`). This is used for both screenblocks *and* charblocks. You can choose which ones to use freely through the control registers, but be careful that they don't overlap (see {@tbl:cbb-sbb}). Each screenblock is 2048 (`800h`) bytes long, giving 32 screenblocks in total. All but the smallest backgrounds use multiple screenblocks for the full tilemap. Each charblock is 16 KiB (`4000h` bytes) long, giving four blocks overall.
+64 KiB の VRAM が、タイルマップ用に割り当てられています（`0600:0000h`〜`0600:FFFFh`）。これは、スクリーンブロック*と*キャラブロックの両方に使われます。どれを使うかは制御のレジスタで自由に選べますが、重ならないように気をつけてください（{@tbl:cbb-sbb} を参照）。各スクリーンブロックの大きさは 2048（`800h`）バイトで、全部で 32 個のスクリーンブロックがあります。一番小さいものを除いて、背景はどれも、タイルマップ全体に複数のスクリーンブロックを使います。各キャラブロックの大きさは 16 KiB（`4000h` バイト）で、全部で 4 つのブロックがあります。
 
 <div class="cblock">
 <table id="tbl:cbb-sbb" rules=groups>
 <caption align="bottom">
   <b>{*@tbl:cbb-sbb}</b>:
-  charblock and screenblock overlap.
+  キャラブロックとスクリーンブロックの重なり。
 </caption>
 <colgroup span=1 style="background-color:var(--table-background-color-custom);"></colgroup>
 <colgroup span=3 style="background-color:var(--table-alternate-bg);"></colgroup>
@@ -67,93 +67,93 @@ Both the tiles and tilemaps are stored in VRAM, which is divided into <dfn>charb
 <colgroup span=3 style="background-color:var(--table-background-color-custom);"></colgroup>
 
 <tbody align="left"><tr>
-  <th>Memory
+  <th>メモリ
   <th colspan=3> 0600:0000 <th colspan=3> 0600:4000
   <th colspan=3> 0600:8000 <th colspan=3> 0600:C000
 </tbody>
 <tbody align="center"><tr>
-  <th>charblock
+  <th>キャラブロック
   <td colspan=3> 0 <td colspan=3> 1 <td colspan=3> 2 <td colspan=3> 3 
 </tbody>
 <tbody><tr>
-  <th>screenblock
+  <th>スクリーンブロック
   <td>0 <td>&hellip; <td>7		<td>8 <td>&hellip; <td>15
   <td>16 <td>&hellip; <td> 23	<td>24 <td>&hellip; <td>31
 </tbody>
 </table>
 </div>
 
-:::warning Tiles vs ‘tiles’
+:::warning タイルと「タイル」
 
-Both the entries of the tilemap and the data in the tileset are often referred to as ‘tiles’, which can make conversation confusing. I reserve the term ‘tile’ for the graphics, and ‘screen(block) entry’ or ‘map entry’ for the map's contents.
-
-:::
-
-:::warning Charblocks vs screenblocks
-
-Charblocks and screenblocks use the same addresses in memory. Each charblock overlaps eight screenblocks. When loading data, make sure the tiles themselves don't overwrite the map, or vice versa.
+タイルマップのエントリとタイルセットのデータは、どちらもよく「タイル」と呼ばれるので、話が紛らわしくなることがあります。私は「タイル」という言葉をグラフィックに限り、マップの中身には「スクリーン（ブロック）エントリ」か「マップエントリ」という言葉を使います。
 
 :::
 
-Size was one of the benefits of using tilemaps, speed was another. The rendering of tilemaps in done in hardware and if you've ever played PC games in hardware and software modes, you'll know that hardware is good. Another nice point is that scrolling is done in hardware too. Instead of redrawing the whole scene, you just have to enter some coordinates in the right registers.
+:::warning キャラブロックとスクリーンブロック
 
-As I said in the overview, there are three stages to setting up a tiled background: control, mapping and image-data. I've already covered most of the image-data in the [overview](objbg.html), as well as some of the control and mapping parts that are shared by sprites and backgrounds alike; this chapter covers only things specific to backgrounds in general and regular backgrounds in particular. I'm assuming you've read the overview.
-
-:::tip Essential tilemap steps
-
--   Load the graphics: tiles into charblocks and colors in the background palette.
--   Load a map into one or more screenblocks.
--   Switch to the right mode in `REG_DISPCNT` and activate a background.
--   Initialize the background's control register to use the right CBB, SBB and bitdepth.
+キャラブロックとスクリーンブロックは、メモリ上の同じアドレスを使います。各キャラブロックは、8 つのスクリーンブロックと重なっています。データを読み込むときは、タイル自体がマップを上書きしたり、その逆が起きたりしないように気をつけてください。
 
 :::
 
-## Background control {#sec-ctrl}
+大きさはタイルマップを使う利点の 1 つでしたが、速さももう 1 つの利点です。タイルマップの描画はハードウェアで行われます。PC のゲームをハードウェアモードとソフトウェアモードで遊んだことがあれば、ハードウェアがいいものだと知っているでしょう。もう 1 つのよい点は、スクロールもハードウェアで行われることです。場面全体を描き直す代わりに、正しいレジスタに座標を入れるだけで済みます。
 
-### Background types {#ssec-ctrl-bgs}
+概要で言ったとおり、タイル背景の準備には、制御、マッピング、画像データの 3 つの段階があります。画像データのほとんどと、スプライトと背景に共通する制御とマッピングの部分の一部は、[概要](objbg.html)ですでに説明しました。この章では、背景全般、特に通常の背景に特有のことだけを扱います。概要は読んでいるものとします。
 
-Just like sprites, there are two types of tiled backgrounds: regular and affine; these are also known as text and rotation backgrounds, respectively. The type of the background depends on the video mode (see {@tbl:bg-types}). At their cores, both regular and affine backgrounds work the same way: you have tiles, a tile-map and a few control registers. But that's where the similarity ends. Affine backgrounds use more and different registers than regular ones, and even the maps are formatted differently. This page only covers the regular backgrounds. I'll leave the [affine ones](affbg.html) till after the page on the [affine matrix](affine.html).
+:::tip タイルマップに欠かせない手順
+
+-   グラフィックを読み込む: タイルをキャラブロックに、色を背景のパレットに。
+-   マップを 1 つ以上のスクリーンブロックに読み込む。
+-   `REG_DISPCNT` で正しいモードに切り替え、背景を有効にする。
+-   背景の制御のレジスタを、正しい CBB、SBB、ビット深度を使うように初期化する。
+
+:::
+
+## 背景の制御 {#sec-ctrl}
+
+### 背景の種類 {#ssec-ctrl-bgs}
+
+スプライトと同じく、タイル背景にも 2 種類あります。通常の背景とアフィン背景です。それぞれ、テキスト背景、回転背景とも呼ばれます。背景の種類は、ビデオモードで決まります（{@tbl:bg-types} を参照）。根本のところでは、通常の背景もアフィン背景も同じように働きます。タイルとタイルマップと、いくつかの制御のレジスタがあります。でも、似ているのはそこまでです。アフィン背景は、通常の背景より多くの、そして違うレジスタを使い、マップの形式さえ違います。このページでは、通常の背景だけを扱います。[アフィン背景](affbg.html)は、[アフィン行列](affine.html)のページのあとにとっておきます。
 
 <div class="lblock">
 <table id="tbl:bg-types" class="table-data">
 <caption align="bottom">
-  <b>{*@tbl:bg-types}</b>: video modes and 
-  background type
+  <b>{*@tbl:bg-types}</b>: ビデオモードと
+  背景の種類
 </caption>
 <tbody align="center">
 <tr>
-  <th>mode	<th>BG0	<th>BG1	<th>BG2	<th>BG3
+  <th>モード	<th>BG0	<th>BG1	<th>BG2	<th>BG3
 <tr>
-  <td>0     <td>reg	<td>reg	<td>reg	<td>reg
+  <td>0     <td>通常	<td>通常	<td>通常	<td>通常
 <tr>
-  <td>1     <td>reg	<td>reg	<td>aff	<td> -
+  <td>1     <td>通常	<td>通常	<td>アフィン	<td> -
 <tr>
-  <td>2     <td>-	<td>-	<td>aff	<td>aff
+  <td>2     <td>-	<td>-	<td>アフィン	<td>アフィン
 </tbody>
 </table>
 </div>
 
-### Control registers {#ssec-ctrl-regs}
+### 制御のレジスタ {#ssec-ctrl-regs}
 
-All backgrounds have 3 primary control registers. The primary control register is `REG_BGxCNT`, where *x* indicates the backgrounds 0 through 3. This register is where you say what the size of the tilemap is, and which charblock and screenblock it uses. The other two are the scrolling registers, `REG_BGxHOFS` and `REG_BGxVOFS`.
+どの背景にも、主な制御のレジスタが 3 つあります。一番の制御のレジスタは `REG_BGxCNT` で、*x* は背景 0〜3 を表します。このレジスタで、タイルマップの大きさと、どのキャラブロックとスクリーンブロックを使うかを指定します。ほかの 2 つは、スクロールのレジスタの `REG_BGxHOFS` と `REG_BGxVOFS` です。
 
-Each of these is a 16-bit register. `REG_BG0CNT` can be found at `0400:0008`, with the other controls right after it. The offsets are paired by background, forming coordinate pairs. These start at `0400:0010`
+これらはどれも 16 ビットのレジスタです。`REG_BG0CNT` は `0400:0008` にあり、ほかの背景の制御のレジスタがそのすぐあとに続きます。オフセットのレジスタは背景ごとに対になっていて、座標の組を作っています。これらは `0400:0010` から始まります。
 
 <div class="lblock">
 <table id="tbl:ctrl-ofs" class="table-data">
 <caption align= bottom>
-  <b>{*@tbl:ctrl-ofs}</b>: Background register 
-    addresses
+  <b>{*@tbl:ctrl-ofs}</b>: 背景のレジスタの
+    アドレス
 </caption>
 <col span=2 align="right">
-  <tr><th>Register      <th>length  <th>address
+  <tr><th>レジスタ      <th>長さ  <th>アドレス
   <tr><th>REG_BGxCNT    <td>2       <td>0400:0008h + 2·<i>x</i>
   <tr><th>REG_BGxHOFS   <td>2       <td>0400:0010h + 4·<i>x</i>
   <tr><th>REG_BGxVOFS   <td>2       <td>0400:0012h + 4·<i>x</i>
 </table>
 </div>
 
-The description of `REG_BGxCNT` can be found below. Most of it is pretty standard, except for the size: there are actually *two* lists of possible sizes; one for regular maps and one for affine maps. They both use the same bits, you may have to be careful that you're using the right `#define`s.
+`REG_BGxCNT` の説明は下のとおりです。大きさ以外は、ほとんどごく標準的です。大きさについては、実は可能な大きさの一覧が*2 つ*あります。1 つは通常のマップ用、もう 1 つはアフィンのマップ用です。どちらも同じビットを使うので、正しい `#define` を使っているか気をつける必要があるかもしれません。
 
 <div class="reg">
 <table class="table-reg" id="tbl-reg-bgxcnt">
@@ -178,43 +178,43 @@ The description of `REG_BGxCNT` can be found below. Most of it is pretty standar
   <col class="bits" width=40>
   <col class="bf" width="8%">
   <col class="def" width="12%">
-<tr align="left"><th>bits<th>name<th>define<th>description
+<tr align="left"><th>ビット<th>名前<th>define<th>説明
 <tbody valign="top">
 <tr class="bg0">	
   <td>0-1<td class="rclr4">Pr
   <td><i>BG_PRIO#</i>
-  <td><b>Priority</b>. Determines drawing order of backgrounds.
+  <td><b>優先度</b>。背景を描く順番を決める。
 <tr class="bg1">	
   <td>2-3<td class="rclr0">CBB
   <td><i>BG_CBB#</i>
-  <td><b>Character Base Block</b>. Sets the charblock that serves as 
-    the base for character/tile indexing. Values: 0-3.
+  <td><b>キャラクタベースブロック</b>。キャラクタ（タイル）のインデックスの
+    基点となるキャラブロックを設定する。値: 0-3。
 <tr class="bg0">	
   <td> 6 <td class="rclr5">Mos
   <td>BG_MOSAIC
-  <td><b>Mosaic</b> flag. Enables mosaic effect.
+  <td><b>モザイク</b>のフラグ。モザイク効果を有効にする。
 <tr class="bg1">	
   <td> 7 <td class="rclr3">CM
   <td>BG_4BPP, BG_8BPP
-  <td><b>Color Mode</b>. 16 colors (4bpp) if cleared; 
-    256 colors (8bpp) if set. 
+  <td><b>カラーモード</b>。消えていれば 16 色（4bpp）、
+    立っていれば 256 色（8bpp）。
 <tr class="bg0">	
   <td>8-C<td class="rclr1">SBB
   <td><i>BG_SBB#</i>
-  <td><b>Screen Base Block</b>. Sets the screenblock that serves as 
-    the base for screen-entry/map indexing. Values: 0-31.
+  <td><b>スクリーンベースブロック</b>。スクリーンエントリ（マップ）のインデックスの
+    基点となるスクリーンブロックを設定する。値: 0-31。
 <tr class="bg1">	
   <td> D <td class="rclr6">Wr
   <td>BG_WRAP
-  <td><b>Affine Wrapping</b> flag. If set, affine background wrap 
-    around at their edges. Has no effect on regular backgrounds as 
-    they wrap around by default.
+  <td><b>アフィンの折り返し</b>のフラグ。立っていれば、アフィン背景は端で
+    折り返す。通常の背景はもともと折り返すので、
+    効果はない。
 <tr class="bg0">	
   <td>E-F<td class="rclr2">Sz
-  <td><i>BG_SIZE#</i>, <i class="mini">see below</i>
-  <td><b>Background Size</b>. Regular and affine backgrounds have 
-      different sizes available to them. The sizes, in tiles and in 
-      pixels, can be found in {@tbl:bg-size}.
+  <td><i>BG_SIZE#</i>, <i class="mini">下を参照</i>
+  <td><b>背景の大きさ</b>。通常の背景とアフィン背景では、
+      使える大きさが違う。タイル単位とピクセル単位の大きさは、
+      {@tbl:bg-size} にある。
 </tbody>
 </table>
 </div>
@@ -223,11 +223,11 @@ The description of `REG_BGxCNT` can be found below. Most of it is pretty standar
 <div style="display: inline-block">
   <table id="tbl-reg-size" class="table-data">
   <caption align="bottom">
-    <b>{*@tbl:bg-size}a</b>: regular bg sizes
+    <b>{*@tbl:bg-size}a</b>: 通常の背景の大きさ
   </caption>
   <col><col class="def">
   <tbody align="center">
-    <tr><th>Sz-flag	<th>define    <th>(tiles)<th>(pixels)
+    <tr><th>Sz のフラグ	<th>define    <th>(タイル)<th>(ピクセル)
     <tr><td> 00   <td><code>BG_REG_32x32</code> <td> 32×32 <td> 256×256 
     <tr><td> 01   <td><code>BG_REG_64x32</code> <td> 64×32 <td> 512×256 
     <tr><td> 10   <td><code>BG_REG_32x64</code> <td> 32×64 <td> 256×512 
@@ -238,11 +238,11 @@ The description of `REG_BGxCNT` can be found below. Most of it is pretty standar
 <div style="display: inline-block">
   <table id="tbl-aff-size" class="table-data">
   <caption align="bottom">
-    <b>{*@tbl:bg-size}b</b>: affine bg sizes
+    <b>{*@tbl:bg-size}b</b>: アフィン背景の大きさ
   </caption>
   <col><col class="def">
   <tbody align="center">
-    <tr><th>Sz-flag	<th>define    <th>(tiles) <th>(pixels)
+    <tr><th>Sz のフラグ	<th>define    <th>(タイル) <th>(ピクセル)
     <tr><td> 00   <td><code>BG_AFF_16x16</code>  <td> 16×16  <td> 128×128 
     <tr><td> 01   <td><code>BG_AFF_32x32</code>  <td> 32×32  <td> 256×256 
     <tr><td> 10   <td><code>BG_AFF_64x64</code>  <td> 64×64  <td> 512×512 
@@ -252,21 +252,21 @@ The description of `REG_BGxCNT` can be found below. Most of it is pretty standar
 </div>
 </div>
 
-Each background has two 16-bit scrolling registers to offset the rendering (`REG_BGxHOFS` and `REG_BGxVOFS`). There are a number of interesting points about these. First, because regular backgrounds wrap around, the values are essentially modulo *mapsize*. This is not really relevant at the moment, but you can use this to your benefit once you get to more advanced tilemaps. Second, these registers are **write-only**! This is a little annoying, as it means that you can't update the position by simply doing `REG_BG0HOFS++` and the like.
+各背景には、描画をずらすための 16 ビットのスクロールのレジスタが 2 つあります（`REG_BGxHOFS` と `REG_BGxVOFS`）。これらにはいくつか面白い点があります。まず、通常の背景は折り返すので、値は本質的に *マップの大きさ* を法とした剰余になります。今はあまり関係ありませんが、もっと高度なタイルマップを扱うようになったら、これをうまく使えます。次に、これらのレジスタは**書き込み専用**です！ これは少し厄介です。`REG_BG0HOFS++` のように書いて位置を更新することができないからです。
 
-And now the third part, which may be the most important, namely what the values actually *do*. The simplest way of looking at them is that they give the coordinates of the screen on the map. Read that again, carefully: it's the position of the screen on the map. It is *not* the position of the map on the screen, which is how sprites work. The difference is only a minus sign, but even something as small as a sign change can wreak havoc on your calculations.
+そして 3 つ目の点は、たぶん一番大事なことで、値が実際に何を*する*のかです。一番単純な見方は、値はマップ上での画面の座標を表す、というものです。もう一度、注意して読んでください。マップ上での画面の位置です。スプライトのような、画面上でのマップの位置では*ありません*。違いはマイナス記号だけですが、符号が変わるという小さなことでも、計算を大混乱させることがあります。
 
 <div class="lblock">
   <div class="cpt" style="width:520px;">
     <img src="./img/bgs/brin3-ofs-2x.png" id="fig:map-ofs" width=520
       alt="map-ofs-a"><br>
     <b>{*@fig:map-ofs}</b>: 
-	Scrolling offset <b>dx</b> sets is the position of the screen 
-	on the map. In this case, <b>dx</b> = (192, 64).
+	スクロールのオフセット <b>dx</b> は、マップ上での画面の位置を
+	設定する。この場合、<b>dx</b> = (192, 64)。
   </div>
 </div>
 
-So, if you increase the scrolling values, you move the screen to the right, which corresponds to the map moving *left* on the screen. In mathematical terms, if you have map position **p** and screen position **q**, then the following is true:
+なので、スクロールの値を増やすと、画面が右に動き、これは画面上でマップが*左に*動くことに当たります。数学の言葉で言うと、マップの位置を **p**、画面の位置を **q** とすると、次の式が成り立ちます。
 
 <table id="eq:bgr-dx">
 <tr>
@@ -310,21 +310,21 @@ So, if you increase the scrolling values, you move the screen to the right, whic
   </math>
 </table>
 
-:::warning Direction of offset registers
+:::warning オフセットのレジスタの向き
 
-The offset registers REG_BGxHOFS and REG_BGxVOFS indicate which map location is mapped to the top-left of the screen, meaning positive offsets scroll the map left and up. Watch your minus signs.
-
-:::
-
-:::warning Offset registers are write only
-
-The offset registers are **write-only**! That means that direct arithmetic like `+=` will not work.
+オフセットのレジスタ REG_BGxHOFS と REG_BGxVOFS は、マップのどの位置を画面の左上に対応づけるかを表します。つまり、正のオフセットは、マップを左と上にスクロールします。マイナス記号に注意してください。
 
 :::
 
-### Useful types and #defines {#ssec-ctrl-types}
+:::warning オフセットのレジスタは書き込み専用です
 
-Tonc's code has several useful extra types and macros that can make life a little easier.
+オフセットのレジスタは**書き込み専用**です！ つまり、`+=` のような直接の算術演算は動きません。
+
+:::
+
+### 便利な型と #define {#ssec-ctrl-types}
+
+Tonc のコードには、少し楽にしてくれる、便利な追加の型とマクロがいくつかあります。
 
 ```c
 // === Additional types (tonc_types.h) ================================
@@ -365,21 +365,21 @@ typedef SCR_ENTRY   SCREENBLOCK[1024];
 #define REG_BG_AFFINE   ((BG_AFFINE*)(REG_BASE+0x0000))
 ```
 
-Strictly speaking, making a `SCREEN_ENTRY` `typedef` is not necessary, but makes its use clearer. `se_mem` works much like `tile_mem`: it maps out VRAM into screenblocks screen-entries, making finding a specific entry easier. The other typedefs are used to map out arrays for the background registers. For example, `REG_BGCNT` is an array that maps out all `REG_BGxCNT` registers. `REG_BGCNT[0]` is `REG_BG0CNT`, etc. The `BG_POINT` and `BG_AFFINE` types are used in similar fashions. Note that `REG_BG_OFS` still covers the same registers as `REG_BGxHOFS` and `REG_BGxVOFS` do, and the write-only-ness of them has not magically disappeared. The same goes for `REG_BG_AFFINE`, but that discussion will be saved for another time.
+厳密に言えば、`SCREEN_ENTRY` の `typedef` を作る必要はありませんが、使い道が分かりやすくなります。`se_mem` は `tile_mem` とよく似た働きをします。VRAM をスクリーンブロックとスクリーンエントリに対応づけて、特定のエントリを見つけやすくします。ほかの typedef は、背景のレジスタを配列として対応づけるのに使います。たとえば、`REG_BGCNT` は、すべての `REG_BGxCNT` レジスタを対応づける配列です。`REG_BGCNT[0]` は `REG_BG0CNT`、という具合です。`BG_POINT` 型と `BG_AFFINE` 型も同じように使います。`REG_BG_OFS` が指すのは、あくまで `REG_BGxHOFS` と `REG_BGxVOFS` と同じレジスタで、書き込み専用という性質が魔法のように消えたわけではないことに注意してください。`REG_BG_AFFINE` も同じですが、その話はまたの機会にとっておきます。
 
-In theory, it's also useful to create a sort of background API, with a struct with the temporaries for map positioning and functions for initializing and updating the registers and maps. However, most of tonc's demos are not complex enough to warrant these things. With the types above, manipulating the necessary items is already simplified enough for now.
+理屈の上では、一種の背景の API を作るのも便利です。マップの位置を一時的に保存する構造体と、レジスタやマップを初期化したり更新したりする関数を持つものです。でも、tonc のデモのほとんどは、そこまでする必要があるほど複雑ではありません。上の型があれば、必要なものを扱うのは、今のところもう十分簡単です。
 
-## Regular background tile-maps {#sec-map}
+## 通常の背景のタイルマップ {#sec-map}
 
-The screenblocks form a matrix of screen entries that describe the full image on the screen. In the example of {@fig:map}, the tilemap entries just contained the tile index. The GBA screen entries bahave a little differently.
+スクリーンブロックは、画面上の画像全体を表すスクリーンエントリの行列を形作ります。{@fig:map} の例では、タイルマップのエントリにはタイルのインデックスしか入っていませんでした。GBA のスクリーンエントリは、少し違う振る舞いをします。
 
-For regular tilemaps, each screen entry is 16-bits long. Besides the tile index, it contains flipping flags and a palette bank index for 4bpp / 16-color tiles. The exact layout can be found in "Screen entry format" below. The affine screen entries are only 8 bits wide and just contain an 8-bit tile index.
+通常のタイルマップでは、各スクリーンエントリの長さは 16 ビットです。タイルのインデックスのほかに、反転のフラグと、4bpp / 16 色のタイルのためのパレットバンクのインデックスを持っています。正確な並びは、下の「スクリーンエントリの形式」にあります。アフィンのスクリーンエントリは 8 ビットしかなく、8 ビットのタイルのインデックスだけを持っています。
 
 <div class="reg">
 <table class="table-reg" id="tbl-se"
   border=1 frame=void cellpadding=4 cellspacing=0>
 <caption class="reg">
-  Screen entry format for regular backgrounds
+  通常の背景のスクリーンエントリの形式
 </caption>
 <tr class="bits">
 	<td>F E D C<td>B<td>A<td>9 8 7 6 5 4 3 2 1 0
@@ -394,39 +394,39 @@ For regular tilemaps, each screen entry is 16-bits long. Besides the tile index,
   <col class="bits" width=40>
   <col class="bf" width="8%">
   <col class="def" width=12%>
-<tr align="left"><th>bits<th>name<th>define<th>description
+<tr align="left"><th>ビット<th>名前<th>define<th>説明
 <tbody valign="top">
 <tr class="bg0">	
   <td>0-9<td class="rclr0">TID
   <td><i>SE_ID#</i>
-  <td><b>Tile-index</b> of the SE.
+  <td>SE の<b>タイルのインデックス</b>。
 <tr class="bg1">	
   <td>A-B<td class="rclr2">HF, VF
   <td>SE_HFLIP, SE_VFLIP. <i>SE_FLIP#</i>
-  <td><b>Horizontal/vertical flipping</b> flags. 
+  <td><b>水平・垂直反転</b>のフラグ。
 <tr class="bg0">	
   <td>C-F<td class="rclr1">PB
   <td><i>SE_PALBANK#</i>
-  <td><b>Palette bank</b> to use when in 16-color mode. Has no effect 
-    for 256-color bgs (<code>REG_BGxCNT{6}</code> is set).
+  <td>16 色モードのときに使う<b>パレットバンク</b>。256 色の背景
+    （<code>REG_BGxCNT{6}</code> が立っている）では効果はない。
 </tbody>
 </table>
 </div>
 
-### Map layout {#ssec-map-layout}
+### マップの並び {#ssec-map-layout}
 
-VRAM contains 32 screenblocks to store the tilemaps in. Each screenblock is 800h bytes long, so you can fit 32×32 screen entries into it, which equals one 256×256 pixel map. The bigger maps simply use more than one screenblock. The screenblock index set in `REG_BGxCNT` is the <dfn>screen base block</dfn> which indicates the start of the tilemap.
+VRAM には、タイルマップを入れるためのスクリーンブロックが 32 個あります。各スクリーンブロックの大きさは 800h バイトなので、32×32 個のスクリーンエントリが入り、これは 256×256 ピクセルのマップ 1 枚に当たります。もっと大きなマップは、単純に複数のスクリーンブロックを使います。`REG_BGxCNT` で設定するスクリーンブロックのインデックスは<dfn>スクリーンベースブロック</dfn>で、タイルマップの始まりを表します。
 
-Now, suppose you have a tilemap that's *tw*×*th* tiles/SEs in size. You might expect that the screen entry at tile-coordinates (*tx*, *ty*) could be found at SE-number *n* = *tx*+*ty*·*tw*, because that's how matrices always work, right? Well, you'd be wrong. At least, you'd be *partially* wrong.
+さて、大きさが *tw*×*th* タイル（SE）のタイルマップがあるとします。タイルの座標 (*tx*, *ty*) にあるスクリーンエントリは、SE の番号 *n* = *tx*+*ty*·*tw* にあると思うかもしれません。行列はいつもそうなっていますよね？ でも、それは間違いです。少なくとも、*一部*間違っています。
 
-Within each screenblock the equation works, but the bigger backgrounds don't simply *use* multiple screenblocks, they're actually accessed as four separate maps. How this works can be seen in {@tbl:reg-layout}: each numbered block is a contingent block in memory. This means that to get the SE-index you have to find out which screenblock you are in and then find the SE-number inside that screenblock.
+各スクリーンブロックの中ではこの式が成り立ちますが、大きな背景は単に複数のスクリーンブロックを*使う*だけでなく、実際には 4 つの別々のマップとしてアクセスされます。これがどういう仕組みかは、{@tbl:reg-layout} で分かります。番号の付いた各ブロックは、メモリ上で連続したブロックです。つまり、SE のインデックスを求めるには、どのスクリーンブロックにいるかを割り出してから、そのスクリーンブロックの中での SE の番号を求める必要があります。
 
 <div class="lblock">
 <table class="table-reg" id="tbl:reg-layout"
   border=1 frame=void cellpadding=4 cellspacing=0>
 <caption align="bottom">
-  <b>{*@tbl:reg-layout}</b>: screenblock layout of 
-  regular backgrounds.
+  <b>{*@tbl:reg-layout}</b>: 通常の背景の
+  スクリーンブロックの並び。
  </caption>
 <col span=4 align="center">
 <tr><th>32×32<th>64×32<th>32×64<th>64×64
@@ -452,7 +452,7 @@ Within each screenblock the equation works, but the bigger backgrounds don't sim
 </table>
 </div>
 
-This kind of nesting problem isn't as hard as it looks. We know how many tiles fit in a screenblock, so to get the SBB-coordinates, all we have to do divide the tile-coords by the SBB width and height: *sbx*=*tx*/32 and *sby*=*ty*/32. The SBB-number can then be found with the standard matrix→array formula. To find the in-SBB SE-number, we have to use *tx*%32 and *ty*%32 to find the in-SBB coordinates, and then again the conversion from 2D coords to a single element. This is to be offset by the SBB-number tiles the size of an SBB to find the final number. The final form would be:
+こうした入れ子の問題は、見た目ほど難しくありません。1 つのスクリーンブロックに何個のタイルが入るかは分かっているので、SBB の座標を求めるには、タイルの座標を SBB の幅と高さで割るだけです。*sbx*=*tx*/32、*sby*=*ty*/32 です。すると、SBB の番号は、行列から配列への標準的な式で求められます。SBB の中での SE の番号を求めるには、*tx*%32 と *ty*%32 を使って SBB の中での座標を求め、それをまた 2 次元の座標から 1 つの要素の番号に変換します。最終的な番号を求めるには、それを SBB の番号と SBB の大きさの積だけずらします。最終的な形は次のようになります。
 
 <div id="cd-se-index">
 
@@ -467,9 +467,9 @@ uint se_index(uint tx, uint ty, uint pitch)
 ```
 </div>
 
-The general formula is left as an exercise for the reader – one that is well worth the effort, in my view. This kind of process crops up in a number of places, like getting the offset for bitmap coordinates in tiles, and tile coords in 1D object mapping.
+一般的な式は、読者への練習問題とします。私の意見では、十分取り組む価値のある問題です。この種の処理は、タイルに分けたビットマップの座標のオフセットを求めるときや、1D のオブジェクトマッピングでのタイルの座標など、いろいろな場所で出てきます。
 
-If all those operations make you queasy, there's also a faster version specifically for a 2×2 arrangement. It starts with calculating the number as if it's a 32×32t map. This will be incorrect for a 64t wide map, which we can correct for by adding 0x0400−0x20 (i.e., tiles/block − tiles per row). We need another full block correction is the size is 64×64t.
+こうした演算を見て気分が悪くなるなら、2×2 の並び専用の、もっと速い版もあります。まず、32×32t のマップであるかのように番号を計算します。幅 64t のマップではこれは正しくないので、0x0400−0x20（つまり、ブロックあたりのタイル数 − 1 行あたりのタイル数）を足して補正します。大きさが 64×64t なら、さらにブロック 1 つ分の補正が必要です。
 
 <div id="cd-se-index-fast">
 
@@ -491,46 +491,46 @@ uint se_index_fast(uint tx, uint ty, u16 bgcnt)
 ```
 </div>
 
-I would like to remind you that *n* here is the SE-number, not the address. Since the size of a regular SE is 2 bytes, you need to multiply *n* by 2 for the address. (Unless, of course, you have a pointer/array of `u16`s, in which case *n* will work fine.) Also, this works for regular backgrounds only; affine backgrounds use a linear map structure, which makes this extra work unnecessary there. By the way, both the screen-entry and map layouts are different for affine backgrounds. For their formats, see the [map format](affbg.html#sec-map) section of the affine background page.
+ここでの *n* はアドレスではなく、SE の番号だということを思い出してください。通常の SE の大きさは 2 バイトなので、アドレスにするには *n* に 2 を掛ける必要があります。（もちろん、`u16` のポインタや配列を使っているなら、*n* のままでうまくいきます。）また、これは通常の背景にしか使えません。アフィン背景は線形のマップ構造を使うので、そこではこの余分な作業は要りません。ちなみに、アフィン背景では、スクリーンエントリとマップの並びの両方が違います。その形式については、アフィン背景のページの[マップの形式](affbg.html#sec-map)の節を見てください。
 
-### Background tile subtleties {#ssec-map-subtle}
+### 背景のタイルの微妙な点 {#ssec-map-subtle}
 
-There are two additional things you need to be aware of when using tiles for tile-maps. The first concerns tile-numbering. For sprites, numbering went according to 4-bit tiles (s-tiles); for 8-bit tiles (d-tiles) you'd have use multiples of 2 (a bit like u16 addresses are always multiples of 2 in memory). In tile-maps, however, d-tiles are numbered by the d-tile. To put it in other words, for sprites, using index *id* indicates the same tile for both 4 and 8-bit tiles, namely the one that starts at *id*·20h. For tile-maps, however, it starts at *id*·20h for 4-bit tiles, but at *id*·40h for 8-bit tiles.
+タイルマップにタイルを使うときには、ほかに知っておくべきことが 2 つあります。1 つ目は、タイルの番号の付け方です。スプライトでは、番号は 4 ビットのタイル（s タイル）単位で付けられ、8 ビットのタイル（d タイル）には 2 の倍数を使う必要がありました（u16 のアドレスがメモリ上で常に 2 の倍数になるのと少し似ています）。でもタイルマップでは、d タイルは d タイル単位で番号が付けられます。言い換えると、スプライトでは、インデックス *id* は 4 ビットのタイルでも 8 ビットのタイルでも同じタイル、つまり *id*·20h から始まるタイルを指します。でもタイルマップでは、4 ビットのタイルなら *id*·20h から始まりますが、8 ビットのタイルなら *id*·40h から始まります。
 
 <div class="lblock">
 <table id="tbl:bg-tids" class="table-data">
 <caption align="bottom">
-  {*@tbl:bg-tids}: tile counting 
-  for backgrounds, sticks to its bit-depth.
+  {*@tbl:bg-tids}: 背景のタイルの数え方。
+  ビット深度に従う。
 </caption>
 <tbody align="center">
 <tr>
-  <th>memory offset<th>000h<th>020h <th>040h<th>060h <th>080h<th>100h <th>...
+  <th>メモリのオフセット<th>000h<th>020h <th>040h<th>060h <th>080h<th>100h <th>...
 <tr>
-  <th>4bpp tile <td>0      <td>1  <td>2    <td>3  <td>4    <td>5 <td>...
+  <th>4bpp のタイル <td>0      <td>1  <td>2    <td>3  <td>4    <td>5 <td>...
 <tr>
-  <th>8bpp tile <td colspan=2>0   <td colspan=2>1 <td colspan=2>2<td>...
+  <th>8bpp のタイル <td colspan=2>0   <td colspan=2>1 <td colspan=2>2<td>...
 </tbody>
 </table>
 </div>
 
-The second concerns, well, also tile-numbering, but more how many tiles you can use. Each map entry for regular backgrounds has 10 bits for a tile index, so you can use up to 1024 tiles. However, a quick calculation shows that a charblock contains 4000h/20h= 512 s-tiles, or 4000h/40h= 256 d-tiles. So what's the deal here? Well, the charblock index you set in `REG_BGxCNT` is actually only the block where tile-counting starts: its <dfn>character base block</dfn>. You can use the ones after it as well. Cool, huh? But wait, if you can access subsequent charblocks as well; does this mean that, if you set the base charblock to 3, you can use the sprite blocks (which are basically blocks 4 and 5) as well?
+2 つ目は、まあ、これもタイルの番号の話ですが、どれだけの数のタイルを使えるかについてです。通常の背景のマップのエントリは、タイルのインデックスに 10 ビットを持っているので、最大 1024 個のタイルを使えます。でも、ちょっと計算すると、キャラブロックに入るのは 4000h/20h= 512 個の s タイル、または 4000h/40h= 256 個の d タイルです。では、どういうことなのでしょうか？ 実は、`REG_BGxCNT` で設定するキャラブロックのインデックスは、タイルを数え始めるブロック、つまり<dfn>キャラクタベースブロック</dfn>にすぎません。そのあとのブロックも使えるのです。すごいでしょう？ でも待ってください。続くキャラブロックにもアクセスできるなら、基点のキャラブロックを 3 にすれば、スプライトのブロック（基本的にはブロック 4 と 5）も使えるということでしょうか？
 
-The answer is: yes. And <span class="ack">NO</span>!
+答えは、イエス。そして<span class="ack">ノー</span>です！
 
-Emulators from the early 2000s allow you to do this. However, a real GBA doesn't. It does output *something*, though: the screen-entry will be used as tile-data itself, but in a manner that simply defies explanation. Trust me on this one, okay? Of the current tonc demos, this is one of the times that VBA gets it wrong.
+2000年代初めのエミュレータでは、これができます。でも、本物の GBA ではできません。ただし、*何か*は表示されます。スクリーンエントリそのものがタイルのデータとして使われるのですが、その使われ方はまったく説明のつかないものです。ここは私を信じてください。今の tonc のデモの中で、VBA が間違えるのはここです。
 
-:::note Available tiles
+:::note 使えるタイル
 
-For both 4bpp and 8bpp regular bgs, you can access 1024 tiles. The only caveat here is that you cannot access the tiles in the object charblocks even if the index would call for it.
+4bpp と 8bpp のどちらの通常の背景でも、1024 個のタイルにアクセスできます。唯一の注意点は、インデックスがそれを指していても、オブジェクトのキャラブロックにあるタイルにはアクセスできないことです。
 
 :::
 
-Another thing you may be wondering is if you can use a particular screenblock that is within a currently used charblock. For example, is it allowed to have a background use charblock 0 and screenblock 1. Again, yes you can do this. This can be useful since you're not likely to fill an entire charblock, so using its later screenblocks for your map data is a good idea. (A sign of True Hackerdom would be if you manage to use the same data for both tiles and SEs and still get a meaningful image (this last part is important). If you have done this, please let me know.)
+もう 1 つ疑問に思うかもしれないのは、今使っているキャラブロックの中にある特定のスクリーンブロックを使えるかどうかです。たとえば、ある背景にキャラブロック 0 とスクリーンブロック 1 を使ってもいいのでしょうか。これも、できます。キャラブロック全体を埋めることはまずないので、そのあとのほうのスクリーンブロックをマップのデータに使うのはいい考えです。（真のハッカーの証は、同じデータをタイルと SE の両方に使って、しかも意味のある画像を出すことでしょう（この最後の部分が大事です）。もしやり遂げたら、ぜひ教えてください。）
 
-:::note Tilemap data conversion via CLI
+:::note コマンドラインでのタイルマップのデータの変換
 
-A converter that can tile images (for objects), can also create a tileset for tilemaps, although there will likely be many redundant tiles. A few converters can also reduce the tileset to only the unique tiles, and provide the tilemap that goes with it. The Brinstar bitmap from {@fig:map} is a 512×256 image, which could be tiled to a 64×32 map with a 4bpp tileset reduced for uniqueness in tiles, including palette info and mirroring.
+（オブジェクト用に）画像をタイル化できる変換ツールは、タイルマップ用のタイルセットも作れます。ただし、重複したタイルがたくさんできる可能性が高いです。変換ツールの中には、タイルセットを重複しないタイルだけに減らし、それに対応するタイルマップを出してくれるものもあります。{@fig:map} のブリンスタのビットマップは 512×256 の画像で、パレットの情報と鏡像化も含めてタイルの重複をなくした 4bpp のタイルセットを使えば、64×32 のマップにタイル化できます。
 
 ```sh
 # gfx2gba
@@ -545,21 +545,21 @@ A converter that can tile images (for objects), can also create a tileset for ti
     grit foo.bmp -gB4 -mRtpf
 ```
 
-Two notes on gfx2gba: First, it merges the palette to a single 16-color array, rearranging it in the process. Second, while it lists metamapping options in the readme, it actually doesn't give a metamap and meta-tileset, it just formats the map into different blocks.
+gfx2gba について、注意が 2 つあります。まず、パレットを 1 つの 16 色の配列にまとめ、その過程で並べ替えます。次に、readme にはメタマッピングのオプションが載っていますが、実際にはメタマップとメタタイルセットを作るわけではなく、マップを別々のブロックに整形するだけです。
 
 :::
 
-## Tilemap demos {#sec-demo}
+## タイルマップのデモ {#sec-demo}
 
-There are four demos in this chapter. The first one is *brin_demo*, which is very, very short and shows the basic steps of tile loading and scrolling. The next ones are called *sbb_reg* and *cbb_demo*, which are tech demos, illustrating the layout of multiple screenblocks and how tile indexing is done on 4bpp and 8bpp backgrounds. In both these cases, the map data is created manually because it's more convenient to do so here, but using map-data created by map editors really isn't that different.
+この章にはデモが 4 つあります。1 つ目は *brin_demo* で、とてもとても短く、タイルの読み込みとスクロールの基本的な手順を示します。次の *sbb_reg* と *cbb_demo* は技術デモで、複数のスクリーンブロックの並び方と、4bpp と 8bpp の背景でタイルのインデックスがどう付けられるかを示します。どちらの場合も、ここでは手で作るほうが便利なので、マップのデータは手で作っていますが、マップエディタで作ったマップのデータを使っても、本当にたいして違いはありません。
 
-### Essential tilemap steps: brin_demo {#ssec-demo-brin}
+### タイルマップに欠かせない手順: brin_demo {#ssec-demo-brin}
 
-As I've been using a 512×256 part of Brinstar throughout this chapter, I thought I might as well use it for a demo.
+この章を通してブリンスタの 512×256 の部分を使ってきたので、デモにも使ってみることにしました。
 
-There are a few map editors out there that you can use. Two good ones are Nessie's [MapEd](https://nessie.gbadev.org) or [Mappy](https://www.tilemap.co.uk/mappy.php), both of which have a number of interesting features. I have my own map editor, [mirach](https://www.coranac.com/projects/#mirach), but it's just a very basic thing. Some tutorials may point you to GBAMapEditor. Do *not* use this editor as it's pretty buggy, leaving out half of the tilemaps sometimes. Tilemaps can be troublesome enough for beginners without having to worry about whether the map data is faulty.
+使えるマップエディタはいくつかあります。よいものを 2 つ挙げると、Nessie さんの [MapEd](https://nessie.gbadev.org) と [Mappy](https://www.tilemap.co.uk/mappy.php) で、どちらも面白い機能がいくつもあります。私も自分のマップエディタ [mirach](https://www.coranac.com/projects/#mirach) を持っていますが、ごく基本的なものにすぎません。チュートリアルによっては、GBAMapEditor を勧めているかもしれません。このエディタは使わ*ないでください*。かなりバグが多く、ときどきタイルマップの半分が抜け落ちます。タイルマップは、マップのデータが壊れているかどうかを心配しなくても、初心者にとっては十分厄介なものです。
 
-In this cause, however, I haven't used any editor at all. Some of the graphics converters can convert to a tileset+tilemap – it's not the standard method, but for small maps it may well be easier. In this case I've used Usenti to do it, but grit and gfx2gba work just as well. Note that because the map here is 64×32 tiles, which requires splitting into screenblocks. In Usenti this is called the ‘sbb’ layout, in grit it's ‘-mLs’ and for gfx2gba you'd use ‘-mm 32’ … I think. In any case, after a conversion you'd have a palette, a tileset and a tilemap.
+ただし、今回はエディタをまったく使っていません。グラフィックの変換ツールの中には、タイルセットとタイルマップに変換できるものがあります。標準的なやり方ではありませんが、小さなマップならそのほうが簡単かもしれません。今回は Usenti を使いましたが、grit や gfx2gba でも同じようにできます。ここでのマップは 64×32 タイルなので、スクリーンブロックに分ける必要があることに注意してください。Usenti ではこれを「sbb」の並びと呼び、grit では「-mLs」、gfx2gba では「-mm 32」を使います……たぶん。いずれにせよ、変換すると、パレット、タイルセット、タイルマップができます。
 
 <div class="cblock">
 <table id="fig:brin" width=100%>
@@ -568,7 +568,7 @@ In this cause, however, I haven't used any editor at all. Some of the graphics c
     <div class="cpt">
     <img src="./img/demo/brin_demo_pal.png" 
       alt=""><br>
-    <b>{*@fig:brin}a</b>: <i>brin_demo</i> palette.
+    <b>{*@fig:brin}a</b>: <i>brin_demo</i> のパレット。
 	</div>
   <td rowspan=2>
 
@@ -596,23 +596,23 @@ const unsigned short brinMap[2048]=
   <td valign="bottom">
     <div class="cpt">
     <img src="./img/demo/brin_demo_tiles.png" alt=""><br>
-    <b>{*@fig:brin}b</b>: <i>brin_demo</i> tileset.
+    <b>{*@fig:brin}b</b>: <i>brin_demo</i> のタイルセット。
     </div>
 </table>
 </div>
 
-In {@fig:brin} you can see the full palette, the tileset and part of the map. Note that the tileset of {@fig:brin}b is not the same as that of {@fig:map}b because the former uses 8×8 tiles while the latter used 16×16 tiles. Note also that the screen entries you see here are either 0 (i.e., the empty tile) or of the form `0x3xxx`. The high nybble indicates the palette bank, in this case three. If you'd look to the palette ({@fig:brin}a) you'd see that this gives bluish colors.
+{@fig:brin} には、パレット全体、タイルセット、そしてマップの一部が見えます。{@fig:brin}b のタイルセットは、{@fig:map}b のものとは違うことに注意してください。前者は 8×8 のタイルを使い、後者は 16×16 のタイルを使っていたからです。また、ここに見えるスクリーンエントリは、0（つまり空のタイル）か、`0x3xxx` の形のどちらかであることにも注意してください。上位のニブルはパレットバンクを表していて、ここでは 3 です。パレット（{@fig:brin}a）を見れば、これが青っぽい色になることが分かります。
 
-Now on to using these data. Remember the essential steps here:
+では、これらのデータを使ってみましょう。ここでの欠かせない手順を思い出してください。
 
--   Load the graphics: tiles into charblocks and colors in the background palette.
--   Load a map into one or more screenblocks.
--   Switch to the right mode in `REG_DISPCNT` and activate a background.
--   Initialize the background's control register to use the right CBB, SBB and bitdepth.
+-   グラフィックを読み込む: タイルをキャラブロックに、色を背景のパレットに。
+-   マップを 1 つ以上のスクリーンブロックに読み込む。
+-   `REG_DISPCNT` で正しいモードに切り替え、背景を有効にする。
+-   背景の制御のレジスタを、正しい CBB、SBB、ビット深度を使うように初期化する。
 
-If you do it correctly, you should have something showing on screen. If not, go to the tile/map/memory viewers of your emulator; they'll usually give you a good idea where the problem is. A common one is having a mismatch between the CBB and SBB in `REG_BGxCNT` and where you put the data, which most likely would leave you with an empty map or empty tileset.
+正しくやれば、画面に何かが表示されるはずです。表示されなければ、エミュレータのタイル、マップ、メモリのビューアを見てみてください。たいていは、どこに問題があるかの見当がつきます。よくあるのが、`REG_BGxCNT` の CBB と SBB が、データを置いた場所と食い違っていることで、その場合はたぶん、マップかタイルセットが空のままになります。
 
-The full code of *brin_demo* is given below. The three calls to `memcpy()` load up the palette, tileset and tilemap. For some reason, probably related to where the NES and 8-bit Game Boy put screenblocks in video memory, it's become conventional to place the maps in the last screenblocks on GBA as well. In this case, that's 30 rather than 31 because we need two blocks for a 64×32t map. For the scrolling part, I'm using two variables to store and update the positions because the scrolling registers are write-only. I'm starting at (192, 64) here because that's what I used for the scrolling picture of {@fig:map-ofs} earlier.
+*brin_demo* のコード全体を下に示します。3 回の `memcpy()` の呼び出しで、パレット、タイルセット、タイルマップを読み込みます。たぶんファミコンや 8 ビットのゲームボーイがビデオメモリのどこにスクリーンブロックを置いていたかに関係しているのでしょうが、GBA でもマップを最後のほうのスクリーンブロックに置くのが慣習になっています。今回は、64×32t のマップにはブロックが 2 つ必要なので、31 ではなく 30 です。スクロールの部分では、スクロールのレジスタが書き込み専用なので、位置を保存して更新するために 2 つの変数を使っています。(192, 64) から始めているのは、さっきの {@fig:map-ofs} のスクロールの図でそれを使ったからです。
 
 <div id="cd-brin-demo">
 
@@ -663,33 +663,33 @@ int main()
 	<div class="cpt" style="width:240px;">
 	  <img src="./img/demo/brin_demo.png"
 		alt=""><br>
-	  <b>{*@fig:brin-demo}a</b>: <i>brin_demo</i> 
-	    at <b>dx</b>=(192, 64).
+	  <b>{*@fig:brin-demo}a</b>: <b>dx</b>=(192, 64) での
+	    <i>brin_demo</i>。
 	</div>
   <td>
 	<div class="cpt" style="width:240px;">
 	  <img src="./img/demo/brin_demo0.png"
 		alt=""><br>
-	  <b>{*@fig:brin-demo}b</b>: <i>brin_demo</i> 
-	    at <b>dx</b>=(0, 0).
+	  <b>{*@fig:brin-demo}b</b>: <b>dx</b>=(0, 0) での
+	    <i>brin_demo</i>。
 	</div>
 </table>
 </div>
 
-#### Interlude: Fast-copying of non sbb-prepared maps
+#### 幕間: SBB 用に準備されていないマップの高速なコピー
 
-This is not exactly required knowledge, but should make for an interesting read. In this demo I use a multi-sbb map that was already prepared for that. The converter made sure that the left block of the map came before the right block. If this weren't the case then you couldn't load the whole map in one go because the second row of the left block would use the first row of the right block and so on (see {@fig:brin-bad}).
+これは必須の知識ではありませんが、読み物として面白いはずです。このデモでは、もともと複数の SBB 用に準備された、複数の SBB にまたがるマップを使っています。変換ツールが、マップの左のブロックが右のブロックより先に来るようにしてくれたのです。そうでなければ、マップ全体を一度に読み込むことはできません。左のブロックの 2 行目に、右のブロックの 1 行目が入ってしまう、という具合になるからです（{@fig:brin-bad} を参照）。
 
 <div class="lblock">
 	<div class="cpt" style="width:512px;">
 	  <img src="./img/demo/brin_demo_bad.png" id="fig:brin-bad"
 		alt=""><br>
-	  <b>{*@fig:brin-bad}</b> <i>brin_demo</i> 
-	  without blocking out into SBB's first.
+	  <b>{*@fig:brin-bad}</b> 先に SBB ごとのブロックに分けなかった場合の
+	  <i>brin_demo</i>。
 	</div>
 </div>
 
-There are few simple and slow ways and one simple and fast way of copying a non sbb-prepared map to a multiple screenblocks. The slow way would be to perform a double loop to go row by row of each screenblock. The fast way is through struct-copies and pointer arithmetic, like this:
+SBB 用に準備されていないマップを複数のスクリーンブロックにコピーするには、単純で遅い方法がいくつかと、単純で速い方法が 1 つあります。遅い方法は、二重ループで各スクリーンブロックを 1 行ずつ処理することです。速い方法は、構造体のコピーとポインタの計算を使うもので、次のようになります。
 
 <div id="lin2sbb-fast">
 
@@ -712,11 +712,11 @@ for(iy=0; iy<32; iy++)
 ```
 </div>
 
-A `BLOCK` struct-copy takes care of half a row, so two takes care of a whole screenblock row (yes, you could define `BLOCK` as a 16-word struct, but that wouldn't work out anymore. Trust me). At that point, the `src` pointer has arrived at the right half of the map, so we copy the next row into the right-hand side destination, `dst1`. When done with that, `src` points to the second row of the left side. Now do this for all 32 lines. Huzzah for struct-copies, and pointers!
+`BLOCK` の構造体のコピー 1 回で半行分を処理するので、2 回でスクリーンブロックの 1 行全体を処理できます（そう、`BLOCK` を 16 ワードの構造体として定義することもできますが、そうするとうまくいかなくなります。信じてください）。その時点で、`src` ポインタはマップの右半分に来ているので、次の行を右側のコピー先 `dst1` にコピーします。それが終わると、`src` は左側の 2 行目を指しています。これを 32 行全部に対して行います。構造体のコピーとポインタに万歳！
 
-### A screenblock demo {#ssec-demo-sbb}
+### スクリーンブロックのデモ {#ssec-demo-sbb}
 
-The second demo, *sbb_reg*, uses a 64×64t background to indicate how multiple screenblocks are used for bigger maps in more detail. While the *brin_demo* used a multi-sbb map as well, it wasn't easy to see what's what because the map was irregular; this demo uses a very simple tileset so you can clearly see the screenblock boundaries. It'll also show how you can use the `REG_BG_OFS` registers for scrolling rather than `REG_BGxHOFS` and `REG_BGxVOFS`.
+2 つ目のデモ *sbb_reg* は、64×64t の背景を使って、大きなマップに複数のスクリーンブロックがどう使われるかを、もっと詳しく示します。*brin_demo* も複数の SBB にまたがるマップを使っていましたが、マップが不規則だったので、どこが何なのか見分けにくかったはずです。このデモではとても単純なタイルセットを使うので、スクリーンブロックの境界がはっきり見えます。また、スクロールに `REG_BGxHOFS` と `REG_BGxVOFS` ではなく、`REG_BG_OFS` レジスタを使う方法も示します。
 
 
 <div id="cd-demo-sbb">
@@ -817,24 +817,24 @@ int main()
 <div class="cpt_fr" style="width:240px">
 <img src="./img/demo/sbb_reg.png" id="fig:sbb-reg"
   alt="sbb_reg"><br>
-<b>{*@fig:sbb-reg}</b>: <i>sbb_reg</i>. 
-  Compare {@tbl:reg-layout}, 64×64t background. 
-  Note the little cross in the top left corner.
+<b>{*@fig:sbb-reg}</b>: <i>sbb_reg</i>。
+  64×64t の背景の {@tbl:reg-layout} と比べてみてください。
+  左上の隅にある小さなバツ印に注目。
 </div>
 
-The `init_map()` contains all of the initialization steps: setting up the registers, tiles, palettes and maps. Unlike the previous demo, the tiles, palette and the map are all created manually because it's just easier in this case. At point (1), I define two tiles. The first one looks a little like a pane and the second one is a rudimentary cross. You can see them clearly in the screenshot ({@fig:brin-demo}). The pane-like tile is loaded into tile 0, and is therefore the ‘default’ tile for the map.
+`init_map()` には、初期化の手順が全部入っています。レジスタ、タイル、パレット、マップの準備です。前のデモと違って、タイル、パレット、マップはすべて手で作っています。この場合は、そのほうが単純に簡単だからです。ポイント (1) で、2 つのタイルを定義しています。1 つ目は窓ガラスのような見た目で、2 つ目は簡単なバツ印です。どちらも画面写真（{@fig:brin-demo}）ではっきり見えます。窓ガラスのようなタイルはタイル 0 に読み込むので、マップの「デフォルト」のタイルになります。
 
-The palette is set at point (2). The colors are the same as in {@tbl:reg-layout}: red, green, blue and grey. Take note of which palette entries I'm using: the colors are in different palette banks so that I can use palette swapping when I fill the map. Speaking of which …
+パレットはポイント (2) で設定します。色は {@tbl:reg-layout} と同じで、赤、緑、青、灰色です。どのパレットのエントリを使っているかに注目してください。マップを埋めるときにパレットの入れ替えを使えるように、色は別々のパレットバンクに入れてあります。そういえば……
 
-Loading the map itself (point (3)) happens through a double loop. The outer loop sets the palette-bank for the screen entries. The inner loop fills 1024 SEs with palette-swapped tile-0's. Now, if big maps used a flat layout, the result would be a big map in four colored bands. However, what actually happens is that you see *blocks*, not bands, proving that indeed regular maps are split into screenblocks just like {@tbl:reg-layout} said. Yes, it's annoying, but that's just the way it is.
+マップ自体の読み込み（ポイント (3)）は、二重ループで行います。外側のループで、スクリーンエントリのパレットバンクを設定します。内側のループで、パレットを入れ替えたタイル 0 で 1024 個の SE を埋めます。さて、もし大きなマップが平らな並び方をしていたら、結果は 4 色の帯の大きなマップになるはずです。でも実際には、帯ではなく*ブロック*が見えます。これは、{@tbl:reg-layout} のとおり、通常のマップが本当にスクリーンブロックに分かれていることの証拠です。そう、面倒ですが、そういうものなのです。
 
-That was creating the map, now we turn to the main loop in `main()`. The keys (point (4)) let you scroll around the map. The RIGHT button is tied to a positive change in *x*, but the map itself actually scrolls to the *left*! When I say it like that it may seem counter-intuitive, but if you look at the demo you see that it actually makes sense. Think of it from a hypothetical player sprite point of view. As the sprite moves through the world, you need to update the background to keep the sprite from going off-screen. To do that, the background's movement should be the opposite of the sprite's movement. For example, if the sprite moves to the *right*, you have to move the background to the *left* to compensate.
+マップを作る部分はここまでで、次は `main()` の中のメインループです。キー（ポイント (4)）でマップをスクロールできます。右ボタンは *x* の正の変化に結び付いていますが、マップ自体は実際には*左に*スクロールします！ こう言うと直感に反するように思えるかもしれませんが、デモを見れば、実際には理にかなっていることが分かります。仮のプレイヤーのスプライトの視点で考えてみてください。スプライトが世界の中を動くとき、スプライトが画面から出ないように背景を更新する必要があります。そのためには、背景の動きはスプライトの動きと逆向きでなければなりません。たとえば、スプライトが*右に*動いたら、それを打ち消すために背景を*左に*動かす必要があります。
 
-Finally, there's one more thing to discuss: the cross that appears centered on the map. To do this as you scroll along, I keep track of the screen-entry at the center of the screen via a number of variables and the `se_index()` function. Variables `tx` and `ty` are the tile coordinates of the center of the screen, found by shifting and masking the background pixel coordinates. Feeding these to `se_index()` gives me the screen-entry offset from the screen base block. If this is different than the previous offset, I repaint the former offset as a pane, and update the new offset to the cross. That way, the cross seems to move over the map; much like a sprite would. This was actually designed as a test for `se_index()`; if the function was flawed, the cross would just disappear at some point. But it doesn't. Yay me <kbd>^_^</kbd>
+最後に、話しておくべきことがもう 1 つあります。マップの中央に表示されるバツ印です。スクロールしながらこれを表示するために、いくつかの変数と `se_index()` 関数を使って、画面の中央にあるスクリーンエントリを追いかけています。変数 `tx` と `ty` は画面の中央のタイルの座標で、背景のピクセルの座標をシフトしてマスクすることで求めています。これらを `se_index()` に渡すと、スクリーンベースブロックからのスクリーンエントリのオフセットが得られます。これが前のオフセットと違えば、前のオフセットを窓ガラスに描き直し、新しいオフセットをバツ印にします。こうすると、バツ印はまるでスプライトのように、マップの上を動いているように見えます。これは実は `se_index()` のテストとして作ったものです。関数に欠陥があれば、バツ印はどこかで消えてしまうはずです。でも消えません。やったね <kbd>^_^</kbd>
 
-### The charblock demo {#ssec-demo-cbb}
+### キャラブロックのデモ {#ssec-demo-cbb}
 
-The third demo, *cbb_demo*, covers some of the details of charblocks and the differences in 4bpp and 8bpp tiles. The backgrounds in question are BG 0 and BG 1. Both will be 32×32t backgrounds, but BG 0 will use 4bpp tiles and CBB 0 and BG 2 uses 8bpp tiles and CBB 2. The exact locations and contents of the screenblocks are not important; what is important is to load the tiles to the starts of all 6 charblocks and see what happens.
+3 つ目のデモ *cbb_demo* は、キャラブロックの細かい点と、4bpp と 8bpp のタイルの違いを扱います。対象の背景は BG 0 と BG 1 です。どちらも 32×32t の背景ですが、BG 0 は 4bpp のタイルと CBB 0 を使い、BG 2 は 8bpp のタイルと CBB 2 を使います。スクリーンブロックの正確な位置と中身は重要ではありません。大事なのは、6 つのキャラブロックすべての先頭にタイルを読み込んで、どうなるかを見ることです。
 
 <div id="cd-cbb-demo">
 
@@ -913,13 +913,13 @@ int main()
 ```
 </div>
 
-The tilesets can be found in *cbb_ids.c*. Each tile contains two numbers: one for the charblock I'm putting it and one for the tile-index in that block. For example, the tile that I want in charblock 0 at tile 1 shows ‘01’, CBB 1 tile 0 shows ‘10’, CBB 1, tile 1 has ‘11’, etc. I have twelve tiles in total, 4 s-tiles to be used for BG 0 and 8 d-tiles for BG 1.
+タイルセットは *cbb_ids.c* にあります。各タイルには 2 つの数字が書かれています。1 つはそのタイルを置くキャラブロックの番号、もう 1 つはそのブロックの中でのタイルのインデックスです。たとえば、キャラブロック 0 のタイル 1 に置きたいタイルには「01」、CBB 1 のタイル 0 には「10」、CBB 1 のタイル 1 には「11」と書かれている、という具合です。全部で 12 個のタイルがあり、BG 0 用の s タイルが 4 個、BG 1 用の d タイルが 8 個です。
 
-Now, I have six pairs of tiles and I intend to place them in the first tiles of each of the 6 charblock (except for CBBs 0 and 2, where tile 0 would be used as default tiles for the background, which I want to keep empty). Yes six, I'm loading into the sprite charblocks as well. I could do this by hand, calculating all the addresses manually (`0600:0020` for CBB 0, tile 1, etc) and hope I don't make a mistake and can remember what I'm doing when revisiting the demo later, or I can just use my `tile_mem` and `tile8_mem` memory map matrices and get the addresses quickly and without any hassle. Even better, C allows struct assignments so I can load the individual tiles with a simple assignment! That is exactly what I'm doing in `load_tiles()`. The source tiles are cast to `TILE` and `TILE8` arrays for 4bpp and 8bpp tiles respectively. After that, loading the tiles is very simple indeed.
+さて、タイルの組が 6 つあり、それを 6 つのキャラブロックそれぞれの先頭のタイルに置くつもりです（ただし CBB 0 と 2 は除きます。そこではタイル 0 が背景のデフォルトのタイルとして使われるので、空のままにしておきたいのです）。そう、6 つです。スプライトのキャラブロックにも読み込んでいます。これを手でやることもできます。アドレスを全部手で計算して（CBB 0 のタイル 1 なら `0600:0020`、など）、間違えないことを祈り、あとでデモを見直したときに自分が何をしていたか思い出せることを祈るのです。あるいは、私の `tile_mem` と `tile8_mem` のメモリマップの行列を使えば、アドレスを素早く、何の手間もなく求められます。さらにいいことに、C では構造体の代入ができるので、個々のタイルを単純な代入で読み込めます！ `load_tiles()` でしているのは、まさにそれです。元のタイルは、4bpp と 8bpp のタイル用に、それぞれ `TILE` と `TILE8` の配列にキャストしています。そうすれば、タイルの読み込みは本当にとても簡単です。
 
-The maps themselves are created in `init_maps()`. The only thing I'm interested in for this demo is to show how and which charblocks are used, so the particulars of the map aren't that important. The only thing I want them to do is to be able to show the tiles that I loaded in `load_tiles()`. The two pointers I create here, `se4` and `se8`, point to screen-entries in the screenblocks used for BG 0 and BG 1, respectively. BG 0's map, containing s-tiles, uses 1 and 512 offsets; BG 1's entries, 8bpp tiles, carries 1 and 256 offsets. If what I said before about tile-index for different bitdepths is true, then you should see the contents of all the loaded tiles. And looking at the result of the demo ({@fig:cbb-demo}), it looks as if I did my math correctly: background tile-indices follow the bg's assigned bitdepth, in contrast to sprites which always counts in 32 byte offsets.
+マップ自体は `init_maps()` で作っています。このデモで関心があるのは、どのキャラブロックがどう使われるかを示すことだけなので、マップの細部はあまり重要ではありません。マップには、`load_tiles()` で読み込んだタイルを表示できることだけを求めています。ここで作っている 2 つのポインタ、`se4` と `se8` は、それぞれ BG 0 と BG 1 が使うスクリーンブロックの中のスクリーンエントリを指しています。s タイルを使う BG 0 のマップは、1 と 512 のオフセットを使います。8bpp のタイルを使う BG 1 のエントリは、1 と 256 のオフセットを持っています。前に言った、ビット深度ごとのタイルのインデックスについての話が正しければ、読み込んだタイル全部の中身が見えるはずです。そして、デモの結果（{@fig:cbb-demo}）を見ると、私の計算は正しかったようです。スプライトが常に 32 バイト単位で数えるのとは対照的に、背景のタイルのインデックスは、背景に割り当てたビット深度に従います。
 
-There is, however, one point of concern: on hardware, you won't see the tiles that are actually in object VRAM (blocks 4 and 5). While you might expect to be able to use the sprite blocks for backgrounds due to the addresses, the actual wiring in the GBA seems to forbid it. This is why you should test on hardware is important: emulators aren't always perfect. But if hardware testing is not available to you, test on multiple emulators; if you see different behaviour, be wary of the code that produced it.
+ただし、気になる点が 1 つあります。実機では、実際にオブジェクト VRAM（ブロック 4 と 5）にあるタイルは見えません。アドレスからすると背景にスプライトのブロックも使えそうに思えますが、GBA の実際の配線では、それが禁じられているようです。だからこそ、実機で試すことが大事なのです。エミュレータはいつも完璧とは限りません。でも、実機で試せないなら、複数のエミュレータで試してください。振る舞いが違ったら、それを生み出したコードを疑ってかかりましょう。
 
 <div class="lblock">
 <table id="fig:cbb-demo">
@@ -927,25 +927,25 @@ There is, however, one point of concern: on hardware, you won't see the tiles th
 <td>
   <div class="cpt" style="width:240px">
   <img src="./img/demo/cbb_demo_vba.png" alt="cbb_demo on VBA"><br>
-  <b>{*@fig:cbb-demo}a</b>: <i>cbb_demo</i> on 
-  obsolete emulators (such as VBA and Boycott Adv).
+  <b>{*@fig:cbb-demo}a</b>: 古いエミュレータ（VBA や Boycott Adv など）での
+  <i>cbb_demo</i>。
   </div>
 <td>
   <div class="cpt" style="width:240px">
   <img src="./img/demo/cbb_demo_hw.png" alt="cbb_demo on hardware"><br>
-  <b>{*@fig:cbb-demo}b</b>: <i>cbb_demo</i> on 
-    hardware. Spot the differences!
+  <b>{*@fig:cbb-demo}b</b>: 実機での
+    <i>cbb_demo</i>。違いを探してみてください！
   </div>
 </table>
 </div>
 
-### Bonus demo: the 'text' in text bg and introducing libtonc {#ssec-demo-hello}
+### おまけのデモ: テキスト背景の「テキスト」と libtonc の紹介 {#ssec-demo-hello}
 
-Woo, bonus demo! This example will serve a number of purposes. The first is to introduce libtonc, a library of code to make life on the GBA a bit easier. In past demos, I've been using *toolbox.h/c* to store useful macros and functions. This is alright for very small projects, but as code gets added, it becomes very hard to maintain everything. It's better to store common functionality in [libraries](https://en.wikipedia.org/wiki/Library_(computing)) that can be shared among projects.
+わーい、おまけのデモです！ この例にはいくつかの目的があります。1 つ目は、GBA での暮らしを少し楽にしてくれるコードのライブラリ、libtonc を紹介することです。これまでのデモでは、便利なマクロや関数を *toolbox.h/c* に入れてきました。とても小さなプロジェクトならそれで構いませんが、コードが増えるにつれて、全部を保守するのがとても難しくなります。共通の機能は、プロジェクト間で共有できる[ライブラリ](https://en.wikipedia.org/wiki/Library_(computing))に入れておくほうがいいです。
 
-The second reason is to show how you can output text, which is obviously an important ability to have. Tonclib has an extensive list of options for text rendering – too much to explain here – but its interface is pretty easy. For details, visit the [Tonc Text Engine chapter](tte.html).
+2 つ目の理由は、文字を出力する方法を示すことです。これは明らかに、持っておくべき大事な能力です。tonclib には、文字の描画のためのたくさんのオプションがあり、ここで説明しきれないほどですが、インターフェースはかなり簡単です。詳しくは、[Tonc Text Engine の章](tte.html)を見てください。
 
-Anyway, here's the example.
+とにかく、例は次のとおりです。
 
 <div id="cd-hello">
 
@@ -977,28 +977,28 @@ int main()
   <td>
     <div class="cpt" style="width:112px;">
       <img src="./img/demo/hello.png" alt=""><br>
-      <b>{*@fig:hello}a</b>: <i>hello</i> demo.
+      <b>{*@fig:hello}a</b>: <i>hello</i> のデモ。
     </div>
   <td>
     <div class="cpt" style="width:256px;">
       <img src="./img/demo/hello_tiles.png" alt=""><br>
-      <b>{*@fig:hello}b</b>: tileset of the <i>hello</i> demo.
+      <b>{*@fig:hello}b</b>: <i>hello</i> のデモのタイルセット。
     </div>
 </tbody>
 </table>
 </div>
 
-Yes, it is indeed a “hello world” demo, the starting point of nearly every introductory C/C++ tutorial. However, those are usually for meant for PC platforms, which have native console functionality like `printf()` or `cout`. These do not exist for the GBA. (Or “didn't”, I should say; there are ways to make use of them nowadays. See [tte:conio](tte.html#ssec-misc-conio) for details.)
+そう、これはまさに「hello world」のデモで、C/C++ の入門チュートリアルのほぼすべてが出発点にしているものです。でも、そうしたチュートリアルはたいてい PC のプラットフォーム向けで、`printf()` や `cout` のような、コンソールの機能を標準で持っています。GBA にはそれがありません。（いや、「ありませんでした」と言うべきでしょう。今はそれを使う方法があります。詳しくは [tte:conio](tte.html#ssec-misc-conio) を見てください。）
 
-Tonc's support for text goes through `tte_` functions. In this case, `tte_init_se_default()` sets up background 0 for tile-mapped text. It also loads the default 8×8 font into charblock 0 (see {@fig:hello}b). After that, you can write to text with `tte_write`. The sequence `#{P:x,y}` is the formatting command that TTE uses to position the cursor. There are a number of these, some of which you'll also see in later chapters.
+Tonc の文字のサポートは、`tte_` の関数を通して行います。ここでは、`tte_init_se_default()` が、タイルマップで文字を表示するように背景 0 を準備します。また、デフォルトの 8×8 のフォントをキャラブロック 0 に読み込みます（{@fig:hello}b を参照）。そのあとは、`tte_write` で文字を書き込めます。`#{P:x,y}` という並びは、TTE がカーソルの位置を決めるのに使う書式のコマンドです。こうしたコマンドはいくつかあり、そのいくつかはあとの章でも出てきます。
 
-From this point on, I'll make liberal use of libtonc's text capabilities in examples for displaying values and the like. This will mostly happen without explanation, because that won't be part of the demo. Again, to see the internals, go to the [TTE chapter](tte.html).
+ここから先は、値などを表示するために、例の中で libtonc の文字の機能を遠慮なく使います。たいていは説明なしで使います。デモの本題ではないからです。繰り返しますが、中の仕組みを知りたければ、[TTE の章](tte.html)を見てください。
 
-#### Creating and using code libraries
+#### コードのライブラリを作って使う
 
-Using the functions themselves is pretty simple, but they are spread out over multiple files and reference even more. This makes it a hassle to find which files you need to add to the list of sources to compile a project. You could add everything, of course, but that's not a pleasant prospect either. The best solution is to pre-compile the utility code into a library.
+関数そのものを使うのはとても簡単ですが、関数は複数のファイルに散らばっていて、さらに多くのファイルを参照しています。そのため、プロジェクトをコンパイルするためにソースの一覧にどのファイルを足せばいいのかを探すのが面倒です。もちろん全部を足すこともできますが、それも気の進むことではありません。一番いい解決策は、便利なコードを前もってライブラリにコンパイルしておくことです。
 
-Libraries are essentially clusters of object files. Instead of linking the objects into an executable directly, you <dfn>archive</dfn> them with arm-none-eabi-ar. The command is similar to the link step as well. Here is how you can create the library libfoo.a from objects foo.o, bar.o and baz.o.
+ライブラリは、本質的にはオブジェクトファイルの寄せ集めです。オブジェクトを直接実行ファイルにリンクする代わりに、arm-none-eabi-ar で<dfn>アーカイブ</dfn>します。コマンドは、リンクの段階のものとも似ています。オブジェクト foo.o、bar.o、baz.o からライブラリ libfoo.a を作るには、次のようにします。
 
 ```makefile
 # archive rule
@@ -1007,9 +1007,9 @@ libfoo : foo.o bar.o baz.o
 # shorthand rule: $(AR) rcs $@ $^
 ```
 
-The three flags stand for **c**reate archive, **r**eplace member and create **s**ymbol table, respectively. For more on these and other archiving flags, I will refer you to the manual, which is part of the [binutils](https://sourceware.org/binutils/) toolset. The flags are followed by the library name, which is followed by all the objects (the ‘members’ you want to archive).
+3 つのフラグは、それぞれアーカイブを作る（**c**reate）、メンバーを置き換える（**r**eplace）、シンボルテーブルを作る（**s**ymbol table）を表します。これらとほかのアーカイブのフラグについて詳しくは、[binutils](https://sourceware.org/binutils/) のツール群の一部であるマニュアルを見てください。フラグのあとにライブラリの名前が続き、そのあとに全部のオブジェクト（アーカイブしたい「メンバー」）が続きます。
 
-To use the library, you have to link it to the executable. There are two linker flags of interest here: `-L` and `-l`. Upper- and lowercase ‘L’. The former, `-L` adds a library path. The lowercase version, `-l`, adds the actual library, but there is a twist here: only need the root-name of the library. For example, to link the library *libfoo.a*, use `-lfoo`. The prefix *lib* and extension *.a* are assumed by the linker.
+ライブラリを使うには、それを実行ファイルにリンクする必要があります。ここで関係するリンカのフラグは 2 つ、`-L` と `-l` です。大文字と小文字の「L」です。前者の `-L` は、ライブラリのパスを足します。小文字の `-l` は実際のライブラリを足しますが、ここにひとひねりあります。ライブラリの名前の根っこの部分だけが必要なのです。たとえば、ライブラリ *libfoo.a* をリンクするには、`-lfoo` を使います。接頭辞の *lib* と拡張子の *.a* は、リンカが補ってくれます。
 
 ```makefile
 # using libfoo (assume it's in ../lib)
@@ -1017,13 +1017,13 @@ $(PROJ).elf : $(OBJS)
     $(LD) $^ $(LDFLAGS) -L../lib -lfoo -o $@
 ```
 
-Of course, these archives can get pretty big if you dump a lot of stuff in there. You might wonder if all of it is linked when you add a library to your project. The answer is no, it is not. The linker is smart enough to use only the files which functions you're actually referencing. In the case of this demo, for example, I'm using various text functions, but none of the [affine](affine.html) functions or tables, so those are excluded. Note that the exclusion goes by *file*, not by *function*. If you only have one file in the library (or `#include`d everything, which amounts to the same thing), everything will be linked.
+もちろん、たくさんのものを詰め込めば、こうしたアーカイブはかなり大きくなります。ライブラリをプロジェクトに足すと、その全部がリンクされるのかと思うかもしれません。答えはノーで、全部はリンクされません。リンカは賢いので、実際に参照している関数を含むファイルだけを使います。たとえばこのデモでは、さまざまな文字の関数を使っていますが、[アフィン](affine.html)の関数や表は使っていないので、それらは除かれます。除かれるのは、*関数*単位ではなく*ファイル*単位であることに注意してください。ライブラリにファイルが 1 つしかなければ（または全部を `#include` していれば、同じことですが）、すべてがリンクされます。
 
-I intend to use libtonc in a number of later demos. In particular, the memory map, text and copy routines will be present often. Don't worry about what they do for the demo; just focus on the core content itself. Documentation of libtonc can be found in the *libtonc* folder (`tonc/code/libtonc`) and at [Tonclib's website](https://www.coranac.com/man/libtonc/).
+あとのいくつかのデモでは、libtonc を使うつもりです。特に、メモリマップ、文字、コピーのルーチンがよく出てくるでしょう。それらがデモの中で何をしているかは気にせず、本題の中身そのものに集中してください。libtonc のドキュメントは、*libtonc* のフォルダ（`tonc/code/libtonc`）と、[tonclib のウェブサイト](https://www.coranac.com/man/libtonc/)にあります。
 
-:::tip Better copy and fill routines: memcpy16/32 and memset16/32
+:::tip もっとよいコピーと塗りつぶしのルーチン: memcpy16/32 と memset16/32
 
-Now that I am using libtonc as a library for its text routines, I might as well use it for its copy and fill routines as well. Their names are `memcpy16()` and `memcpy32()` for copies and `memset16()` and `memset32()` for fill routines. The 16 and 32 denote their preferred datatypes: halfwords and words, respectively. Their arguments are similar to the conventional `memcpy()` and `memset()`, with the exception that the size is the number of items to be copied, rather than in bytes.
+文字のルーチンのために libtonc をライブラリとして使うようになったので、コピーと塗りつぶしのルーチンにも使ってしまいましょう。コピーの名前は `memcpy16()` と `memcpy32()`、塗りつぶしは `memset16()` と `memset32()` です。16 と 32 は、それぞれ得意なデータ型、つまりハーフワードとワードを表しています。引数は従来の `memcpy()` や `memset()` と似ていますが、大きさがバイト数ではなく、コピーする要素の数である点が違います。
 
 ```c
 void memset16(void *dest, u16 hw, uint hwcount);
@@ -1033,16 +1033,16 @@ void memset32(void *dest, u32 wd, uint wcount) IWRAM_CODE;
 void memcpy32(void *dest, const void *src, uint wcount) IWRAM_CODE;
 ```
 
-These routines are optimized assembly so they are [fast](text.html#ssec-demo-se2). They are also safer than the [dma routines](dma.html#sec-func), and the [BIOS routine](swi.html) `CpuFastSet()`. Basically, I highly recommend them, and I will use them wherever I can.
+これらのルーチンは最適化されたアセンブリなので、[速い](text.html#ssec-demo-se2)です。また、[DMA のルーチン](dma.html#sec-func)や [BIOS のルーチン](swi.html)の `CpuFastSet()` より安全です。基本的に、強くおすすめしますし、私も使えるところでは使います。
 
 :::
 
-:::warning Linker options: object files before libraries
+:::warning リンカのオプション: オブジェクトファイルはライブラリより前に
 
-In most cases, you can change the order of the options and files freely, but in the linker's case it is important the object files of the projects are mentioned *before* the linked libraries. If not, the link will fail. Whether this is standard behaviour or if it is an oversight in the linker's workings I cannot say, but be aware of potential problems here.
+ほとんどの場合、オプションとファイルの順番は自由に変えられますが、リンカの場合は、プロジェクトのオブジェクトファイルを、リンクするライブラリより*前に*書くことが大事です。そうしないと、リンクに失敗します。これが標準の振る舞いなのか、リンカの仕組みの見落としなのかは分かりませんが、ここで問題が起きうることを意識しておいてください。
 
 :::
 
-## In conclusion {#sec-conc}
+## まとめ {#sec-conc}
 
-Tilemaps are essential for most types of GBA games. They are trickier to get to grips with than the bitmap modes or sprites because there are more [steps to get exactly right](#ssec-demo-brin). And, of course, you need to be sure the editor that gave you the map actually supplied the data you were expecting. Fool around with the demos a little: run them, change the code and see what happens. For example, you could try to add scrolling code to the brin_demo so you can see the whole map. Change screen blocks, change charblock, change the bitdepth, mess up *intentionally* so you can see what can go wrong, so you'll be prepared for it when you try your own maps. Once you're confident enough, only then start making your own. I know it's the boring way, but you will benefit from it in the long run.
+タイルマップは、ほとんどの種類の GBA のゲームに欠かせません。[正確にこなす必要のある手順](#ssec-demo-brin)が多いので、ビットマップモードやスプライトより習得が少し難しいです。それにもちろん、マップを作ってくれたエディタが、本当に期待どおりのデータを出しているかを確かめる必要もあります。デモで少し遊んでみてください。実行して、コードを変えて、どうなるか見てみましょう。たとえば、brin_demo にスクロールのコードを足して、マップ全体を見られるようにしてみてもいいでしょう。スクリーンブロックを変え、キャラブロックを変え、ビット深度を変え、*わざと*めちゃくちゃにして、何がうまくいかなくなりうるのかを見てみてください。そうすれば、自分のマップを作るときに備えができます。十分に自信がついたら、そこで初めて自分のマップを作り始めてください。退屈なやり方なのは分かっていますが、長い目で見れば得をします。

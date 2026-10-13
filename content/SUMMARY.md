@@ -3,17 +3,17 @@
 [まえがき](./foreword.md)
 [はじめに](./intro.md)
 
-# GBA Basics
+# GBA の基礎
 
-- [GBA Hardware](./hardware.md)
-- [Setting up a development environment](./setup.md)
-- [My First GBA Demo](./first.md)
-- [Video Introduction](./video.md)
-- [The bitmap modes](./bitmaps.md)
-- [The GBA keypad](./keys.md)
-- [Sprite and tiled background overview](./objbg.md)
-- [Regular sprites](./regobj.md)
-- [Regular tiled backgrounds](./regbg.md)
+- [GBA のハードウェア](./hardware.md)
+- [開発環境の準備](./setup.md)
+- [最初の GBA デモ](./first.md)
+- [GBA のグラフィック入門](./video.md)
+- [ビットマップモード](./bitmaps.md)
+- [GBA のボタン](./keys.md)
+- [スプライトと背景の概要](./objbg.md)
+- [通常のスプライト](./regobj.md)
+- [通常のタイル背景](./regbg.md)
 
 # GBA Extended
 
