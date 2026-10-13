@@ -511,3 +511,12 @@
 .tonc .bdrB, .bdrBL, .bdrBR, .bdrLL, .bdrRR {
     border-bottom: 1px black solid;
 }
+/* Attribution for the unofficial Japanese translation, shown on every page. */
+.translation-notice {
+    margin-top: 3em;
+    padding-top: 1em;
+    border-top: 1px solid var(--quote-border);
+    font-size: 0.8em;
+    color: var(--fg);
+    opacity: 0.8;
+}

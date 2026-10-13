@@ -1,5 +1,5 @@
 [book]
-title = "Tonc - GBA Programming in rot13"
+title = "Tonc 日本語版（非公式）"
 description = "GBA Programming tutorial"
 src = "content"
 language = "en"
@@ -12,8 +12,8 @@ create-missing = false
 command = "cargo run -p pandocs-preproc --locked --release --"
 
 [output.html]
-git-repository-url = "https://github.com/gbadev-org/tonc"
-edit-url-template = "https://github.com/gbadev-org/tonc/edit/master/{path}"
+git-repository-url = "https://github.com/sacckey/tonc"
+edit-url-template = "https://github.com/sacckey/tonc/edit/master/{path}"
 site-url = "/tonc/"
 additional-css = [
     "theme/css/tonc.css",

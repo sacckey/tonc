@@ -52,7 +52,7 @@ jobs:
     - name: Generate sitemap
       run: |
         cd tonc/output
-        npx sscli --no-clean --base https://gbadev.net/tonc
+        npx sscli --no-clean --base https://sacckey.github.io/tonc
 
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
