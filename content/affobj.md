@@ -1,18 +1,18 @@
-# 11. Affine sprites
+# 11. アフィンスプライト
 
 <!-- toc -->
 
-## Affine sprite introduction {#sec-intro}
+## アフィンスプライトの紹介 {#sec-intro}
 
-Essentially, <dfn>affine sprites</dfn> are still sprites. The difference with regular sprites is that you can perform an affine transformation (hence the name) on them before the rendering stage by setting the right bits in the object attributes and filling in the **P** matrix. You can read about affine transformations and the **P** matrix [here](affine.html). It is required reading for this section, as are the [sprite and background overview](objbg.html) and the [regular sprite](regobj.html) page.
+<dfn>アフィンスプライト</dfn>も、本質的にはやはりスプライトです。通常のスプライトとの違いは、オブジェクト属性の適切なビットを設定して **P** 行列を埋めることで、描画の前にアフィン変換（名前の由来です）をかけられる点です。アフィン変換と **P** 行列については[こちら](affine.html)で読めます。この節を読むには、それと、[スプライトと背景の概要](objbg.html)、[通常のスプライト](regobj.html)のページを読んでいることが前提です。
 
-You may wonder whether this is really worth a separate section. The short answer is yes. A longer answer is yes, because using affine sprites involves a lot more math than regular sprites and I didn't want to freak out the, erm, ‘mathematically challenged’. The section on [regular sprites](regobj.html) can stand on its own and you can use it in blissful ignorance of the nasty math that it required for affine sprites.
+これが本当に独立した節にする価値のあるものなのか、疑問に思うかもしれません。短く答えるなら、はい、です。もう少し長く答えるなら、はい、アフィンスプライトを使うには通常のスプライトよりずっと多くの数学が必要で、えーと、「数学が苦手な」人たちを怖がらせたくなかったからです。[通常のスプライト](regobj.html)の節は単独で成り立っていて、アフィンスプライトに必要な厄介な数学のことなど何も知らないまま、幸せに使えます。
 
-In this chapter we'll see how to set-up object to use affine transformations. This in itself is rather easy. Also discussed are a number of potential graphical problems you might run into sooner or later –one of them almost immediately, actually– and how to correct the sprite's position to make it seem like the transformation's origin is at an arbitrary point. And, as usual, there will be demo-code illustrating the various topics raised in this chapter.
+この章では、オブジェクトがアフィン変換を使うように設定する方法を見ていきます。これ自体はかなり簡単です。ほかにも、遅かれ早かれ（実際には、そのうちの 1 つはほぼすぐに）出くわすかもしれないグラフィック上の問題をいくつかと、変換の原点が任意の点にあるように見せるためにスプライトの位置を補正する方法も扱います。そしていつものように、この章で取り上げるさまざまな話題を示すデモのコードもあります。
 
-## Affine sprite initialization {#sec-init}
+## アフィンスプライトの初期化 {#sec-init}
 
-To turn a regular sprite into an affine sprite you need to do two things. First, set `OBJ_ATTR.attr0{8}` to indicate this is a affine sprite. Second, put a number between 0 and 31 into `OBJ_ATTR.attr1{8-C}`. This number indicates which of the 32 Object Affine Matrices (`OBJ_AFFINE` structures) should be used. In case you've forgotten, the `OBJ_AFFINE` looks like this:
+通常のスプライトをアフィンスプライトにするには、2 つのことをする必要があります。まず、`OBJ_ATTR.attr0{8}` を設定して、これがアフィンスプライトであることを示します。次に、`OBJ_ATTR.attr1{8-C}` に 0 から 31 の数値を入れます。この数値は、32 個あるオブジェクトのアフィン行列（`OBJ_AFFINE` 構造体）のどれを使うかを示します。忘れてしまった人のために書いておくと、`OBJ_AFFINE` は次のようになっています。
 
 ```c
 typedef struct OBJ_AFFINE
@@ -28,7 +28,7 @@ typedef struct OBJ_AFFINE
 } ALIGN4 OBJ_AFFINE;
 ```
 
-The *signed* 16-bit members `pa`, `pb`, `pc` and `pd` are 8.8 fixed point numbers that form the actual matrix, which I will refer to as **P**, in correspondence with the elements' names. For more information about this matrix, go to the [affine matrix](affine.html) section. Do so now if you haven't already, because I'm not going to repeat it here. If all you are after is a simple scale-then-rotate matrix, try this: for a zoom by s<sub>x</sub> and s<sub>y</sub> followed by a counter-clockwise rotation by α, the correct matrix is this:
+*符号付き*の 16 ビットのメンバ `pa`、`pb`、`pc`、`pd` は 8.8 の固定小数点数で、これらが実際の行列を作ります。要素の名前に合わせて、この行列を **P** と呼ぶことにします。この行列について詳しくは、[アフィン行列](affine.html)の節を見てください。まだ読んでいないなら今すぐ読んでください。ここでは繰り返しませんから。単純な「拡大縮小してから回転」の行列が欲しいだけなら、これを使ってください。s<sub>x</sub> と s<sub>y</sub> で拡大縮小したあとに α だけ反時計回りに回転する正しい行列は、次のとおりです。
 <!--
 \vb{P} =
 \begin{bmatrix}
@@ -182,21 +182,21 @@ p_{c} & p_{d}
   </mstyle>
 </math>
 
-Note that the origin of the transformation is *center* of the sprite, not the top-left corner. This is worth remembering if you want to align your sprite with other objects, which we'll do later.
+変換の原点は、左上の角ではなく、スプライトの*中心*であることに注意してください。スプライトをほかのオブジェクトと揃えたいときには、覚えておく価値があります。これはあとでやります。
 
-:::tip Essential affine sprite steps
+:::tip アフィンスプライトに欠かせない手順
 
--   Set-up an object as usual: load graphics and palette, set `REG_DISPCNT`, set-up an OAM entry.
--   Set bit 8 of attribute 0 to enable affinity for that object, and choose an object affine matrix to use (attribute 1, bits 8-12).
--   Set that obj affine matrix to something other than all zeroes, for example the identity matrix.
+-   いつもどおりにオブジェクトを準備する: グラフィックとパレットを読み込み、`REG_DISPCNT` を設定し、OAM のエントリを準備する。
+-   属性 0 のビット 8 を設定してそのオブジェクトのアフィンを有効にし、使うオブジェクトのアフィン行列を選ぶ（属性 1 のビット 8-12）。
+-   そのオブジェクトのアフィン行列を、すべてゼロ以外のもの、たとえば単位行列に設定する。
 
 :::
 
-## Graphical artifacts {#sec-artifact}
+## グラフィック上のアーティファクト {#sec-artifact}
 
-### The clipping and discretization artifacts {#ssec-clip}
+### クリッピングと離散化のアーティファクト {#ssec-clip}
 
-The procedure that the GBA uses for drawing sprites is as follows: the sprite forms a rectangle on the screen defined by its size. To paint the screen pixels in that area (**q**) uses texture-pixel **p**, which is calculated via:
+GBA がスプライトを描く手順は次のとおりです。スプライトは、その大きさで決まる長方形を画面上に作ります。その領域の画面のピクセル（**q**）を塗るには、テクスチャのピクセル **p** を使います。**p** は次の式で計算されます。
 
 <!--
 \vb{p} - \vb{p}_{0} = \vb{P} \cdot (\vb{q} - \vb{q}_0)
@@ -238,7 +238,7 @@ The procedure that the GBA uses for drawing sprites is as follows: the sprite fo
 </math>
 </table>
 
-where **p**<sub>0</sub> and **q**<sub>0</sub> are the centers of the sprite in texture and screen space, respectively. The code below is essentially what the hardware does; it scans the screen-rectangle between plus and minus the half-width and half-height (half-sizes because the center is the reference point), calculates the texture-pixel and plots that color.
+ここで **p**<sub>0</sub> と **q**<sub>0</sub> は、それぞれテクスチャ空間と画面空間でのスプライトの中心です。以下のコードは、本質的にはハードウェアがしていることです。画面の長方形を、半分の幅と半分の高さのプラスからマイナスの範囲で走査し（中心が基準点なので半分の大きさです）、テクスチャのピクセルを計算して、その色を描きます。
 
 ```c
 // pseudocode for affine objects
@@ -256,26 +256,26 @@ for(iy=-hheight; iy<hheight; iy++)
 }
 ```
 
-This has two main consequences, the clipping artifact and a discretization artifact.
+このことから、主に 2 つの結果が生じます。クリッピングのアーティファクトと、離散化のアーティファクトです。
 
 <div class="cpt_fr" style="width:160px;">
 <img src="./img/metr/aff_clipped.png" id="fig:metr-clip" 
   alt="defanged metroid"><br>
-<b>{*@fig:metr-clip}</b>: a partially defanged metroid, 
-since the parts outside the blue square are clipped off.
+<b>{*@fig:metr-clip}</b>: 一部の牙を抜かれたメトロイド。
+青い四角の外側の部分が切り落とされています。
 </div>
 
-The <dfn>clipping artifact</dfn> is caused by scanning only over the rectangle **on-screen**. But almost all transformations will cause the texture pixels to exceed that rectangle, and the pixels outside the rectangle will not be rendered. {*@fig:metr-clip} shows the screen rect (grey, blue border) and a rotated object (inside the red border). The parts that extend the blue borderlines will not be cut off.
+<dfn>クリッピングのアーティファクト</dfn>は、**画面上**の長方形だけを走査することで起きます。しかし、ほとんどすべての変換でテクスチャのピクセルはその長方形からはみ出し、長方形の外側のピクセルは描画されません。{*@fig:metr-clip} は、画面上の長方形（灰色で縁が青）と、回転したオブジェクト（赤い縁の内側）を示しています。青い境界線からはみ出した部分は切り落とされます（訳注: 原文は "will not be cut off" ですが、文脈から「切り落とされる」の意味と解釈しました）。
 
-As this is an obvious flaw, there is of course a way around it: set the sprite's affine mode to **double-sized affine** (`ATTR0_AFF_DBL`, `OBJ_ATTR.attr0{8,9}`). This will double the screen range of valid **q** coordinates, so you'd have + and − the width and height to play with instead of the half-sizes. This double (well quadruple, really) area means that you can safely rotate a sprite as the maximum distance from the center is ½√2 ≈ 0.707. Of course, you can still get the clipping artifact if you scale up beyond the doubled ranges. Also, note that the sprites' origin is shifted to the center of this rectangle, so that **q**<sub>0</sub> is now one full sprite-size away from the top-left corner.
+これは明らかな欠点なので、当然回避する方法があります。スプライトのアフィンモードを**倍サイズのアフィン**（`ATTR0_AFF_DBL`、`OBJ_ATTR.attr0{8,9}`）にするのです。これで有効な **q** 座標の画面上の範囲が 2 倍になり、半分の大きさではなく、幅と高さのプラスマイナスの範囲を使えるようになります。この 2 倍（実際には 4 倍）の領域なら、中心からの最大距離は ½√2 ≈ 0.707 なので、スプライトを安全に回転できます。もちろん、2 倍の範囲を超えて拡大すれば、やはりクリッピングのアーティファクトは起きます。また、スプライトの原点がこの長方形の中心に移るので、**q**<sub>0</sub> は左上の角からスプライト 1 つぶんの大きさだけ離れることにも注意してください。
 
-The double-size flag also has a second use. Or perhaps I should say misuse. If you set it for a regular sprite, it will be hidden. This is an alternative way to hide unused sprites.
+倍サイズのフラグには、もう 1 つの使い道があります。あるいは悪用と言うべきかもしれません。通常のスプライトにこのフラグを設定すると、スプライトは非表示になります。これは、使っていないスプライトを隠す別の方法です。
 
-The second artifact, if you can call it that, is a <dfn>discretization</dfn> artifact. This is a more subtle point than the clipping artifact and you might not even ever notice it. The problem here is that the transformation doesn't actually take place at the center of the object, but at the **center pixel**, rounded up. As an example, look at {@fig:numline}. Here we have a number-line from 0 to 8; and in between them 8 pixels from 0 to 7. The number at the center is 4, of course. The central pixel is 4 as well, however its location is actually halfway between numbers 4 and 5. This creates an unbalance between the number of pixels on the left and on the right.
+2 つ目のアーティファクトは、そう呼べるならですが、<dfn>離散化</dfn>のアーティファクトです。これはクリッピングのアーティファクトより微妙な点で、気づくことすらないかもしれません。ここでの問題は、変換が実際にはオブジェクトの中心ではなく、切り上げた**中心のピクセル**で行われることです。例として {@fig:numline} を見てください。0 から 8 までの数直線があり、その間に 0 から 7 までの 8 つのピクセルがあります。中心の数は、もちろん 4 です。中心のピクセルも 4 ですが、その位置は実際には数 4 と 5 のちょうど中間です。そのため、左右のピクセルの数に偏りが生じます。
 
-The center pixel is the reference point of the transformation algorithm, which has indices (ix, iy) = (0, 0). Fill that into the equations and you'll see that this is invariant under the transformation, even though mathematically it should not be. This has consequences for the offsets, which are calculated from the pixel, not the position. In {@fig:numline}, there are 4 pixels on the left, but only 3 on the right. A mirroring operation that would center on pixel 4 would effectively move the sprite one pixel to the right.
+中心のピクセルは変換アルゴリズムの基準点で、そのインデックスは (ix, iy) = (0, 0) です。これを式に入れてみると、数学的にはそうなるべきではないのに、このピクセルが変換で動かないことがわかります。これはオフセットに影響します。オフセットは位置ではなくピクセルから計算されるからです。{@fig:numline} では、左には 4 ピクセルありますが、右には 3 ピクセルしかありません。ピクセル 4 を中心にして鏡映すると、実質的にスプライトが 1 ピクセル右に動くことになります。
 
-{*@fig:aff-algor} shows how this affects rotations. It displays lines every grey gridlines every 8 pixels and a 16×16 sprite of a box. Note that at the start the right and left sides do not lie on the gridlines, because the sprite's width and height is 16, not 17. The other figures are rotations in increments of 90°, which gives nice round numbers in the matrix. When rotating, the center pixel (the red dot in the middle) stays in the same position, and the rest rotate around it, and this process will carry the edges out of the designated 16×16 box of the sprite (the dashed lines).
+{*@fig:aff-algor} は、これが回転にどう影響するかを示しています。8 ピクセルごとの灰色のグリッド線と、箱の形をした 16×16 のスプライトが表示されています。最初の状態で、左右の辺がグリッド線の上にないことに注意してください。スプライトの幅と高さは 17 ではなく 16 だからです。ほかの図は 90° ずつ回転させたもので、行列にはきれいな切りのいい数が入ります。回転すると、中心のピクセル（真ん中の赤い点）は同じ位置にとどまり、残りがその周りを回ります。この過程で、辺はスプライトに割り当てられた 16×16 の箱（破線）の外に出てしまいます。
 
 <div class="cblock">
 <table>
@@ -285,38 +285,38 @@ The center pixel is the reference point of the transformation algorithm, which h
   <div class="cpt_fr" style="width:288px;">
   <img src="./img/affine/numline.png" id="fig:numline" width="288"
     alt="Numbers vs pixels"><br>
-  <b>{*@fig:numline}</b>: pixels are between, 
-    not on, coordinates.
+  <b>{*@fig:numline}</b>: ピクセルは座標の上ではなく、
+    座標の間にあります。
   </div></td>
   <td>
   <div class="cpt_fr" style="width:320px;">
   <img src="./img/affine/numalgor.png" id="fig:aff-algor" width="320"
     alt="Rotations"><br>
-  <b>{*@fig:aff-algor}</b>: Rotations in 90&deg; 
-    increments.
+  <b>{*@fig:aff-algor}</b>: 90&deg; ずつの
+    回転。
   </div></td>
 </tr>
 </tbody>
 </table>
 </div>
 
-:::warning The offsets measure distance from the center pixel, not center position.
+:::warning オフセットは、中心の位置ではなく中心のピクセルからの距離を測る
 
-The offsets that are calculated from the affine matrix use the distances from the center pixel (*w*/2, *h*/2), not the center point. As such, there is a half a pixel deviation from the mathematical transformation, which may result in a ±pixel offset for the sprite as a whole and lost texture edges.
+アフィン行列から計算されるオフセットは、中心の点ではなく、中心のピクセル（*w*/2, *h*/2）からの距離を使います。そのため、数学的な変換とは半ピクセルのずれがあり、スプライト全体が ±1 ピクセルずれたり、テクスチャの端が欠けたりすることがあります。
 
 :::
 
-### The wrapping artifact {#ssec-wrap}
+### 回り込みのアーティファクト {#ssec-wrap}
 
-Apart from the clipping artifact, there seems to be another; one that I have actually never seen mentioned anywhere. It's what I call the wrapping artifact. As you know, the position for sprites is given in a 9-bit *x*-value and an 8-bit *y*-value, which values wrap around the screen. For *x*, you can just interpret this as having the \[-256, 255\] range. For *y* values, you can't really do that because the top value for a signed 8-bit integer is 127, which would mean that you'd never be able to put a sprite at the bottom 32 lines. But since the values wrap around, it all works out in the end anyway. With one exception.
+クリッピングのアーティファクトのほかに、もう 1 つあるようです。私はどこかで触れられているのを実際に見たことがありません。私が回り込みのアーティファクトと呼んでいるものです。ご存じのとおり、スプライトの位置は 9 ビットの *x* の値と 8 ビットの *y* の値で与えられ、これらの値は画面上で回り込みます。*x* については、単に \[-256, 255\] の範囲だと解釈できます。*y* の値ではそうはいきません。符号付き 8 ビット整数の最大値は 127 なので、それでは画面の下の 32 ラインにスプライトを置けなくなってしまいます。でも、値が回り込むので、結局はすべてうまくいきます。1 つの例外を除いては。
 
-There's never any trouble with regular sprites, and hardly any for affine sprites; the one exception is when you have a 64×64 or 32×64 affine sprite with the double size flag switched on. Such a sprite has a bounding box of 128×128. Now there are three different ways of interpreting the meaning of *y* \> 128:
+通常のスプライトでは問題はまったく起きませんし、アフィンスプライトでもほとんど起きません。唯一の例外は、倍サイズのフラグを有効にした 64×64 か 32×64 のアフィンスプライトです。このようなスプライトの外接矩形は 128×128 になります。このとき、*y* \> 128 の意味には 3 通りの解釈があります。
 
-1.  Full-wrap: the top of the sprite would show at the bottom of the screen, and vice versa.
-2.  Positive precedence: consider the \[128, 159\] range as indicative of the bottom of the screen, and forget the wrap.
-3.  Negative precedence: if *y* value would make the sprite appear partially at the top, consider it to be negative, again neglecting the wrap.
+1.  完全な回り込み: スプライトの上部が画面の下に表示され、その逆も同様。
+2.  正の優先: \[128, 159\] の範囲は画面の下部を表すものとし、回り込みは考えない。
+3.  負の優先: *y* の値によってスプライトの一部が画面の上に表示されるなら、それを負の値とみなす。やはり回り込みは考えない。
 
-As it happens, the GBA uses the third interpretation. In other words, it uses
+実際のところ、GBA は 3 番目の解釈を使います。つまり、次のようにしています。
 
 ```c
 // pseudo code
@@ -324,30 +324,30 @@ if(oam.y + bbox_height > 256)
     oam.y -= 256;
 ```
 
-Note, by the way, that some older emulators (VBA and BoycottAdvance) both use interpretation #2, which may seem more logical, but is incorrect. As you can tell, it can only happen with a 32×64 or 64×64, double-sized sprite, and even then you'll only notice it under very specific conditions, namely if the transformed sprite has visible pixels inside the top 32 lines of the bounding box. In the case that you have this problem, as far as I can tell the only way to get the sprite showing at the bottom of the screen is if you reduce the height to 32 for the time being.
+ちなみに、古いエミュレータの一部（VBA と BoycottAdvance）は、どちらも解釈 2 を使っていることに注意してください。こちらのほうが論理的に見えるかもしれませんが、正しくありません。ご覧のとおり、これは 32×64 か 64×64 の倍サイズのスプライトでしか起きませんし、その場合でも、ごく特定の条件、つまり変換後のスプライトが外接矩形の上の 32 ラインに見えるピクセルを持つ場合にしか気づきません。この問題が起きた場合、私の知る限り、スプライトを画面の下に表示する唯一の方法は、その間だけ高さを 32 に減らすことです。
 
-## A very (af)fine demo {#sec-demo}
+## とっても（アフィ）ファインなデモ {#sec-demo}
 
-I have a really interesting demo for you this time called *obj_aff*. It features a normal (boxed) metroid, which can be scaled, rotated and scaled. Because these transformations are applied to the *current* state of the matrix, you can end up with every kind of affine matrix possible by concatenating the different matrices. The controls are as follows:
+今回は *obj_aff* という、とても面白いデモを用意しました。（箱に入った）普通のメトロイドが登場し、拡大縮小、回転、せん断ができます（訳注: 原文は "scaled, rotated and scaled" ですが、操作の内容からせん断と解釈しました）。これらの変換は行列の*現在の*状態にかけられるので、いろいろな行列をつなげることで、ありとあらゆるアフィン行列を作れます。操作は次のとおりです。
 
 <div class="lblock">
   <table cellspacing=0>
     <col valign="top">
-    <tr><th>L,R<td>Rotates the sprite CCW and CW, respectively.
-    <tr><th>D-pad<td>Shears the sprite.
-    <tr><th>D-pad+Sel<td>Moves sprite around.
-    <tr><th>A,B<td>Expands horizontally or vertically, respectively.
-    <tr><th>A,B+Sel<td>Shrinks horizontally or vertically, respectively.
-      (I ran out of buttons, so had to do it like this).
-    <tr><th>Start<td>Toggles double-size flag. Note that a) the corners
-      of a rotated sprite are no longer clipped and b) the position shifts
-      by 1/2 sprite size.
-    <tr><th>Start+Sel<td>Resets <b>P</b> to normal.
-    <tr><th>Select<td>Control button (see A, B and Start).
+    <tr><th>L,R<td>スプライトをそれぞれ反時計回り、時計回りに回転する。
+    <tr><th>D-pad<td>スプライトをせん断する。
+    <tr><th>D-pad+Sel<td>スプライトを動かす。
+    <tr><th>A,B<td>それぞれ横方向、縦方向に拡大する。
+    <tr><th>A,B+Sel<td>それぞれ横方向、縦方向に縮小する。
+      （ボタンが足りなくなったので、こうするしかありませんでした）。
+    <tr><th>Start<td>倍サイズのフラグを切り替える。a) 回転した
+      スプライトの角が切り落とされなくなることと、b) 位置が
+      スプライトの大きさの 1/2 だけずれることに注意。
+    <tr><th>Start+Sel<td><b>P</b> を通常に戻す。
+    <tr><th>Select<td>制御ボタン（A、B、Start を参照）。
   </table>
 </div>
 
-The interesting point of seeing the transformations back to back is that you can actually see the difference between, for example, a scaling followed by a rotation (**A**=**S**·**R**), and a rotate-then-scale (**A**=**R**·**S**). {*@fig:obj-aff-rs} and {@fig:obj-aff-sr} show this difference for a 45° rotation and a 2× vertical scale. Also, note that the corners are cut off here: the clipping artifact at work – even though I've already set the double-size flag here.
+変換を続けて見ることの面白い点は、たとえば拡大縮小のあとに回転するもの（**A**=**S**·**R**）と、回転してから拡大縮小するもの（**A**=**R**·**S**）の違いが実際に見られることです。{*@fig:obj-aff-rs} と {@fig:obj-aff-sr} は、45° の回転と縦方向の 2 倍の拡大について、この違いを示しています。また、ここでは角が切り落とされていることにも注意してください。倍サイズのフラグをすでに設定しているのに、クリッピングのアーティファクトが働いています。
 
 <div class="cblock">
 <table>
@@ -357,19 +357,19 @@ The interesting point of seeing the transformations back to back is that you can
 <img src="./img/demo/obj_aff_rs.png" id="fig:obj-aff-rs" 
   alt="R*S affine object."><br>
 <b>{*@fig:obj-aff-rs}</b>: 
-  <tt>obj_aff</tt>, via <b>S</b>(1,2), then <b>R</b>(45&deg;)
+  <tt>obj_aff</tt>、<b>S</b>(1,2) のあとに <b>R</b>(45&deg;)
 </div>
 <td>
 <div class="cpt_fr" style="width:240px;">
 <img src="./img/demo/obj_aff_sr.png" id="fig:obj-aff-sr"
   alt="S*R affine object."><br>
 <b>{*@fig:obj-aff-sr}</b>: 
-  <tt>obj_aff</tt>, via <b>R</b>(45&deg;), then <b>S</b>(1,2)
+  <tt>obj_aff</tt>、<b>R</b>(45&deg;) のあとに <b>S</b>(1,2)
 </div>
 </table>
 </div>
 
-The full source code for the *obj_aff* demo is given below. It's quite long, mostly because of the amount of code necessary for managing the different affine states that can be applied. The functions that actually deal with affine sprites are `init_metr()`, `get_aff_new()` and part of the game loop in `objaff_test()`; the rest is essentially fluff required to making the whole thing work.
+*obj_aff* デモの完全なソースコードを以下に示します。かなり長いですが、その大部分は、かけられるさまざまなアフィンの状態を管理するのに必要なコードです。実際にアフィンスプライトを扱っている関数は、`init_metr()`、`get_aff_new()`、そして `objaff_test()` のゲームループの一部です。残りは基本的に、全体を動かすために必要な飾りのようなものです。
 
 <div id="cd-obj-aff">
 
@@ -572,11 +572,11 @@ int main()
 ```
 </div>
 
-Making the metroid an affine sprite is all done inside `init_metr()`. As you've seen how bits are set a number of times by now, it should be understandable. That said, do note that I am filling the first `OBJ_AFFINE` (the one that the sprite uses) to the identity matrix **I**. If you keep this fully zeroed-out, you'll just end up with a 64×64-pixel rectangle of uniform color. Remember that **P** contains pixel offsets; if they're all zero, there is no offset and the origin's color is used for the whole thing. In essence, the sprite is scaled up to infinity.
+メトロイドをアフィンスプライトにする処理は、すべて `init_metr()` の中で行っています。ビットの設定方法はもう何度も見てきたので、理解できるはずです。とはいえ、（スプライトが使う）最初の `OBJ_AFFINE` を単位行列 **I** にしていることには注意してください。これをすべてゼロのままにしておくと、64×64 ピクセルの単色の長方形になってしまいます。**P** にはピクセルのオフセットが入っていることを思い出してください。それがすべてゼロなら、オフセットがないので、原点の色が全体に使われます。要するに、スプライトが無限大に拡大されるのです。
 
-To be frank though, calling `obj_aff_identity()` isn't necessary after a call to `oam_init()`, as that initializes the matrices as well. Still, you need to be aware of potential problems.
+ただ、正直に言うと、`oam_init()` を呼んだあとなら `obj_aff_identity()` を呼ぶ必要はありません。この関数は行列も初期化するからです。それでも、起こりうる問題は知っておく必要があります。
 
-That's the set-up, now for how the demo does what it does. At any given time, you will have some transformation matrix, **P**. By pressing a button (or not), a small transformation of the current state will be performed, via matrix multiplication.
+準備は以上です。次は、このデモがどうやって動いているかです。どの時点でも、何らかの変換行列 **P** があります。ボタンを押すと（あるいは押さないと）、行列の積によって、現在の状態に小さな変換がかけられます。
 
 <!--
 \vb{P}_\text{new} = \vb{P}_{old} \cdot \vb{D}^{-1}
@@ -616,7 +616,7 @@ That's the set-up, now for how the demo does what it does. At any given time, yo
 </math>
 </table>
 
-where **D** is either a small rotation (**R**), scaling (**S**) or shear (**H**). Or a no-op (**I**). However, there is a little hitch here. This would work nice in theory, but in *practice*, it won't work well because the fixed point matrix multiplications will result in unacceptable round-off errors very very quickly. Fortunately, all these transformations have the convenient property that
+ここで **D** は、小さな回転（**R**）、拡大縮小（**S**）、せん断（**H**）のどれか、あるいは何もしない変換（**I**）です。ただし、ここにはちょっとした問題があります。理論上はうまくいくのですが、*実際には*、固定小数点の行列の積によって、受け入れがたい丸め誤差があっという間にたまってしまうので、うまくいきません。幸い、これらの変換にはどれも次のような便利な性質があります。
 <!--
 \vb{D}(a)\cdot\vb{D}(b) = \vb{D}(c)
 -->
@@ -652,20 +652,20 @@ where **D** is either a small rotation (**R**), scaling (**S**) or shear (**H**)
 </math>
 </table>
 
-That is to say, multiple small transformations work as one big one. All you have to do is keep track of the current chosen transformation (the variable `aff_state`, in `get_aff_state()`), modify the state variable (`aff_value`), then calculate full transformation matrix (`get_aff_new()`) and apply that (with `obj_aff_postmul()`). When a different transformation type is chosen, the current matrix is saved, the state value is reset and the whole thing continues with that state until yet another is picked. The majority of the code is for keeping track of these changes; it's not pretty, but it gets the job done.
+つまり、複数の小さな変換は 1 つの大きな変換として働くということです。必要なのは、現在選ばれている変換（`get_aff_state()` の中の変数 `aff_state`）を記録しておき、状態の変数（`aff_value`）を変更して、変換行列全体を計算し（`get_aff_new()`）、それをかける（`obj_aff_postmul()` で）ことだけです。別の種類の変換が選ばれたら、現在の行列を保存し、状態の値をリセットして、また別の変換が選ばれるまでその状態で続けます。コードの大部分は、こうした変化を記録するためのものです。きれいではありませんが、仕事はこなします。
 
-## Off-center reference points and object combos {#sec-combo}
+## 中心以外の基準点とオブジェクトの組み合わせ {#sec-combo}
 
 <div class="cpt_fr" style="width:240px;">
 <img src="./img/metr/rot_ofs.png" id="fig:rot-ofs" 
   alt="Rotation around off-center point"><br>
-<b>{*@fig:rot-ofs}</b>: rotation of object around an 
-  off-center point.
+<b>{*@fig:rot-ofs}</b>: 中心以外の点の周りでの
+  オブジェクトの回転。
 </div>
 
-As mentioned earlier, affine sprites always use their centers as affine origins, but there are times when one might want to use something else to rotate around – to use another point as the reference point. Now, you can't actually do this, but you can make it *look* as if you can. To do this, I need to explain a few things about what I like to call anchoring. The <dfn>anchor</dfn> is the position that is supposed to remain ‘fixed’; the spot where the texture (in this case the object) is anchored to the screen.
+前に述べたように、アフィンスプライトは常に中心をアフィンの原点として使います。しかし、何か別のものを中心に回転させたい、つまり別の点を基準点として使いたいときもあります。実際にはそうすることはできませんが、できるように*見せる*ことはできます。そのためには、私がアンカリングと呼んでいるものについて、いくつか説明する必要があります。<dfn>アンカー</dfn>とは、「固定」されたままであるべき位置のことです。テクスチャ（この場合はオブジェクト）が画面に固定される場所です。
 
-For anchoring, you actually need one set of coordinates for each coordinate-space you're using. In this case, that's two: the texture space and the screen space. Let's call these points **p**<sub>0</sub> and **q**<sub>0</sub>, respectively. Where these actually point *from* is largely immaterial, but for convenience' sake let's use the screen and texture origins for this. These points are only the start. In total, there are *seven* vectors that we need to take into account for the full procedure, and they are all depicted in {@fig:rot-ofs}. Their meanings are explained in the table below.
+アンカリングには、実際には使う座標空間ごとに 1 組の座標が必要です。この場合は 2 つ、テクスチャ空間と画面空間です。これらの点をそれぞれ **p**<sub>0</sub> と **q**<sub>0</sub> と呼ぶことにしましょう。これらが実際にどこ*から*指しているかはほとんど重要ではありませんが、便宜上、画面とテクスチャの原点を使うことにします。これらの点は始まりにすぎません。手順全体では、全部で *7 つ*のベクトルを考える必要があり、それらはすべて {@fig:rot-ofs} に描かれています。それぞれの意味は、下の表で説明します。
 
 <div class="lblock">
 
@@ -675,34 +675,34 @@ For anchoring, you actually need one set of coordinates for each coordinate-spac
     <col span="1" style="width: 86%;">
 </colgroup>
 <tbody valign="top">
-<tr align="left"> <th width=48>point</th>		<th>description</th> </tr>
+<tr align="left"> <th width=48>点</th>		<th>説明</th> </tr>
 <tr>
   <td> <b>p</b><sub>0</sub>, <b>q</b><sub>0</sub> </td>
-  <td> Anchors in texture and screen space. </td>
+  <td> テクスチャ空間と画面空間でのアンカー。 </td>
 </tr>
 <tr>
   <td> <b>c</b><sub>p</sub>, <b>c</b><sub>q</sub> </td>
   <td> 
-    Object centers in texture and screen space. With the 
-    object sizes, <b>s</b>=(w,h), we have
-    <b>c</b><sub>p</sub>=&frac12;<b>s</b> and 
-	<b>c</b><sub>q</sub>=<i>m</i><b>s</b>, where <i>m</i> is 
-	  &frac12; or 1, depending on the double-size flag.
+    テクスチャ空間と画面空間でのオブジェクトの中心。
+    オブジェクトの大きさを <b>s</b>=(w,h) とすると、
+    <b>c</b><sub>p</sub>=&frac12;<b>s</b>、
+	<b>c</b><sub>q</sub>=<i>m</i><b>s</b> となります。ここで <i>m</i> は
+	  倍サイズのフラグに応じて &frac12; か 1 です。
   </td>
 </tr>
 <tr>
   <td> <b>r</b><sub>p</sub>, <b>r</b><sub>q</sub> </td>
-  <td> Distances between object centers and anchors. By definition, 
+  <td> オブジェクトの中心とアンカーの間の距離。定義により、
 	<b>r</b><sub>p</sub> = <b>P</b>·<b>r</b><sub>q</sub></td>
 </tr>
 <tr>
-  <td> <b>x</b> </td>	<td>Desired object coordinates.</td>
+  <td> <b>x</b> </td>	<td>求めたいオブジェクトの座標。</td>
 </tr>
 </tbody>
 </table>
 </div>
 
-Yes, it is a whole lot of vectors, but funnily enough, most are already known. The center points (**c**<sub>p</sub> and **c**<sub>q</sub>) can be derived from the objects size and double-size status, the anchors are known in advance because those are the input values, and **r**<sub>p</sub> and **r**<sub>q</sub> fit the general equation for the affine transformation, {@eq:aff-ex-base}, so this links the two spaces. All that's left now is to write down and solve the set of equations.
+たしかにベクトルがたくさんありますが、面白いことに、そのほとんどはすでにわかっています。中心の点（**c**<sub>p</sub> と **c**<sub>q</sub>）はオブジェクトの大きさと倍サイズの状態から求められますし、アンカーは入力値なので前もってわかっています。そして **r**<sub>p</sub> と **r**<sub>q</sub> はアフィン変換の一般式 {@eq:aff-ex-base} に当てはまるので、これが 2 つの空間を結びつけます。あとは連立方程式を書き出して解くだけです。
 <!--
 \begin{matrix}
 \vb{x} + \vb{c}_{q} + \vb{r}_{q} & = & \vb{q}_{0} \\
@@ -814,7 +814,7 @@ Yes, it is a whole lot of vectors, but funnily enough, most are already known. T
 </tr>
 </table>
 
-Three equations with three unknowns, means it is solvable. I won't post the entire derivation because that's not all that difficult; what you see in {@eq:aff-ex} is the end result in the most usable form.
+未知数が 3 つで式が 3 つなので、解けます。導出はそれほど難しくないので全部は載せません。{@eq:aff-ex} は、最も使いやすい形にした最終結果です。
 <!--
 \vb{x} = \vb{q}_{0} - m\vb{s} - \vb{P}^{-1} \cdot (\vb{p}_{0} - \tfrac{1}{2} s)
 -->
@@ -872,9 +872,9 @@ Three equations with three unknowns, means it is solvable. I won't post the enti
 </math>
 </table>
 
-The right-hand side here has three separate vectors, two of which are part of the input, a scaling flag for the double-size mode, and the inverted affine matrix. Yes, I did say inverted. This is here because the translations to position the object correctly mostly take place in screen-space. The whole term using it is merely **r**<sub>q</sub>, the transformed difference between anchor and center in texture space, which you need for the final correction.
+この右辺には 3 つの別々のベクトルがあり、そのうち 2 つは入力の一部です。それに倍サイズモードのためのスケールのフラグと、アフィン行列の逆行列があります。そう、逆行列と言いました。これが出てくるのは、オブジェクトを正しい位置に置くための平行移動が、主に画面空間で行われるからです。逆行列を使う項全体は、単に **r**<sub>q</sub>、つまりテクスチャ空間でのアンカーと中心の差を変換したもので、最後の補正にはこれが必要です。
 
-Now, this matrix inversion means two things. First, that you will likely have to set up *two* matrices: the affine matrix itself, and its inverse. For general matrices, this might take a while, especially when considering that if you want scaling, you will have to do a division somewhere. Secondly, because you only have 16 bits for the matrix elements, the inverse won't be the *exact* inverse, meaning that aligning the objects exactly will be difficult, if not actually impossible. This is pretty much guaranteed by the hardware itself and I'll return to this point later on. For now, let's look at a function implementing {@eq:aff-ex} in the case of a 2-way scaling followed by a rotation.
+さて、この逆行列には 2 つの意味があります。1 つ目は、おそらく行列を *2 つ*、つまりアフィン行列そのものとその逆行列を用意しなければならないということです。一般の行列では、これには時間がかかるかもしれません。特に拡大縮小をしたいなら、どこかで割り算をしなければならないことを考えるとなおさらです。2 つ目は、行列の要素には 16 ビットしかないので、逆行列は*正確な*逆行列にはならず、オブジェクトをぴったり揃えるのは、不可能とまでは言わないまでも難しいということです。これはハードウェアそのものによってほぼ確実にそうなるもので、この点にはあとでまた戻ります。今は、2 方向の拡大縮小のあとに回転する場合について、{@eq:aff-ex} を実装した関数を見てみましょう。
 
 <div id="cd-oe-rs-ex">
 
@@ -944,25 +944,25 @@ void obj_rotscale_ex(OBJ_ATTR *obj, OBJ_AFFINE *oa, AFF_SRC_EX *asx)
 ```
 </div>
 
-The `AFF_SRC_EX` struct and `oam_sizes` arrays are supporting entities of the function that does the positioning, which is `obj_rotscale_ex()`. This creates the affine matrix (`pa-pd`), and carries out all the necessary steps for {@eq:aff-ex}, namely create the inverse matrix **A** (`aa-ad`), calculate all the offsets and correcting for the sizes, and finally updating the `OBJ_ATTR`. Note that the fixed point accuracy varies a lot, so it is important to comment often on this
+`AFF_SRC_EX` 構造体と `oam_sizes` 配列は、位置合わせをする関数 `obj_rotscale_ex()` を支えるものです。この関数はアフィン行列（`pa-pd`）を作り、{@eq:aff-ex} に必要な手順をすべて実行します。つまり、逆行列 **A**（`aa-ad`）を作り、すべてのオフセットを計算して大きさを補正し、最後に `OBJ_ATTR` を更新します。固定小数点の精度があちこちで大きく変わるので、こまめにコメントを書いておくことが大事です。
 
-As I said, this is not a particularly fast function; it takes roughly a scanline worth of cycles. If you need more speed, I also have a Thumb assembly version which is about 40% faster.
+先ほど言ったように、これは特に速い関数ではありません。だいたいスキャンライン 1 本ぶんのサイクルがかかります。もっと速さが必要なら、約 40% 速い Thumb アセンブリ版も用意してあります。
 
-### Affine object combo demo {#ssec-combo-demo}
+### アフィンオブジェクトの組み合わせのデモ {#ssec-combo-demo}
 
 <div class="cpt_fr" style="width:64px;">
 <img src="./img/demo/oac_orb.png" id="fig:oac-orb"
   width=64 alt=""><br>
-<b>{*@fig:oac-orb}</b>: object for <tt>oacombo</tt>.
+<b>{*@fig:oac-orb}</b>: <tt>oacombo</tt> のオブジェクト。
 </div>
 
-The demo for this section, *oacombo*, will display three versions of essentially the same object, namely the circle of {@fig:oac-orb}. The difference between them is in how they are constructed
+この節のデモ *oacombo* は、本質的には同じオブジェクト、つまり {@fig:oac-orb} の円を 3 通り表示します。違いは、それぞれの組み立て方です。
 
-0.  1 32×32p object, full circle.
-1.  2 32×16p objects, two semi-circles.
-2.  4 16×16p objects, four quarter-circles.
+0.  32×32p のオブジェクト 1 つ。完全な円。
+1.  32×16p のオブジェクト 2 つ。2 つの半円。
+2.  16×16p のオブジェクト 4 つ。4 つの四分円。
 
-The point of this demo will be to rotate them and position the components of the combined sprites (<dfn>object combos</dfn>) as if they were a single sprite. This requires off-center anchors and therefore ties in nicely with the subject of this section. To manage the combos, I make use of the following struct.
+このデモの目的は、それらを回転させ、組み合わせたスプライト（<dfn>オブジェクトの組み合わせ</dfn>）の部品を、あたかも 1 つのスプライトであるかのように配置することです。これには中心以外のアンカーが必要なので、この節の話題とうまく結びつきます。組み合わせを管理するために、次の構造体を使います。
 
 ```c
 typedef struct OACOMBO
@@ -977,11 +977,11 @@ typedef struct OACOMBO
 } OACOMBO;
 ```
 
-Each combo is composed of `sub_count` objects; `sub_oe` is a pointer to the array storing these objects, and `sub_pos` is a pointer to the list of (top-left) coordinates of these objects, relative to the top-left of the full sprite. This global position is in `pos`. The anchor (in `anchor`) is also relative to this position. The global screen-anchor would be at `pos+anchor`, and the texture-anchor of sub-object *ii* at `anchor-sub_pos[ii]`.
+それぞれの組み合わせは `sub_count` 個のオブジェクトでできています。`sub_oe` はこれらのオブジェクトを格納する配列へのポインタで、`sub_pos` は、スプライト全体の左上を基準にした、これらのオブジェクトの（左上の）座標のリストへのポインタです。この全体の位置は `pos` に入っています。アンカー（`anchor` に入っています）も、この位置を基準にしたものです。画面全体でのアンカーは `pos+anchor` に、サブオブジェクト *ii* のテクスチャでのアンカーは `anchor-sub_pos[ii]` になります。
 
-The rotation will take place around the center of the circle, so that's an anchor of (16,16). Or, rather (16,16)\*256 because they're .8 fixed point numbers, but that's not important right now. For the full circle, this will be the center of the object, but it'll still need to be corrected for the double-size flag. For the other combos, the anchor will *not* be at the center of their sub-objects.
+回転は円の中心の周りで行うので、アンカーは (16,16) です。正確には .8 の固定小数点数なので (16,16)\*256 ですが、今それは重要ではありません。完全な円では、これはオブジェクトの中心になりますが、それでも倍サイズのフラグに合わせて補正する必要があります。ほかの組み合わせでは、アンカーはサブオブジェクトの中心には*ありません*。
 
-Because the sub-objects share the same **P** matrix, it'd be a waste to recalculate it the whole time, so I'm using a modified version of it especially tailored to `OACOMBO` structs called `oac_rotscale()`. The code is basically the same though. The `oacs[]` array forms the three combos, which are initialized at definition because that makes things so much easier. The full circle is at (16,20), the semis at (80,20) and the one composed of quarter circles is at (48,60). The `obj_data[]` array contains the data for our seven objects, and is copied to `obj_buffer` in the initialization function. While it is generally true that magic numbers (such as using hex for OAM attributes) are evil, it is also true that they really aren't central to this story and to spend a lot of space on initializing all of them in the ‘proper’ fashion may actually do more harm than good … this time. I am still using `#define`s for the anchor and a reference point though, because they appear multiple times in the rest of the code.
+サブオブジェクトは同じ **P** 行列を共有するので、毎回それを計算し直すのは無駄です。そこで、`OACOMBO` 構造体専用に手を加えた `oac_rotscale()` という版を使っています。とはいえ、コードは基本的に同じです。`oacs[]` 配列が 3 つの組み合わせで、定義時に初期化しています。そのほうがずっと楽だからです。完全な円は (16,20)、半円は (80,20)、四分円でできたものは (48,60) にあります。`obj_data[]` 配列には 7 つのオブジェクトのデータが入っていて、初期化関数で `obj_buffer` にコピーされます。一般に、マジックナンバー（OAM の属性に 16 進数を使うなど）は悪だというのは本当ですが、この話の本筋ではありませんし、それらすべてを「正しい」やり方で初期化するのに多くの紙幅を割くのは、かえって害になるかもしれません…今回は。ただし、アンカーと基準点にはやはり `#define` を使っています。コードの残りの部分で何度も出てくるからです。
 
 <div id="cd-oacombo">
 
@@ -1135,16 +1135,16 @@ int main()
 <div class="cpt_fr" style="width:272px;">
 <img src="./img/demo/oacombo.png" id="fig:oacombo" width=272
   alt=""><br>
-<b>{*@fig:oacombo}</b>: <tt>oacombo</tt> in action. 
-Note the gaps.
+<b>{*@fig:oacombo}</b>: 動作中の <tt>oacombo</tt>。
+隙間に注目してください。
 </div>
 
-{*@fig:oacombo} on the right shows a screenshot of the demo. There are three main things to point out here. First, all three objects are indeed roughly the same shape, meaning that the function(s) work. But this was never really much in doubt anyway, since it just follows the math. The second point is that there appear to be gaps in the semi- and quarter-circle combos. If you play with the demo yourself for a while, you'll see these gaps appear and disappear seemingly at random. Meanwhile, the full-circle object looks fine throughout. Well mostly anyway.
+右の {*@fig:oacombo} は、このデモのスクリーンショットです。ここで指摘しておくべき点が主に 3 つあります。1 つ目は、3 つのオブジェクトがどれもたしかにほぼ同じ形をしていること、つまり関数がきちんと動いていることです。もっとも、数学のとおりにしているだけなので、これはそもそもあまり疑う余地のないことでした。2 つ目は、半円と四分円の組み合わせに隙間ができているように見えることです。しばらく自分でデモを触ってみると、これらの隙間が一見でたらめに現れたり消えたりするのがわかるでしょう。一方、完全な円のオブジェクトは、ずっと問題なく見えます。まあ、だいたいは。
 
-The cause of this is related to the third point. Compare the pixel clusters of all three circles, in particular the smaller circles within each of them. Note that even though they use the **exact** same **P** matrix, their formations are different! The reason for this is that while we may have positioned the sub-objects to make them form a bigger object, the pixel-mapping for each of them *still* starts at their centers. This means that the cumulative offsets that determine which source pixel is used for a given screen pixel will be different and hence you'll get a different picture, which is especially visible at the seams.
+この原因は 3 つ目の点に関係しています。3 つの円すべてのピクセルの集まり、特にそれぞれの中にある小さな円を比べてみてください。**まったく**同じ **P** 行列を使っているのに、形が違うことに注目してください！ これは、サブオブジェクトを並べて大きなオブジェクトを形作ったとしても、それぞれのピクセルの写像は*やはり*それぞれの中心から始まるからです。そのため、画面のあるピクセルにどの元のピクセルを使うかを決める累積のオフセットが変わり、違う絵になってしまうのです。これは特に継ぎ目で目立ちます。
 
-If this is a little hard to visualize, try this: open a bitmap editor and draw a single-width diagonal line. Now duplicate this with a (1, 1) pixel offset. Instead of a single thick line, you'll have two thin ones with a slit in between. The same thing happens here.
+これが少し思い描きにくければ、次のことを試してみてください。ビットマップエディタを開いて、幅 1 ピクセルの斜めの線を引きます。次に、それを (1, 1) ピクセルずらして複製します。すると、1 本の太い線ではなく、間に細い隙間のある 2 本の細い線になります。ここでも同じことが起きているのです。
 
-The point is that getting affine objects to align perfectly at the seams will be pretty much impossible. Alright, I suppose in some simple cases you might get away with it, and you could spend time writing code that corrects the textures to align properly, but generally speaking you should expect a hardware-caused uncertainty of about a pixel. This will be a noticeable effect at the off-center reference point, which will tend to wobble a bit, or at the seams of affine object combos, where you'll see gaps. A simple solution to the former would be to rearrange the object's tiles so that the ref-point is not off-center (sounds cheap I know, but works beautifully), or to have transparent pixels there – you can't notice something wobbling if it's invisible, after all. This would also work for the combo, which might also benefit from having the objects overlap slightly, although I haven't tried that yet. It *may* be possible to gain some accuracy by adding rounding terms to the calculations, but I have a hunch that it won't do that much. Feel free to try though.
+要するに、アフィンオブジェクトを継ぎ目でぴったり揃えるのは、ほぼ不可能だということです。まあ、簡単な場合ならなんとかなるかもしれませんし、テクスチャを補正して正しく揃えるコードを書くのに時間をかけることもできますが、一般的には、ハードウェアによる約 1 ピクセルの不確かさがあると考えておくべきです。これは、中心以外の基準点では少しぐらつくという形で、アフィンオブジェクトの組み合わせの継ぎ目では隙間という形で、目に見える影響になります。前者の簡単な解決策は、基準点が中心から外れないようにオブジェクトのタイルを並べ替えるか（安直に聞こえるのはわかっていますが、見事にうまくいきます）、そこに透明なピクセルを置くことです。結局のところ、見えないものがぐらついても気づけませんから。これは組み合わせにも使えますし、組み合わせではオブジェクトを少し重ねるのも効果があるかもしれません。私はまだ試していませんが。計算に丸めの項を加えることで精度を少し上げられる*かもしれません*が、それほど効果はないだろうという気がします。とはいえ、自由に試してみてください。
 
-Don't let all this talk of the pitfalls of affine objects get to you too much, I'm just pointing out that it might not be quite as simple as you might have hoped. So they come with a few strings, they're still pretty cool effects. When designing a game that uses them, take the issues raised in this chapter to heart and make sure your math is in order, it might save you a lot of work later on.
+アフィンオブジェクトの落とし穴の話ばかりで、あまり気を落とさないでください。期待していたほど単純ではないかもしれない、と指摘しているだけです。いくつか条件が付くとはいえ、やはりかなりかっこいい効果です。これを使うゲームを設計するときは、この章で取り上げた問題をしっかり心に留めて、数学をきちんと整理しておきましょう。あとで多くの手間を省けるかもしれません。

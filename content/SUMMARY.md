@@ -15,17 +15,17 @@
 - [通常のスプライト](./regobj.md)
 - [通常のタイル背景](./regbg.md)
 
-# GBA Extended
+# GBA の応用
 
-- [The affine transformation matrix](./affine.md)
-- [Affine sprites](./affobj.md)
-- [Affine tiled backgrounds](./affbg.md)
-- [Graphic effects](./gfx.md)
-- [Direct Memory Access](./dma.md)
-- [Timers](./timers.md)
-- [Hardware interrupts](./interrupts.md)
-- [BIOS calls](./swi.md)
-- [Beep! GBA sound introduction](./sndsqr.md)
+- [アフィン変換の行列](./affine.md)
+- [アフィンスプライト](./affobj.md)
+- [アフィンのタイル背景](./affbg.md)
+- [グラフィック効果](./gfx.md)
+- [ダイレクトメモリアクセス](./dma.md)
+- [タイマー](./timers.md)
+- [ハードウェア割り込み](./interrupts.md)
+- [BIOS コール](./swi.md)
+- [ピッ！ GBA の音の入門](./sndsqr.md)
 
 # Advanced / Applications
 

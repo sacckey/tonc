@@ -1,27 +1,27 @@
-# 18. Beep! GBA sound introduction
+# 18. ピッ！ GBA の音の入門
 
 <!-- toc -->
 
-## Introduction to GBA sound {#sec-intro}
+## GBA の音の入門 {#sec-intro}
 
-Apart from graphics and interaction, there is one other sense important to games: audio. While graphics may set the scene, sound sets the mood, which can be even more important that the graphics. Try playing *Resident Evil* with, say, "Weird Al" Yankovic playing: it simply doesn't work, the atmosphere is lost.
+グラフィックと操作のほかに、ゲームにとって大事な感覚がもう 1 つあります。音です。グラフィックが場面を作るとすれば、音は雰囲気を作ります。それはグラフィック以上に大事なこともあります。たとえば "Weird Al" Yankovic を流しながら *バイオハザード* を遊んでみてください。まるで合いません。雰囲気が台無しです。
 
-The GBA has six sound channels. The first four are roughly the same as the original Game Boy had: two square wave generators (channels 1 and 2), a sample player (channel 3) and a noise generator (channel 4). Those are also referred to as the DMG channels after the Game Boy's code name "Dot Matrix Game." New are two Direct Sound channels A and B (not to be confused with Microsoft's DirectSound, the DirectX component). These are 8-bit digital pulse code modulation (PCM) channels.
+GBA には 6 つのサウンドチャンネルがあります。最初の 4 つは、初代ゲームボーイにあったものとほぼ同じです。2 つの矩形波の生成器（チャンネル 1 と 2）、サンプルの再生器（チャンネル 3）、ノイズの生成器（チャンネル 4）です。これらは、ゲームボーイのコードネーム "Dot Matrix Game" にちなんで、DMG チャンネルとも呼ばれます。新しく加わったのが、2 つの Direct Sound チャンネル A と B です（DirectX の構成要素である Microsoft の DirectSound と混同しないでください）。これらは 8 ビットのデジタルのパルス符号変調（PCM）チャンネルです。
 
-I should point out that I really know very little about sound programming, mostly because I'm not able to actually put together a piece of music (it's kinda hard to do that when you already have music playing). If you want to really learn about sound programming, you should look at [Belogic.com](http://www.belogic.com), where almost everybody got their information from, and [deku.gbadev.org](https://stuij.github.io/deku-sound-tutorial/), which shows you how to build a sound mixer. Both of these sites are excellent.
+先に言っておくべきでしょうが、私は音のプログラミングについては本当にほとんど知りません。主な理由は、実際に曲を組み立てることができないからです（すでに頭の中で音楽が鳴っていると、それはなかなか難しいのです）。音のプログラミングを本格的に学びたいなら、ほとんど誰もがそこから情報を得ている [Belogic.com](http://www.belogic.com) と、サウンドミキサーの作り方を説明している [deku.gbadev.org](https://stuij.github.io/deku-sound-tutorial/) を見てください。どちらも素晴らしいサイトです。
 <!-- as of 2023-09, belogic.com uses a self-signed certificate -->
 
-I may not know much about sound creation/programming, but at its core sound is a wave in matter; waves are mathematical critters, and I *do* know a thing or two about math, and that's kind of what I'll do here for the square wave generators.
+音の作り方やプログラミングについてはあまり知らないかもしれませんが、音の本質は物質の中の波です。波は数学的な生き物で、数学のことなら私も少しは*わかります*。というわけで、矩形波の生成器について、ここではそういう方向の話をします。
 
-## Sound and Waves {#sec-sndwav}
+## 音と波 {#sec-sndwav}
 
-Consider if you will, a massive sea of particles, all connected to their neighbours with little springs. Now give one of them a little push. In the direction of the push, the spring compresses and relaxes, pushing the original particle back to its normal position and passing on the push to the neighbour; this compresses the next spring and relays the push to *its* neighbour, and so on and so on.
+粒子の巨大な海を想像してみてください。すべての粒子は、小さなばねで隣の粒子とつながっています。さて、そのうちの 1 つを少し押してみましょう。押した方向でばねが縮んでから戻り、元の粒子を通常の位置に押し戻しつつ、押す力を隣の粒子に伝えます。それが次のばねを縮め、押す力を*その*隣の粒子に伝え、ということが延々と続きます。
 
-This is a prime example of wave behaviour. Giving a precise definition of a wave that covers all cases is tricky, but in essence, a <dfn>wave</dfn> is a <dfn>transferred disturbance</dfn>. There are many kinds of waves; two major classes are <dfn>longitudinal</dfn> waves, which oscillate in the direction of travel, and <dfn>transverse</dfn> waves, which are perpendicular to it. Some waves are periodic (repeating patterns over time or space), some aren't. Some travel, some don't.
+これは波のふるまいの典型的な例です。あらゆる場合を網羅する正確な波の定義を与えるのは難しいのですが、本質的には、<dfn>波</dfn>とは<dfn>伝わっていく乱れ</dfn>のことです。波には多くの種類があります。主な 2 つの種類は、進む方向に振動する<dfn>縦</dfn>波と、進む方向に垂直に振動する<dfn>横</dfn>波です。周期的な（時間や空間で同じパターンを繰り返す）波もあれば、そうでない波もあります。進む波もあれば、進まない波もあります。
 
-### Waves {#ssec-harmonic}
+### 波 {#ssec-harmonic}
 
-The canonical wave is the <dfn>harmonic wave</dfn>. This is any function ψ(*x*) that's a solution to {@eq:wave}. The name of the variable doesn't really matter, but usually it's either spatial (*x*, *y*, *z*) or temporal (*t*), or all of these at the same time. The general solution can be found in {@eq:wave-sols}. Or perhaps I should say solution**s**, as there are many ways of writing them down. They're all equivalent though, and you can go from one to the other with some trickery that does not concern us at this moment.
+標準的な波は<dfn>調和波</dfn>です。これは、{@eq:wave} の解となるすべての関数 ψ(*x*) のことです。変数の名前は実はどうでもいいのですが、普通は空間（*x*、*y*、*z*）か時間（*t*）、あるいはその全部です。一般解は {@eq:wave-sols} にあります。というより解**たち**と言うべきかもしれません。書き表し方はたくさんあるからです。ただし、どれも同等で、今は関係のない技を使えば、ある形から別の形へ移れます。
 
 <!--
 \dv[2]{x}\psi(x) + k^2\psi(x) = 0
@@ -82,7 +82,7 @@ The canonical wave is the <dfn>harmonic wave</dfn>. This is any function ψ(*x*)
 </tbody>
 </table>
 
-General solution(s):
+一般解:
 
 <!--
 \begin{matrix}
@@ -199,40 +199,40 @@ General solution(s):
 <div class="cpt_fr" style="width:212px;">
 <img src="./img/wave.png" id="fig:wave" alt="it's a sine wave">
 
-**{*@fig:wave}**: a harmonic wave
+**{*@fig:wave}**: 調和波
 </div>
 
-A full wave can be described by three things. First, there's the <dfn>amplitude</dfn> *A*, which gives half-distance between the minimum and maximum. Second, the <dfn>wavelength</dfn> λ, which is the length after which the wave repeats itself (this is tied to wave-number *k*= 2π/λ). Then there's <dfn>phase constant</dfn> φ<sub>0</sub>, which defines the stating point. If the wave is in time, instead of a wavelength you have <dfn>period</dfn> *T*, <dfn>frequency</dfn> *f*=1/*T* (and angular frequency ω= 2π*f*= 2π/*T*). You can see what each of these parameters is in {@fig:wave}.
+完全な波は 3 つのもので表せます。1 つ目は<dfn>振幅</dfn> *A* で、最小値と最大値の間の距離の半分です。2 つ目は<dfn>波長</dfn> λ で、波が繰り返すまでの長さです（これは波数 *k*= 2π/λ と結びついています）。それから、始まりの点を決める<dfn>初期位相</dfn> φ<sub>0</sub> があります。時間についての波なら、波長の代わりに<dfn>周期</dfn> *T* と<dfn>周波数</dfn> *f*=1/*T*（と角周波数 ω= 2π*f*= 2π/*T*）を使います。これらのパラメータがそれぞれ何を表すかは {@fig:wave} で見られます。
 
-One of the interesting things about the wave equation is that it is a linear operation on ψ. What that means is that any combination of solutions is also a solution; this is the <dfn>superposition principle</dfn>. For example, if you have two waves ψ<sub>1</sub> and ψ<sub>2</sub>, then Ψ = *a*ψ<sub>1</sub> + *b*ψ<sub>2</sub> is also a wave. This may sound like a trivial thing but I assure you it's not. The fact that non-linear equations (and they exist too) tend to make scientists cringe a little should tell you something about the value of linear equations.
+波動方程式の面白い点の 1 つは、それが ψ に対する線形の演算だということです。つまり、解をどう組み合わせても、やはり解になるということです。これが<dfn>重ね合わせの原理</dfn>です。たとえば、2 つの波 ψ<sub>1</sub> と ψ<sub>2</sub> があれば、Ψ = *a*ψ<sub>1</sub> + *b*ψ<sub>2</sub> も波です。当たり前のことに聞こえるかもしれませんが、そうではありません。非線形の方程式（そういうものもあります）には科学者たちが少し身をすくめがちだという事実が、線形の方程式の価値について何かを物語っているはずです。
 
-### Sound waves {#ssec-wave-sound}
+### 音波 {#ssec-wave-sound}
 
-Sound is also a wave. In fact, it is a longitudinal pressure wave in matter and pretty much works as the system of particles on springs mentioned earlier with whole sets of molecules moving back and forth. In principle, it has both spatial and temporal structure, and things can get hideously complex if you want to deal with everything. But I'll keep it easy and only consider two parts: amplitude *A* and period and frequency *T* and *f*. As you probably know, the tone of a sound is related to the frequency. Human hearing has a range between 20 Hz and 20 kHz, and the higher the frequency (that is, the more compressed the wave), the higher the tone. Most sounds are actually a conglomeration of different waves, with different amplitudes and frequencies – the superposition principle at work. The funny thing about this is that if you added all those components up to one single function and plot it, it wouldn't look like a sine wave at all anymore. What's even funnier is that you can also reverse the process and take a function –*any* function– and break it up into a superposition of sine and cosine waves, and so see what kind of frequencies your sound has. This is called Fourier Transformation, and we'll get to that in a minute.
+音も波です。実際、音は物質の中の縦方向の圧力の波で、先ほどのばねでつながった粒子の仕組みとほぼ同じように、分子の集まり全体が行ったり来たりして伝わります。原理的には空間と時間の両方の構造を持っていて、すべてを扱おうとするとおそろしく複雑になります。でもここでは簡単にして、2 つの部分だけを考えます。振幅 *A* と、周期と周波数 *T* と *f* です。ご存じかもしれませんが、音の高さは周波数に関係しています。人間の耳は 20 Hz から 20 kHz の範囲を聞くことができ、周波数が高いほど（つまり、波が詰まっているほど）、音は高くなります。ほとんどの音は、実際には振幅と周波数の異なるさまざまな波の寄せ集めです。重ね合わせの原理が働いているのです。面白いのは、それらの成分をすべて 1 つの関数に足し合わせてプロットすると、もうまったくサイン波には見えないことです。さらに面白いのは、その過程を逆にたどることもできるということです。関数（*どんな*関数でも）を取ってきて、サイン波とコサイン波の重ね合わせに分解し、その音にどんな周波数が含まれているかを見られるのです。これはフーリエ変換と呼ばれ、すぐあとで扱います。
 
-### Musical scale {#ssec-notes}
+### 音階 {#ssec-notes}
 
-While the full range between 20 Hz and 20 kHz is audible, only a discrete set of frequencies are used for music, which brings us to the notion of the <dfn>musical scale</dfn>. Central to these are <dfn>octaves</dfn>, representing a frequency doubling. Each octave is divided into a number of different notes; 12 in Western systems, ranging from A to G, although octave numbering starts at C for some reason. Octave 0 starts at the <dfn>central C</dfn>, which has a frequency of about 262 Hz (see also {@tbl:oct0}. And yes, I know there are only 7 letters between A and G, the other notes are flats and sharps that lie between these notes. The ‘12’ refers to the number of half-notes in an octave. The musical scale is **logarithmic**; each half-note being 2<sup>1/12</sup> apart. Well, almost anyway: for some reason, some notes don't *quite* fit in exactly.
+20 Hz から 20 kHz の範囲全体が聞こえるとはいえ、音楽に使われるのは飛び飛びの周波数の集まりだけです。ここで<dfn>音階</dfn>という考え方が出てきます。その中心にあるのが<dfn>オクターブ</dfn>で、周波数が 2 倍になることを表します。各オクターブは、いくつかの異なる音に分けられます。西洋の体系では 12 で、A から G までの名前が付いていますが、なぜかオクターブの番号は C から始まります。オクターブ 0 は<dfn>中央の C</dfn>（ド）から始まり、その周波数は約 262 Hz です（{@tbl:oct0} も見てください）。そして、ええ、A から G までには 7 つの文字しかないことは知っています。ほかの音は、それらの音の間にあるフラットやシャープです。「12」は 1 オクターブの中の半音の数を指しています。音階は**対数的**で、半音ごとに 2<sup>1/12</sup> 倍ずつ離れています。まあ、ほぼそうなのですが、なぜか*ぴったり*当てはまらない音もあります。
 
 <div class="cblock">
 <table id="tbl:oct0" class="table-data">
 <caption align="bottom">
-  <b>{*@tbl:oct0}</b>: notes &amp; frequencies of 
-  octave 0
+  <b>{*@tbl:oct0}</b>: オクターブ 0 の
+  音と周波数
 </caption>
 <tbody align="center">
 <tr>
-  <th> half-note
+  <th> 半音
   <th> 0 <th> 1 <th> 2 <th> 3 <th> 4 <th> 5
   <th> 6 <th> 7 <th> 8 <th> 9 <th>10 <th>11 
   <th> (12) 
 <tr>
-  <th> name
+  <th> 名前
   <td> C <td> C# <td> D <td> D# <td> E <td> F 
   <td> F# <td> G <td> G# <td> A <td> A# <td> B 
   <td> (C)
 <tr>
-  <th> freq (Hz)
+  <th> 周波数 (Hz)
   <td> 261.7 <td> 277.2 <td> 293.7 <td> 311.2 <td> 329.7 <td> 349.3 
   <td> 370.0 <td> 392.0 <td> 415.3 <td> 440.0 <td> 466.2 <td> 493.9
   <td> (523.3)
@@ -240,9 +240,9 @@ While the full range between 20 Hz and 20 kHz is audible, only a discrete set of
 </table>
 </div>
 
-### Fourier transforms and the square wave {#ssec-fourier}
+### フーリエ変換と矩形波 {#ssec-fourier}
 
-Fourier transformations are a way of describing a function in the time domain as a distribution of frequencies called a <dfn>spectrum</dfn>. They're also one of the many ways that professors can scare the bejebus out of young, natural-science students. Don't worry, I'm sure you'll get through this section unscathed <kbd>\>:)</kbd>. For well - to reasonably - behaved functions, you can rewrite them as series of *very* well-behaved functions such as polynomials, exponentials and also waves. For example, as a Fourier series, a function may look like {@eq:fser}.
+フーリエ変換は、時間領域の関数を、<dfn>スペクトル</dfn>と呼ばれる周波数の分布として表す方法です。また、教授たちが自然科学を学ぶ若い学生を震え上がらせる、数多くの方法の 1 つでもあります。心配いりません。きっとこの節は無傷で切り抜けられますよ <kbd>\>:)</kbd>。ほどほどに、あるいはそこそこに素直な関数なら、多項式や指数関数、そして波のような、*とても*素直な関数の級数として書き直せます。たとえば、フーリエ級数として書くと、関数は {@eq:fser} のようになります。
 
 <!--
 f(x) = \frac{1}{2}A_0 + \sum_{n>0}A_m\cos(m{\omega}t) + \sum_{n>0}B_m\sin(m{\omega}t)
@@ -326,7 +326,7 @@ f(x) = \frac{1}{2}A_0 + \sum_{n>0}A_m\cos(m{\omega}t) + \sum_{n>0}B_m\sin(m{\ome
 </math>
 </table>
 
-Of course, the whole thing relies on being able to find the coefficients *A*<sub>m</sub> and *B*<sub>m</sub>. While it is fairly straightforward to derive the equations for them, I'll leave that as an exercise for the reader and just present the results in the form of {@eq:ftrans}. I should mention that there are actually a few ways of defining Fourier transforms. For example, there are versions that don't integrate over \[0,*T*\], but over \[−½*T*, ½*T*\]; or use the complex exponential instead of sines and cosines, but in the end they're all doing the same thing.
+もちろん、これはすべて係数 *A*<sub>m</sub> と *B*<sub>m</sub> を求められるかどうかにかかっています。それらの式を導くのはかなり素直なのですが、それは読者への演習として残しておき、結果だけを {@eq:ftrans} の形で示します。実は、フーリエ変換の定義の仕方はいくつかあることも言っておくべきでしょう。たとえば、\[0,*T*\] ではなく \[−½*T*, ½*T*\] で積分するものや、サインとコサインの代わりに複素指数関数を使うものがありますが、結局はどれも同じことをしています。
 
 <!--
 \begin{matrix}
@@ -445,10 +445,10 @@ B_m & = & \frac{2}{T}\int_{0}^{T} f(t)\sin(m{\omega}t) dt
 <div class="cpt_fr" style="width:212px;">
 <img src="./img/sqrwave.png" id="fig:sqrwave" alt="sharp transitions between flat crest and flat trough"><br>
 
-**{*@fig:sqrwave}**: a square wave
+**{*@fig:sqrwave}**: 矩形波
 </div>
 
-As an example, let's take a look at the square wave shown in {@fig:sqrwave}. A square wave is on (1) for a certain time (parameter *h*), then off (0) for the rest of the cycle. It's still a periodic wave, so it doesn't really matter where we place the thing along the *t*-axis. I centered it on the peak for convenience: doing so makes it a symmetrical wave which has the nice properly of removing *all* the anti-symmetrical sine waves. *A*<sub>0</sub>=*h*/*T* because it's the average of the function and the rest of the *A*<sub>m</sub>'s follow from {@eq:ftrans}.
+例として、{@fig:sqrwave} に示す矩形波を見てみましょう。矩形波は、ある時間（パラメータ *h*）だけオン（1）になり、残りの周期の間はオフ（0）になります。周期的な波であることに変わりはないので、*t* 軸のどこに置くかは実はどうでもいいことです。便宜上、山を中心に置きました。こうすると対称な波になり、反対称なサイン波が*すべて*消えるという素敵な性質が得られます。*A*<sub>0</sub>=*h*/*T* です。これは関数の平均だからです。残りの *A*<sub>m</sub> は {@eq:ftrans} から求まります。
 
 <!--
 A_m = \frac{2}{\pi} \cdot \frac{\sin({\pi}mh/T)}{m} = \frac{2T}{h} \cdot \frac{\sin({\pi}h/T \cdot m)}{{\pi}h/T \cdot m}
@@ -544,76 +544,76 @@ A_m = \frac{2}{\pi} \cdot \frac{\sin({\pi}mh/T)}{m} = \frac{2T}{h} \cdot \frac{\
   </table>
 </table>
 
-*A*<sub>m</sub> is a <dfn>sinc</dfn> function: sin(*x*)/*x*. For high *m* it approaches zero (as it should, since higher terms should be relatively less important), but also interesting is that of the higher terms some will also *vanish* because of the sine. This will happen whenever *m* is a multiple of *T/h*.
+*A*<sub>m</sub> は <dfn>sinc</dfn> 関数、つまり sin(*x*)/*x* です。*m* が大きいとゼロに近づきます（高次の項は相対的に重要でなくなるはずなので、当然です）。しかし面白いのは、高次の項の中には、サインのせいで*消えてしまう*ものもあることです。これは、*m* が *T/h* の倍数になるたびに起きます。
 
-## GBA sound {#sec-gbasnd}
+## GBA の音 {#sec-gbasnd}
 
-### Sound registers {#ssec-snd-regs}
+### サウンドのレジスタ {#ssec-snd-regs}
 
-For graphics, you only had to deal with two registers (`REG_DISPCNT` and `REG_BGxCNT`) to get a result; for sound, you have to cover a lot of registers before you get *anything*. The DMG channels each have 2 or 3 registers – some with similar functionality, some not. Apart from that, there are four overall control registers.
+グラフィックでは、結果を得るのに 2 つのレジスタ（`REG_DISPCNT` と `REG_BGxCNT`）を扱うだけで済みました。音では、*何か*を得るまでに、たくさんのレジスタを扱わなければなりません。DMG のチャンネルにはそれぞれ 2 つか 3 つのレジスタがあり、似た機能を持つものもあれば、そうでないものもあります。それとは別に、全体を制御するレジスタが 4 つあります。
 
-The register nomenclature seems particularly vexed when it comes to sound. There are basically two sets of names that you can find: one consisting of `REG_SOUNDxCNT` followed by `_L`, `_H` and `_X` in a rather haphazard manner; the other one uses a `REG_SGxy` and `REG_SGCNTy` structure (*x*=1, 2, 3 or 4 and *y*=0 or 1). I think the former is the newer version, which is funny because the older is more consistent. Oh well. In any case, I find neither of them very descriptive and keep forgetting which of the L/H/X or 0/1 versions does what, so I use a *third* set of names based on the ones found in [tepples'](https://pineight.com/gba/) pin8gba.h, which IMHO makes more sense than the other two.
+レジスタの名前は、音に関しては特に混乱しているようです。見かける名前には基本的に 2 つの系統があります。1 つは `REG_SOUNDxCNT` のあとに、かなり行き当たりばったりに `_L`、`_H`、`_X` が付くもの。もう 1 つは `REG_SGxy` と `REG_SGCNTy` という構成のもの（*x*=1、2、3、4、*y*=0、1）です。前者のほうが新しいのだと思いますが、古いほうが一貫性があるのはおかしな話です。まあいいでしょう。いずれにせよ、私はどちらもあまりわかりやすいとは思えず、L/H/X や 0/1 のどれが何をするのかをいつも忘れてしまうので、[tepples](https://pineight.com/gba/) の pin8gba.h にある名前をもとにした*3 つ目*の名前の系統を使っています。私見ですが、ほかの 2 つより筋が通っています。
 
 <div class="cblock">
 <table id="tbl:snd-names" class="table-data">
 <caption align="bottom">
-  <b>{*@tbl:snd-names}</b>: Sound register nomenclature.
+  <b>{*@tbl:snd-names}</b>: サウンドのレジスタの名前。
 </caption>
 <tr align="center">
-  <th> offset	<th> function 
-  <th> old		<th> new			<th> tonc
+  <th> オフセット	<th> 機能 
+  <th> 旧		<th> 新			<th> tonc
 <tr>
-  <th> 60h	<td> channel 1 (sqr) sweep
+  <th> 60h	<td> チャンネル 1（矩形波）スイープ
   <td rowspan=2> REG_SG10	<td> SOUND1CNT_L	<td> REG_SND1SWEEP	
 <tr>
-  <th> 62h	<td> channel 1 (sqr) len, duty, env
+  <th> 62h	<td> チャンネル 1（矩形波）長さ、デューティ、エンベロープ
   <!-- -->		<td> SOUND1CNT_H	<td> REG_SND1CNT
 <tr>
-  <th> 64h	<td> channel 1 (sqr) freq, on
+  <th> 64h	<td> チャンネル 1（矩形波）周波数、オン
   <td> REG_SG11	<td> SOUND1CNT_X	<td> REG_SND1FREQ
 <tr>
-  <th> 68h		<td> channel 2 (sqr) len, duty, env
+  <th> 68h		<td> チャンネル 2（矩形波）長さ、デューティ、エンベロープ
   <td> REG_SG20	<td> SOUND2CNT_L	<td> REG_SND2CNT
 <tr>
-  <th> 6Ch		<td> channel 2 (sqr) freq, on
+  <th> 6Ch		<td> チャンネル 2（矩形波）周波数、オン
   <td> REG_SG21	<td> SOUND2CNT_H	<td> REG_SND2FREQ
 <tr>
-  <th> 70h		<td> channel 3 (wave) mode
+  <th> 70h		<td> チャンネル 3（波形）モード
   <td rowspan=2> REG_SG30	<td> SOUND3CNT_L	<td> REG_SND3SEL
 <tr>
-  <th> 72h		<td> channel 3 (wave) len, vol
+  <th> 72h		<td> チャンネル 3（波形）長さ、音量
   <!-- -->		<td> SOUND3CNT_H	<td> REG_SND3CNT
 <tr>
-  <th> 74h		<td> channel 3 (wave) freq, on
+  <th> 74h		<td> チャンネル 3（波形）周波数、オン
   <td> REG_SG31	<td> SOUND3CNT_X	<td> REG_SND3FREQ
 <tr>
-  <th> 78h		<td> channel 4 (noise) len, vol, env
+  <th> 78h		<td> チャンネル 4（ノイズ）長さ、音量、エンベロープ
   <td> REG_SG40	<td> SOUND4CNT_L	<td> REG_SND4CNT
 <tr>
-  <th> 7Ch		<td> channel 4 (noise) freq, on
+  <th> 7Ch		<td> チャンネル 4（ノイズ）周波数、オン
   <td> REG_SG41	<td> SOUND4CNT_H	<td> REG_SND4FREQ	
 <tr>
-  <th> 80h	<td> DMG master control
+  <th> 80h	<td> DMG のマスター制御
   <td rowspan=2> REG_SGCNT0	<td> SOUNDCNT_L	<td> REG_SNDDMGCNT
 <tr>
-  <th> 82h	<td> DSound master control	
+  <th> 82h	<td> DSound のマスター制御	
   <!-- -->		<td> SOUNDCNT_H	<td> REG_SNDDSCNT
 <tr>
-  <th> 84h	<td> sound status	
+  <th> 84h	<td> サウンドの状態	
   <td> REG_SGCNT1	<td> SOUNDCNT_X	<td> REG_SNDSTAT
 <tr>
-  <th> 88h	<td> bias control
+  <th> 88h	<td> バイアスの制御
   <td> REG_SGBIAS	<td> SOUNDBIAS	<td> REG_SNDBIAS
 </table>
 </div>
 
-“Oh great. This is going to be one of ‘tegel’ things isn't it? Where *you* think you've got something nice but different going, then later you revert to the standard terminology to conform with the rest of the world. Right?”
+「あーあ。これって例の『tegel』みたいなやつでしょ？ *自分*では素敵で一味違うものを手に入れたつもりでいて、あとになって世間に合わせて標準の用語に戻すっていう。でしょ？」
 
-No, I'll stick to these names. Probably. Hopefully. … To be honest, I really don't know <kbd>:P</kbd>. This is not really a big deal, though: you can easily switch between names with a few defines or search & replaces. Anyway, `REG_SNDxFREQ` contains frequency information and `REG_SNDxCNT` things like volume and envelope settings; in some cases, the bit layouts are even exactly the same. Apart from the sweep function of channel 1, it is exactly the same as channel 2.
+いいえ、この名前を使い続けます。たぶん。そうだといいのですが。……正直に言うと、本当にわかりません <kbd>:P</kbd>。でも、これは大したことではありません。いくつかの define や検索と置換で、名前は簡単に切り替えられます。ともかく、`REG_SNDxFREQ` には周波数の情報が、`REG_SNDxCNT` には音量やエンベロープの設定などが入っています。場合によっては、ビットの配置がまったく同じこともあります。チャンネル 1 は、スイープの機能を除けば、チャンネル 2 とまったく同じです。
 
-### Master sound registers {#ssec-snd-mstr}
+### マスターサウンドのレジスタ {#ssec-snd-mstr}
 
-`REG_SNDDMGCNT`, `REG_SNDDSCNT` and `REG_SNDSTAT` are the master sound controls; you have to set at least some bits on each of these to get anything to work.
+`REG_SNDDMGCNT`、`REG_SNDDSCNT`、`REG_SNDSTAT` は、マスターのサウンド制御です。何かを動かすには、それぞれに少なくともいくつかのビットを設定する必要があります。
 
 <div class="reg">
 <table class="table-reg">
@@ -642,29 +642,29 @@ No, I'll stick to these names. Probably. Hopefully. … To be honest, I really d
   <col class="bits" width=40>
   <col class="bf" width="8%">
   <col class="def" width=128>
-<tr align="left"><th>bits<th>name<th>define<th>description
+<tr align="left"><th>ビット<th>名前<th>定義<th>説明
 <tbody valign="top">
 <tr class="bg0">	
   <td>0-2<td class="rclr2">LV
   <td> &nbsp;
-  <td> Left volume
+  <td> 左の音量
 <tr class="bg1">	
   <td>4-6<td class="rclr3">RV
   <td> &nbsp;
-  <td> Right volume
+  <td> 右の音量
 <tr class="bg0">	
   <td>8-B<td class="rclr0">L1-L4
   <td>SDMG_LSQR1, SDMG_LSQR2, SDMG_LWAVE, SDMG_LNOISE
-  <td>Channels 1-4 on left
+  <td>左のチャンネル 1-4
 <tr class="bg1">	
   <td>C-F<td class="rclr1">R1-R4
   <td>SDMG_RSQR1, SDMG_RSQR2, SDMG_RWAVE, SDMG_RNOISE
-  <td>Channels 1-4 on right
+  <td>右のチャンネル 1-4
 </tbody>
 </table>
 </div>
 
-`REG_SNDDMGCNT` controls the main volume of the DMG channels and which ones are enabled. These controls are separate for the left and right speakers. Below are two macros that make manipulating the register easier. Note that they *don't* actually set the register, just combine the flags.
+`REG_SNDDMGCNT` は、DMG チャンネルの主音量と、どのチャンネルを有効にするかを制御します。これらの制御は左右のスピーカーで別々です。以下は、このレジスタを扱いやすくする 2 つのマクロです。これらは実際にはレジスタを設定*せず*、フラグを組み合わせるだけであることに注意してください。
 
 ```c
 #define SDMG_SQR1    0x01
@@ -705,40 +705,40 @@ No, I'll stick to these names. Probably. Hopefully. … To be honest, I really d
   <col class="bits" width=40>
   <col class="bf" width="8%">
   <col class="def" width=128>
-<tr align="left"><th>bits<th>name<th>define<th>description
+<tr align="left"><th>ビット<th>名前<th>定義<th>説明
 <tbody valign="top">
 <tr class="bg0">	
   <td>0-1<td class="rclr0">DMGV
   <td>SDS_DMG25, SDS_DMG50, SDS_DMG100
-  <td>DMG Volume ratio. 
+  <td>DMG の音量の比率。
     <ul>
       <li><b>00</b>: 25%
       <li><b>01</b>: 50%
       <li><b>10</b>: 100%
-      <li><b>11</b>: forbidden
+      <li><b>11</b>: 使用禁止
     </ul>
 <tr class="bg1">	
   <td> 2 <td class="rclr1">AV
   <td>SDS_A50, SDS_A100
-  <td>DSound A volume ratio. 50% if clear; 100% of set
+  <td>DSound A の音量の比率。クリアなら 50%、セットなら 100%
 <tr class="bg0">	
   <td> 3 <td class="rclr1">BV
   <td>SDS_B50, SDS_B100
-  <td>DSound B volume ratio. 50% if clear; 100% of set
+  <td>DSound B の音量の比率。クリアなら 50%、セットなら 100%
 <tr class="bg1">	
   <td>8-9<td class="rclr2">AR, AL
   <td>SDS_AR, SDS_AL
-  <td><B>DSound A enable</b> Enable DS A on right and left speakers
+  <td><B>DSound A の有効化</b>。右と左のスピーカーで DS A を有効にする
 <tr class="bg0">	
   <td> A <td class="rclr3">AT
   <td>SDS_ATMR0, SDS_ATMR1
-  <td><b>Dsound A timer</B>. Use timer 0 (if clear)  or 1 (if set) 
-    for DS A
+  <td><b>Dsound A のタイマー</B>。DS A にタイマー 0（クリア時）か
+    1（セット時）を使う
 <tr class="bg1">	
   <td> B <td class="rclr4">AF
   <td>SDS_ARESET
-  <td><b>FIFO reset for Dsound A</b>. When using DMA for Direct sound, 
-    this will cause DMA to reset the FIFO buffer after it's used.
+  <td><b>Dsound A の FIFO のリセット</b>。Direct Sound に DMA を使うとき、
+    これを使うと、DMA は FIFO バッファを使ったあとでリセットします。
 <tr class="bg0">	
   <td>C-F
   <td>
@@ -746,12 +746,12 @@ No, I'll stick to these names. Probably. Hopefully. … To be honest, I really d
     <span class="rclr3">BT</span>, 
     <span class="rclr4">BF</span>
   <td>SDS_BR, SDS_BL, SDS_BTMR0, SDS_BTMR1, SDS_BRESET
-  <td>As bits 8-B, but for DSound B
+  <td>ビット 8-B と同じだが、DSound B 用
 </tbody>
 </table>
 </div>
 
-Don't know too much about `REG_SNDDSCNT`, apart from that it governs PCM sound, but also has some DMG sound bits for some reason. `REG_SNDSTAT` shows the status of the DMG channels *and* enables all sound. If you want to have any sound at all, you need to set bit 7 there.
+`REG_SNDDSCNT` については、PCM の音を制御するものの、なぜか DMG の音のビットもいくつか持っているということ以外、あまり知りません。`REG_SNDSTAT` は DMG チャンネルの状態を示し、*さらに*すべての音を有効にします。何か音を出したいなら、そこでビット 7 を設定する必要があります。
 
 <div class="reg">
 <table class="table-reg">
@@ -776,36 +776,36 @@ Don't know too much about `REG_SNDDSCNT`, apart from that it governs PCM sound, 
   <col class="bits" width=40>
   <col class="bf" width="8%">
   <col class="def" width=128>
-<tr align="left"><th>bits<th>name<th>define<th>description
+<tr align="left"><th>ビット<th>名前<th>定義<th>説明
 <tbody valign="top">
 <tr class="bg0">	
   <td class="rof">0-3<td class="rclr1">1A-4A
   <td>SSTAT_SQR1, SSTAT_SQR2, SSTAT_WAVE, SSTAT_NOISE
-  <td><b>Active channels</b>. Indicates which DMG channels are 
-    currently playing. They do <i>not</i> enable the channels; 
-    that's what <code>REG_SNDDMGCNT</code> is for.
+  <td><b>動作中のチャンネル</b>。どの DMG チャンネルが現在
+    鳴っているかを示します。チャンネルを有効にするものでは<i>ありません</i>。
+    それは <code>REG_SNDDMGCNT</code> の役目です。
 <tr class="bg1">	
   <td> 7 <td class="rclr0">MSE
   <td>SSTAT_DISABLE, SSTAT_ENABLE
-  <td><b>Master Sound Enable</b>. Must be set if any sound is to 
-    be heard at all. Set this <b>before</b> you do anything else: 
-    the other registers can't be accessed otherwise, see GBATEK 
-    for details. 
+  <td><b>マスターサウンドの有効化</b>。何か音を聞きたいなら、
+    必ず設定しなければなりません。ほかの何よりも<b>先に</b>設定してください。
+    そうしないと、ほかのレジスタにアクセスできません。詳しくは GBATEK を
+    見てください。
 </tbody>
 </table>
 </div>
 
-:::warning Sound register access
+:::warning サウンドのレジスタへのアクセス
 
-Emulators may allow access to sound registers even if sound is disabled (`REG_SNDSTAT`\{7\} is clear), but hardware doesn't. Always enable sound before use.
+エミュレータでは、音が無効（`REG_SNDSTAT`\{7\} がクリア）でもサウンドのレジスタにアクセスできることがありますが、実機ではできません。使う前に必ず音を有効にしてください。
 
 :::
 
-### GBA Square wave generators {#ssec-snd-sqr}
+### GBA の矩形波の生成器 {#ssec-snd-sqr}
 
-The GBA has two square sound generators, channels 1 and 2. The only difference between them is channel 1's <dfn>frequency sweep</dfn>, which can make the frequency rise or drop exponentially as it's played. That's all done with `REG_SND1SWEEP`. `REG_SNDxCNT` controls the wave's length, envelope and duty cycle. Length should be obvious. The <dfn>envelope</dfn> is basically the amplitude as function of time: you can make it fade in (<dfn>attack</dfn>), remain at the same level (<dfn>sustain</dfn>) and fade out again (<dfn>decay</dfn>). The envelope has 16 volume levels and you can control the starting volume, direction of the envelope and the time till the next change. Volumes are linear: 12 produces twice the amplitude of 6. The <dfn>duty</dfn> refers to the ratio of the ‘on’ time and the period, in other words *D* = *h/T*.
+GBA には、矩形波の音の生成器が 2 つあります。チャンネル 1 と 2 です。両者の唯一の違いは、チャンネル 1 の<dfn>周波数スイープ</dfn>です。これを使うと、鳴っている間に周波数を指数関数的に上げたり下げたりできます。それはすべて `REG_SND1SWEEP` で行います。`REG_SNDxCNT` は、波の長さ、エンベロープ、デューティ比を制御します。長さは明らかでしょう。<dfn>エンベロープ</dfn>は、基本的には時間の関数としての振幅です。フェードインさせたり（<dfn>アタック</dfn>）、同じレベルに保ったり（<dfn>サステイン</dfn>）、またフェードアウトさせたり（<dfn>ディケイ</dfn>）できます。エンベロープには 16 段階の音量があり、開始時の音量、エンベロープの方向、次の変化までの時間を制御できます。音量は線形で、12 は 6 の 2 倍の振幅になります。<dfn>デューティ</dfn>は、「オン」の時間と周期の比、言い換えると *D* = *h/T* のことです。
 
-Of course, you can control the frequency as well, namely with `REG_SNDxFREQ`. However, it isn't the frequency that you enter in this field. It's not exactly the period either; it's something I'll refer to as the <dfn>rate</dfn> *R*. The three quantities are related, but different in subtle ways and chaos ensues when they're confused – and they often *are* in documentation, so be careful. The relation between frequency *f* and rate *R* is described by {@eq:fvsr}; if the rate goes up, so does the frequency. Since *R* ∈ \[0, 2047\], the range of frequencies is \[64 Hz, 131 kHz\]. While this spans ten octaves, the highest ones aren't of much use because the frequency steps become too large (the denominator in eq {@eq:fvsr} approaches 0).
+もちろん、周波数も制御できます。`REG_SNDxFREQ` を使います。ただし、このフィールドに入れるのは周波数ではありません。周期でもありません。私が<dfn>レート</dfn> *R* と呼ぶものです。この 3 つの量は関係していますが、微妙に違っていて、混同すると大混乱になります。そして資料ではよく混同*されている*ので、気をつけてください。周波数 *f* とレート *R* の関係は {@eq:fvsr} で表されます。レートが上がれば、周波数も上がります。*R* ∈ \[0, 2047\] なので、周波数の範囲は \[64 Hz, 131 kHz\] です。これは 10 オクターブにわたりますが、一番高いあたりは、周波数の刻みが大きくなりすぎる（{@eq:fvsr} の式の分母が 0 に近づく）ので、あまり役に立ちません。
 
 <!--
 f(R) = \frac{2^{17}}{2048-R}
@@ -878,9 +878,9 @@ R(f) = 2048 - \frac{2^{17}}{f}
 </math>
 </table>
 
-### Square sound registers {#ssec-snd-sqrreg}
+### 矩形波のサウンドのレジスタ {#ssec-snd-sqrreg}
 
-Both square-wave generators have registers `REG_SNDxCNT` for envelope/length/duty control and `REG_SNDxFREQ` for frequency control. Sound 1 also has sweep control in the form of `REG_SND1SWEEP`. Look in {@tbl:snd-names} for the traditional names; note that in traditional nomenclature the suffixes for control and frequency are *different* for channels 1 and 2, even though they have exactly the same function.
+どちらの矩形波の生成器にも、エンベロープ、長さ、デューティを制御する `REG_SNDxCNT` と、周波数を制御する `REG_SNDxFREQ` のレジスタがあります。サウンド 1 には、さらに `REG_SND1SWEEP` というスイープの制御もあります。伝統的な名前は {@tbl:snd-names} を見てください。伝統的な名前では、制御と周波数のレジスタの接尾辞が、チャンネル 1 と 2 でまったく同じ機能なのに*違っている*ことに注意してください。
 
 <div class="reg">
 <table class="table-reg" id="tbl-reg-snd1cnt" width=420>
@@ -905,51 +905,51 @@ Both square-wave generators have registers `REG_SNDxCNT` for envelope/length/dut
   <col class="bits" width=40>
   <col class="bf" width="8%">
   <col class="def" width="12%">
-<tr align="left"><th>bits<th>name<th>define<th>description
+<tr align="left"><th>ビット<th>名前<th>定義<th>説明
 <tbody valign="top">
 <tr class="bg0">	
   <td class="wof">0-5<td class="rclr4">L
   <td>SSQR_LEN#
-  <td>Sound <b>Length</b>. This is a <i>write-only</i> field and only 
-    works if the channel is timed (<code>REG_SNDxFREQ{E}</code>). The 
-    length itself is actually (64&minus;<i>L</i>)/256 seconds for a 
-    [3.9, 250] ms range.
+  <td>音の<b>長さ</b>。これは<i>書き込み専用</i>のフィールドで、
+    チャンネルが時間指定になっている（<code>REG_SNDxFREQ{E}</code>）
+    ときにだけ働きます。長さそのものは、実際には (64&minus;<i>L</i>)/256 秒で、
+    範囲は [3.9, 250] ms です。
 <tr class="bg1">	
   <td>6-7<td class="rclr3">D
   <td>SSQR_DUTY1_8, SSQR_DUTY1_4, SSQR_DUTY1_2, SSQR_DUTY3_4, 
     SSQR_DUTY#
-  <td>Wave <b>duty cycle</b>. Ratio between on and of times of the 
-    square wave. Looking back at eq&nbsp;18.2, 
-	this comes down to <i>D=h/T</i>. The available cycles are 
-	12.5%, 25%, 50%, and 75% (one eighth, quarter, half and three 
-	quarters).
+  <td>波の<b>デューティ比</b>。矩形波のオンとオフの時間の比です。
+    式&nbsp;18.2 を振り返ると、
+	これは <i>D=h/T</i> になります。使えるデューティ比は
+	12.5%、25%、50%、75%（8 分の 1、4 分の 1、2 分の 1、
+	4 分の 3）です。
 <tr class="bg0">	
   <td>8-A<td class="rclr2">EST
   <td>SSQR_TIME#
-  <td>Envelope <b>step-time</b>. Time between envelope changes: 
-    &Delta;t = <i>EST</i>/64 s.
+  <td>エンベロープの<b>ステップ時間</b>。エンベロープが変化する間隔:
+    &Delta;t = <i>EST</i>/64 s。
 <tr class="bg1">	
   <td> B <td class="rclr1">ED
   <td>SSQR_DEC, SSQR_INC
-  <td>Envelope <b>direction</b>. Indicates if the envelope 
-    decreases (default) or increases with each step. 
+  <td>エンベロープの<b>方向</b>。エンベロープが各ステップで
+    減る（デフォルト）か増えるかを示します。
 <tr class="bg0">	
   <td>C-F<td class="rclr0">EIV
   <td>SSQR_IVOL#
-  <td>Envelope <b>initial value</b>. Can be considered a <b>volume</b> 
-    setting of sorts: 0 is silent and 15 is full volume. Combined 
-    with the direction, you can have fade-in and fade-outs; to have a 
-    sustaining sound, set initial volume to 15 and an increasing 
-    direction. To vary the <i>real</i> volume, remember 
-    <code>REG_SNDDMGCNT</code>.
+  <td>エンベロープの<b>初期値</b>。一種の<b>音量</b>の設定と
+    考えられます。0 は無音で、15 は最大音量です。方向と
+    組み合わせれば、フェードインやフェードアウトができます。
+    音を持続させるには、初期音量を 15 にして、方向を増加に
+    します。<i>実際の</i>音量を変えるには、
+    <code>REG_SNDDMGCNT</code> を思い出してください。
 </tbody>
 </table>
 </div>
 
 <div class="cpt_fr" style="width:312px;">
 <img src="./img/sqrfour.png" alt="Fourier transform of square wave" id="fig:sqrf"><br>
-<b>{*@fig:sqrf}</b>: Square wave spectrum. 
-  (integer <i>m</i> only)
+<b>{*@fig:sqrf}</b>: 矩形波のスペクトル。
+  （整数の <i>m</i> のみ）
 </div>
 
 <!--
@@ -998,7 +998,7 @@ A_m = \frac{2}{\pi} \cdot \frac{sin({\pi}Dm)}{m}
 </math>
 </table>
 
-Some more on the duty cycle. Remember we've done a Fourier analysis of the square wave so we could determine the frequencies in it. Apart from the **base frequency**, there are also **overtones** of frequencies *m·f*. The spectrum (see {@fig:sqrf}) gives the amplitudes of all these frequencies. Note that even though the figure has lines, only integral values of *m* are allowed. The base frequency at *m*=1 has the highest significance and the rest falls off with 1/*m*. The interesting part is when the sine comes into play: whenever *m·D* is an integer, that component vanishes! With a fractional duty number –like the ones we have– this happens every time *m* is equal to the denominator. For the 50% duty, every second overtone disappears, leaving a fairly smooth tone; for 12.5%, only every eighth vanishes and the result is indeed a noisier sound. Note that for *both* ¼ and ¾ duties every fourth vanishes so that they should be indistinguishable. I was a little surprised about this result, but sure enough, when I checked they really did sound the same to me.
+デューティ比についてもう少し説明します。矩形波をフーリエ解析して、そこに含まれる周波数を求めたことを思い出してください。**基本周波数**のほかに、周波数 *m·f* の**倍音**もあります。スペクトル（{@fig:sqrf} を見てください）は、これらすべての周波数の振幅を表します。図には線が描かれていますが、*m* には整数の値しか使えないことに注意してください。*m*=1 の基本周波数が最も重要で、残りは 1/*m* で小さくなっていきます。面白いのは、サインが効いてくるところです。*m·D* が整数になるたびに、その成分が消えるのです！ （ここで使えるもののような）分数のデューティ比では、これは *m* が分母と等しくなるたびに起きます。50% のデューティでは 1 つおきに倍音が消え、かなりなめらかな音になります。12.5% では 8 つごとにしか消えず、実際に、よりノイズっぽい音になります。¼ と ¾ の*両方*のデューティで 4 つごとに消えるので、両者は区別がつかないはずであることに注意してください。この結果には少し驚きましたが、確かめてみると、たしかに私には同じに聞こえました。
 
 <div class="reg">
 <table class="table-reg" id="tbl-reg-snd1freq" width=420>
@@ -1023,32 +1023,32 @@ Some more on the duty cycle. Remember we've done a Fourier analysis of the squar
   <col class="bits" width=40>
   <col class="bf" width="8%">
   <col class="def" width="12%">
-<tr align="left"><th>bits<th>name<th>define<th>description
+<tr align="left"><th>ビット<th>名前<th>定義<th>説明
 <tbody valign="top">
 <tr class="bg0">	
   <td class="wof">0-A<td class="rclr0">R
   <td>SFREQ_RATE#
-  <td>Sound <b>rate</b>. Well, initial rate. That's <i>rate</i>, not 
-    frequency. Nor period. The relation between rate and frequency is 
+  <td>音の<b>レート</b>。正確には初期レートです。<i>レート</i>であって、
+    周波数ではありません。周期でもありません。レートと周波数の関係は
     <span class="nobr"><i>f</i> = 
-    2<sup>17</sup><big>/</big>(2048-<i>R</i>)</span>. Write-only 
-    field.
+    2<sup>17</sup><big>/</big>(2048-<i>R</i>)</span> です。書き込み専用の
+    フィールドです。
 <tr class="bg1">	
   <td> E <td class="rclr2">T
   <td>SFREQ_HOLD, SFREQ_TIMED
-  <td><b>Timed</b> flag. If set, the sound plays for as long as 
-    the length field (<code>REG_SNDxCNT</code>{0-5}) indicates. 
-    If clear, the sound plays forever. Note that even if a decaying 
-    envelope has reached 0, the sound itself would still be considered 
-    on, even if it's silent.
+  <td><b>時間指定</b>のフラグ。設定すると、音は長さのフィールド
+    （<code>REG_SNDxCNT</code>{0-5}）が示す間だけ鳴ります。
+    クリアすると、音はずっと鳴り続けます。減衰する
+    エンベロープが 0 に達していても、無音であるにもかかわらず、
+    音自体はまだオンとみなされることに注意してください。
 <tr class="bg0">	
   <td class="wof"> F <td class="rclr1">Re
   <td>SFREQ_RESET
-  <td>Sound <b>reset</b>. Resets the sound to the initial volume (and 
-    sweep) settings. Remember that the rate field is in this register 
-    as well and due to its write-only nature a simple 
-    &lsquo;<code>|= SFREQ_RESET</code>&rsquo; will <i>not</i> suffice
-    (even though it might on emulators).
+  <td>音の<b>リセット</b>。音を初期音量（とスイープ）の設定に
+    リセットします。レートのフィールドもこのレジスタにあり、
+    それが書き込み専用であるため、単純な
+    &lsquo;<code>|= SFREQ_RESET</code>&rsquo; では十分では<i>ない</i>ことを
+    覚えておいてください（エミュレータではそれで動くかもしれませんが）。
 </tbody>
 </table>
 </div><br>
@@ -1071,29 +1071,29 @@ Some more on the duty cycle. Remember we've done a Fourier analysis of the squar
   <col class="bits" width=40>
   <col class="bf" width="8%">
   <col class="def" width="12%">
-<tr align="left"><th>bits<th>name<th>define<th>description
+<tr align="left"><th>ビット<th>名前<th>定義<th>説明
 <tbody valign="top">
 <tr class="bg0">	
   <td>0-2<td class="rclr0">N
   <td>SSW_SHIFT#
-  <td>Sweep <b>number</b>. <i>Not</i> the number of sweeps; see the 
-    discussion below.
+  <td>スイープの<b>番号</b>。スイープの回数では<i>ありません</i>。
+    下の説明を見てください。
 <tr class="bg1">	
   <td> 3 <td class="rclr1">M
   <td>SSW_INC, SSW_DEC
-  <td>Sweep <b>mode</b>. The sweep can take the rate either up 
-    (default) or down (if set).
+  <td>スイープの<b>モード</b>。スイープはレートを上げる
+    （デフォルト）か、下げる（セット時）かのどちらかです。
 <tr class="bg0">	
   <td>4-6<td class="rclr2">T
   <td>SSW_TIME#
-  <td>Sweep <b>step-time</b>. The time between sweeps is measured in 
-    128 Hz (not kHz!): &Delta;t = <i>T</i>/128 ms &asymp; 7.8<i>T</i> 
-    ms; if <i>T</i>=0, the sweep is disabled. 
+  <td>スイープの<b>ステップ時間</b>。スイープの間隔は
+    128 Hz（kHz ではありません！）単位で測ります: &Delta;t = <i>T</i>/128 ms &asymp; 7.8<i>T</i> 
+    ms。<i>T</i>=0 ならスイープは無効です。
 </tbody>
 </table>
 </div>
 
-I'm reasonably confident that the *exact* workings of shifts are explained without due care in most documents, so here are a few more things about it. Sure enough, the sweep *does* make the pitch go up or down which is controlled by bit 3, and the step-time *does* change the pitch after that time, but exactly what the sweep-shift does is ambiguous at best. The information is in there, but only if you know what to look for. The usual formula given is something like:
+シフトの*正確な*働き方は、ほとんどの資料で十分な注意を払って説明されていないと、かなりの確信を持って言えます。そこで、それについてもう少し説明しておきます。たしかに、スイープはビット 3 で制御される方向に音の高さを上げ下げ*します*し、ステップ時間はその時間が経ったあとで音の高さを変え*ます*。しかし、スイープのシフトが正確に何をするのかは、よく言っても曖昧です。情報は書いてあるのですが、何を探せばいいかを知っていなければわかりません。よく示される式は、次のようなものです。
 
 <!--
 T = T \pm T\cdot2^{-n}
@@ -1129,11 +1129,11 @@ T = T \pm T\cdot2^{-n}
 </math>
 </table>
 
-That's what belogic gives and if you know what the terms are you'll be fine. Contrary to what you may read, the sweep does *not* apply to the frequency (*f*). It does *not* apply to the period (*T*, see above). It applies to the **rate** (*R*). If you look in emulators, you can actually *see* the rate-value change.
+これは belogic が示している式で、各項が何なのかを知っていれば問題ありません。あちこちで読むかもしれないこととは違って、スイープは周波数（*f*）にかかるのでは*ありません*。周期（*T*、上を見てください）にかかるのでも*ありません*。**レート**（*R*）にかかるのです。エミュレータで見てみると、実際にレートの値が変わるのを*見る*ことができます。
 
-Second, the *n* in the exponent is *not* the current sweep index that runs up to the number of sweep shifts. It is in fact simply the **sweep shift number**, and the sweeps continue until the rate reaches 0 or the maximum of 2047.
+2 つ目に、指数の *n* は、スイープのシフトの回数まで進んでいく現在のスイープのインデックスでは*ありません*。実際には単に**スイープのシフト数**で、スイープはレートが 0 か最大値の 2047 に達するまで続きます。
 
-The formulas you may see do say that, but it's easy to misread them. I did. {*@eq:sweep} holds a number of correct relations. *R* is the rate, *n* is the sweep shift ({!@eq:sweep}c explains why it's called a *shift* (singular, not plural)), and *j* is the current sweep index. You can view them in a number of ways, but they all boil down to exponential functions, that's what ‘d*y*(*x*) = *a·y*(*x*)d*x*’ means, after all. For example, if *n*=1, then you get 1½<sup>j</sup> and ½<sup>j</sup> behaviour for increasing and decreasing sweeps, respectively; with *n*=2 it's 1¼<sup>j</sup> and ¾<sup>j</sup>, etc. The higher the shift, the slower the sweep.
+見かける式もそう言ってはいるのですが、読み違えやすいのです。私も読み違えました。{*@eq:sweep} に、正しい関係をいくつか示します。*R* はレート、*n* はスイープのシフト（{!@eq:sweep}c を見れば、なぜそれが（複数形ではなく単数形の）*シフト*と呼ばれるのかがわかります）、*j* は現在のスイープのインデックスです。いろいろな見方ができますが、結局はどれも指数関数になります。結局のところ、「d*y*(*x*) = *a·y*(*x*)d*x*」とはそういう意味です。たとえば *n*=1 なら、増加のスイープでは 1½<sup>j</sup>、減少のスイープでは ½<sup>j</sup> のふるまいになります。*n*=2 なら 1¼<sup>j</sup> と ¾<sup>j</sup>、という具合です。シフトが大きいほど、スイープは遅くなります。
 
 <!--
 {\Delta}R = 2^{-n} \cdot R
@@ -1297,13 +1297,13 @@ R_j & = & R_{j-1} \pm R_{j-1} \cdot 2^{-n} \\
     <code>R += R &gt;&gt; n;</code>
 </table>
 
-### Playing notes {#ssec-snd-notes}
+### 音を鳴らす {#ssec-snd-notes}
 
-Even though the rates are equal, some may be considered more equal than others. I've already given a table with the frequencies for the standard notes ({@tbl:oct0}) of octave 0. You can of course convert those to rates via {@eq:fvsr}b and use them as such. However, it might pay to figure out how to play the notes of *all* octaves.
+すべてのレートは平等ですが、中にはほかより平等なものもあります。オクターブ 0 の標準的な音の周波数の表（{@tbl:oct0}）はすでに示しました。もちろん、それらを {@eq:fvsr}b でレートに変換して、そのまま使うこともできます。しかし、*すべて*のオクターブの音を鳴らす方法を考えておくと役に立つかもしれません。
 
-To do this, we'll use some facts I mentioned in section 18.2.3. about the make-up of the musical scale. While I *could* make use of the logarithmic relation between successive notes (Δ*f*=2<sup>1/12</sup>·*f*), I'll restrict myself to the fact that notes between octaves differ by a factor of two. We'll also need the rate-frequency relation (obviously). That's the basic information you need, I'll explain more once we get through all the math. Yes, it's more math, but it'll be the last of this page, I promise.
+そのために、18.2.3 節で触れた音階の成り立ちについての事実をいくつか使います。続く音どうしの対数的な関係（Δ*f*=2<sup>1/12</sup>·*f*）を使うことも*できます*が、ここでは、オクターブ間の音は 2 倍違うという事実だけに絞ります。（当然ながら）レートと周波数の関係も必要です。必要な基本の情報はこれだけです。数学をすべて片づけたら、もっと説明します。そう、また数学ですが、このページではこれが最後です。約束します。
 
-The equations we'll start with are the general frequency equation and the rate-frequency relation. In these we have rate *R*, frequency *f* and octave *c*. We also have a base octave *C* and frequency *F* in that base octave.
+出発点にする式は、一般的な周波数の式と、レートと周波数の関係です。これらには、レート *R*、周波数 *f*、オクターブ *c* があります。さらに、基準のオクターブ *C* と、その基準のオクターブでの周波数 *F* もあります。
 
 <!--
 \begin{matrix}
@@ -1395,7 +1395,7 @@ R(F, c) & = & 2^{11} - \frac{2^{17}}{f(F, c)}
   </table>
 </table>
 
-And now for the magic. And you *are* expected to understand this.
+さて、ここからが魔法です。そして、これは理解できると*期待されています*。
 
 <!--
 \begin{matrix}
@@ -1603,9 +1603,9 @@ R(F, c) & = & 2^{11} - \frac{2^{17}}{f(F, c)} \\
 </math>
 </table>
 
-Right, and now for *why* this thing's useful. Remember that the GBA has no hardware division or floating-point support, so we're left with integers and (if possible) shifts. That's why the last term in the last step of {@eq:noterate} was separated. The term with *F* gives a rate offset for the base octave, which we need to divide (read: shift) by the octave offset term for the different octaves. Remember that integer division truncates, so we need a big numerator for the most accuracy. This can be done with a large *C* and by adding an extra term *m*. Basically, this makes it an *m*f fixed point division. The workable octave range is −2 to 5, so we take *C*=5. The value for *m* is *almost* arbitrary, but needs to be higher than two because of the minimum octave is −2, and a shift can never be negative. *m*=4 will suffice.
+では、*なぜ*これが役に立つのかです。GBA にはハードウェアの除算も浮動小数点のサポートもないので、残されているのは整数と（可能なら）シフトだということを思い出してください。{@eq:noterate} の最後の段階で最後の項を分けたのはそのためです。*F* の項は基準のオクターブでのレートのオフセットを与え、それを各オクターブのオクターブのオフセットの項で割る（つまりシフトする）必要があります。整数の除算は切り捨てられるので、精度を最大にするには大きな分子が必要です。それは、大きな *C* を使い、余分な項 *m* を加えることで実現できます。基本的に、これで *m*f の固定小数点の除算になります。使えるオクターブの範囲は −2 から 5 なので、*C*=5 にします。*m* の値は*ほぼ*任意ですが、最小のオクターブが −2 で、シフトは決して負にできないので、2 より大きくする必要があります。*m*=4 で十分です。
 
-Note that there is *still* a division in there. Fortunately, there are only twelve values available for *F*, so might just as well store the whole term in a look-up table. The final result is listing 18.1 below.
+それでも*まだ*除算が残っていることに注意してください。幸い、*F* に使える値は 12 個しかないので、項全体をルックアップテーブルに保存してしまえばよいでしょう。最終的な結果が、下のリスト 18.1 です。
 
 <div id="cd-snd-rate">
 
@@ -1634,17 +1634,17 @@ const u32 __snd_rates[12]=
 ```
 </div>
 
-Here you have a couple of constants for the note-indices, the LUT with rate-offsets `__snd_rates` and a simple macro that gives you what you want. While `__snd_rates` is constant here, you may consider a non-const version to allow tuning. Not that a square wave is anything worth tuning, but I'm just saying … y'know.
+ここには、音のインデックスのための定数がいくつかと、レートのオフセットのルックアップテーブル `__snd_rates`、そして欲しいものを返してくれる単純なマクロがあります。ここでは `__snd_rates` は定数ですが、調律できるように定数でない版にすることも考えられます。矩形波に調律する価値があるわけではありませんが、言ってみただけです……ね。
 
-One possible annoyance is that you have to splice the note into a note and octave part and to do that dynamically you'd need division and modulo by 12. Or do you? If you knew a few things about [division by a constant is multiplication by its reciprocal](fixed.html#sec-rmdiv), you'd know what to do. (<span class="small">Hint: *c*=(*N*\*43\>\>9)−2, where *N* is the total note index between 0 and 95 (octave −2 to +5).</span>)
+1 つ面倒かもしれないのは、音を音名の部分とオクターブの部分に分けなければならないことで、それを動的に行うには 12 による除算と剰余が必要になります。本当にそうでしょうか？ [定数による除算はその逆数による乗算である](fixed.html#sec-rmdiv)ことについて少し知っていれば、どうすればいいかわかるはずです。（<span class="small">ヒント: *c*=(*N*\*43\>\>9)−2。ここで *N* は 0 から 95 まで（オクターブ −2 から +5 まで）の通しの音のインデックスです。</span>）
 
-## Demo time {#sec-demo}
+## デモの時間 {#sec-demo}
 
-I think I've done about enough theory for today; don't you, dear reader?
+今日のところは理論はもう十分だと思います。そうでしょう、読者の皆さん？
 
-“ \@\_@ ”
+「 \@\_@ 」
 
-I'll take that as a yes. The demo in question demonstrates the use of the various macros of this chapter, most notably `SND_RATE`. It also shows how you can play a little song – and I use the term lightly – with the square wave generator. I hope you can recognize which one.
+はい、ということにしておきます。今回のデモでは、この章のいろいろなマクロ、特に `SND_RATE` の使い方を示します。また、矩形波の生成器でちょっとした曲（という言葉は軽い意味で使っています）を演奏する方法も示します。どの曲かわかってもらえるといいのですが。
 
 <pre><code class="language-c hljs">#include &lt;stdio.h&gt;
 #include &lt;tonc.h&gt;
@@ -1760,34 +1760,34 @@ int main()
 }
 </code></pre>
 
-The bolded code in `main()` initializes the sound register; nothing fancy, but it has to be done before you hear anything at all. It is important to start with `REG_SNDSTAT` bit 7 (`SSTAT_ENABLE`), i.e., the master sound enable. Without it, you cannot even access the other registers. Setting volume to something non-zero is a good idea too, of course. Then we turn off the sweep function and set sound 1 to use a fading envelope with a 50% duty. And that's where the fun starts.
+`main()` の太字のコードは、サウンドのレジスタを初期化しています。凝ったことは何もしていませんが、何か音が聞こえるようになる前に、これをしておかなければなりません。まず `REG_SNDSTAT` のビット 7（`SSTAT_ENABLE`）、つまりマスターサウンドの有効化から始めることが大事です。これがないと、ほかのレジスタにアクセスすることすらできません。もちろん、音量をゼロでない値にしておくのも良い考えです。それからスイープの機能を切り、サウンド 1 がデューティ 50% で減衰するエンベロープを使うように設定します。ここからが楽しいところです。
 
-I'll explain what `sos()` is in a little while; but first, something about the controls of the demo. You can play notes with the D-pad and A (hmm, there's something familiar about that arrangement). The octave *c* you're working in can be changed with L and R; the background color changes with it. B plays `sos()` again.
+`sos()` が何なのかは少しあとで説明しますが、まずはデモの操作について。十字キーと A で音を鳴らせます（ふむ、この配置には何か見覚えがありますね）。作業中のオクターブ *c* は L と R で変えられ、それに合わせて背景の色も変わります。B でもう一度 `sos()` を演奏します。
 
 <div class="lblock">
   <table>
     <tbody valign="top">
       <tr>
-        <th>A / D-pad <td>Play a note
-          <tr><td><td>&uarr; : D (next octave)
+        <th>A / D-pad <td>音を鳴らす
+          <tr><td><td>&uarr; : D（次のオクターブ）
           <tr><td><td>&larr; : B 
           <tr><td><td>&rarr; : A 
           <tr><td><td>&darr; : F 
           <tr><td><td> A     : D 
       <tr>
-        <th>L / R <td> Decrease / Increase current octave ([-2, 5], 
-        wraps around)
+        <th>L / R <td> 現在のオクターブを下げる / 上げる（[-2, 5]、
+        端で回り込む）
       <tr>
-        <th> B    <td>Play a little tune.
+        <th> B    <td>ちょっとした曲を演奏する。
     </tbody>
   </table>
 </div>
 
-The D-pad and A select a note to play, which is handled by `note_play()`. The bolded line there plays the actual note, the rest is extra stuff that writes the note just played to the screen and scrolls along so you can see the history of what's been played. The code for this is kinda ugly, but is not exactly central to the story so that's fine.
+十字キーと A で鳴らす音を選び、それを `note_play()` で処理しています。そこの太字の行が実際に音を鳴らしていて、残りは、今鳴らした音を画面に書いてスクロールさせ、何を鳴らしたかの履歴が見えるようにするための追加の処理です。このためのコードはちょっと汚いのですが、話の本筋ではないので問題ありません。
 
-### Playing a little ditty {#ssec-demo-ditty}
+### ちょっとした曲を演奏する {#ssec-demo-ditty}
 
-So what is `sos()` all about then? Let's take another look.
+では、`sos()` とはいったい何なのでしょうか？ もう一度見てみましょう。
 
 ```c
 void sos()
@@ -1803,8 +1803,8 @@ void sos()
 }
 ```
 
-There are two arrays here, `notes` and `lens`, and a loop over all elements. We take a byte from `notes` and use the nybbles for octave and note information, play the note, then wait a while –the length is indicated by the `lens` array– before the next note is played. Basically, we're playing music. Hey, if the likes of *Schnappi* and *Crazy Frog* can make it into the top 10, I think I'm allowed to call *this* music too, alright? Alright.
+ここには `notes` と `lens` の 2 つの配列と、すべての要素を回るループがあります。`notes` から 1 バイトを取り出し、その 4 ビットずつをオクターブと音の情報として使って音を鳴らし、それからしばらく待って（長さは `lens` 配列で示されます）、次の音を鳴らします。基本的に、これは音楽を演奏しているのです。ほら、*Schnappi* や *Crazy Frog* のようなものがトップ 10 に入れるのなら、*これ*も音楽と呼んでいいと思いますよね？ いいですよね。
 
-The point I'm trying to make is that it's very well possible to play a tune with just the tone generators. Technically you don't need digitized music and all that stuff to play something. Of course, it'll sound better if you do, but if you just need a little jingle the tone generators may be all you need. Twelve years of Game Boy games using only tone generators prove this. Just define some notes (the nybble format for octaves and notes will do) and some lengths and you have the basics already. You could even use more than one channel for different effects.
+私が言いたいのは、音の生成器だけでも曲を演奏することは十分にできるということです。厳密には、何かを演奏するのに、デジタル化した音楽などは必要ありません。もちろん、あったほうが良い音になりますが、ちょっとしたジングルが必要なだけなら、音の生成器だけで十分かもしれません。音の生成器だけを使った 12 年分のゲームボーイのゲームが、それを証明しています。音（オクターブと音名の 4 ビット形式で十分です）と長さをいくつか定義すれば、基本はもうできあがりです。いろいろな効果のために、複数のチャンネルを使うことさえできます。
 
-If you understood that, then get this: the note+length+channel idea is pretty much what tracked music (mod, it, xm, etc) does, only that they use a more sophisticated wave than a square wave. But the principle is the same. Getting it to work takes a little more effort, but that's what Deku's [sound mix tutorial](https://stuij.github.io/deku-sound-tutorial/) is for.
+それが理解できたなら、次のことも理解してください。音＋長さ＋チャンネルという考え方は、トラッカーの音楽（mod、it、xm など）がしていることとほぼ同じなのです。違うのは、矩形波より洗練された波形を使うことだけです。でも原理は同じです。それを動かすにはもう少し手間がかかりますが、そのために Deku の[サウンドミキシングのチュートリアル](https://stuij.github.io/deku-sound-tutorial/)があるのです。
