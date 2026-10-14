@@ -1,10 +1,10 @@
-# C. Vectors and Matrices
+# C. ベクトルと行列
 
 <!-- toc -->
 
-## Vectors {#sec-vec}
+## ベクトル {#sec-vec}
 
-Before I go into what a vector is, I'll first tell you what it isn't. Generally, you divided physical quantities into <dfn>scalars</dfn> and <dfn>vectors</dfn>. A <dfn>scalar</dfn> gives the magnitude of a quantity. It's a single number, like the ones you use every day. Mass, energy and volume are examples of scalars. A <dfn>vector</dfn> is something with both a magnitude _and_ direction, and is usually represented by multiple numbers: one for every dimension. Position, momentum and force are prime examples. Also, note that velocity is a vector, while speed is not. 50 kph is not a vector. 50 kph down Highway 60 is. The notation of a vector is as a bold character, usually lowercase, and either as a set of numbers enclosed by parentheses, **u** = (1, 4, 9), or as an M×1 column. And yes, I do mean a column, not a row; we'll see why when we get to matrices.
+ベクトルとは何かに入る前に、まずベクトルでないものについて話します。一般に、物理量は<dfn>スカラー</dfn>と<dfn>ベクトル</dfn>に分けられます。<dfn>スカラー</dfn>は量の大きさを与えます。毎日使っているのと同じ、1 つの数です。質量、エネルギー、体積はスカラーの例です。<dfn>ベクトル</dfn>は大きさ_と_向きの両方を持つもので、普通は複数の数、つまり次元ごとに 1 つの数で表されます。位置、運動量、力が代表的な例です。また、速度はベクトルですが、速さはそうではないことに注意してください。時速 50 km はベクトルではありません。60 号線を下る時速 50 km はベクトルです。ベクトルは太字で、普通は小文字で表し、**u** = (1, 4, 9) のようにかっこで囲んだ数の組か、M×1 の列として書きます。そして、そう、行ではなく列です。その理由は行列のところでわかります。
 
 <table id="eq:vec-def">
   <tr>
@@ -96,25 +96,25 @@ Before I go into what a vector is, I'll first tell you what it isn't. Generally,
 <div class="cpt_fr" style="width:128px">
   <img src="img/math/crd_vec.png" id="fig:img-vec"
     alt="vectors and points"><br>
-  <b>{*@fig:img-vec}</b>: the difference between
-  vectors and points.
+  <b>{*@fig:img-vec}</b>: ベクトルと点の
+  違い。
 </div>
 
-If you have a coordinate system, vectors are usually used to represent a spatial point in that system, with vectors' elements as the coordinates. However, there is a crucial difference between points and vectors. Points are always related to an origin, while vectors can are independent of any origin. {*@fig:img-vec} on the right illustrates this. You have points *P* and *Q*, and vectors **u, v, w**. Vectors **u** and **v** are equal (they have equal lengths and directions). However, while **u** and the point it points to (*P*) have the same coordinates, this isn't true for **v** and *Q*. In fact, *Q* = **u** + **w**. And, to be even more precise, *Q* = *O\* + **u** + **w**, which explicitly states the origin (_O_) in the equation.
+座標系があれば、ベクトルは普通、その座標系の中の空間の点を表すのに使われ、ベクトルの要素が座標になります。しかし、点とベクトルの間には決定的な違いがあります。点は常に原点と関係していますが、ベクトルはどんな原点からも独立しています。右の {*@fig:img-vec} はこれを示しています。点 *P* と *Q*、ベクトル **u、v、w** があります。ベクトル **u** と **v** は等しい（長さも向きも同じ）です。しかし、**u** とそれが指す点（*P*）は同じ座標を持つのに対し、**v** と *Q* はそうではありません。実際、*Q* = **u** + **w** です。そして、さらに正確に言えば、*Q* = *O\* + **u** + **w** で、これは式の中で原点（_O_）を明示しています。
 
-## Vector operations {#sec-vec-ops}
+## ベクトルの演算 {#sec-vec-ops}
 
-Vector operations are similar to scalar operations, but the multi-dimensionality does add some complications, especially in the case of multiplications. Note that there are no less than _three_ ways of vector-multiplication, so pay attention. On the right you can see examples of vector addition and scalar-vector multiplication. **u**= (8, 3), **v**= (-4 ,4). With the definitions of the operations given below, you should be able to find the other vectors.
+ベクトルの演算はスカラーの演算と似ていますが、多次元であることがいくつかの複雑さを加えます。特に掛け算の場合です。ベクトルの掛け算は_3 つ_もあるので、注意してください。右に、ベクトルの足し算とスカラーとベクトルの掛け算の例があります。**u**= (8, 3)、**v**= (-4 ,4) です。下に示す演算の定義を使えば、ほかのベクトルも求められるはずです。
 
-### Vector-vector addition and subtraction {#ssec-vec-add}
+### ベクトルどうしの足し算と引き算 {#ssec-vec-add}
 
 <div class="cpt_fr" style="width:160px">
   <img src="img/math/crd_vec_ops.png" id="fig:img-vec-ops" alt="vector ops">
   <br>
-  <b>{*@fig:img-vec-ops}</b>: vector addition and scalar-vector multiplication.
+  <b>{*@fig:img-vec-ops}</b>: ベクトルの足し算とスカラーとベクトルの掛け算。
 </div>
 
-When it comes to addition and subtraction, both operands must be M-dimensional vectors. The result is another vector, also M-dimensional, which elements are the sum or difference of the operands' elements: with **w = u + v** we have _w_<sub>i</sub> = _u_<sub>i</sub> + _v_<sub>i</sub>.
+足し算と引き算では、両方のオペランドが M 次元のベクトルでなければなりません。結果は同じく M 次元の別のベクトルで、その要素はオペランドの要素の和か差です。**w = u + v** なら _w_<sub>i</sub> = _u_<sub>i</sub> + _v_<sub>i</sub> です。
 
 <table id="eq:vec-add">
   <tr>
@@ -176,9 +176,9 @@ When it comes to addition and subtraction, both operands must be M-dimensional v
     </td>
 </table>
 
-### Scalar-vector multiplication {#ssec-vec-scale}
+### スカラーとベクトルの掛け算 {#ssec-vec-scale}
 
-This is the first of the vector multiplications. If you have a scalar _a_ and a vector **u**, the elements of resultant vector after scalar-vector multiplication are the original elements, each multiplied with the scalar. So if **v** = _c_&nbsp;**u**, then _v_<sub>i</sub>= _c\*u_<sub>i</sub>. Note that **u** and **v** lie on the same line – only the length is different. Also, note that subtraction can also be written as **w** = **u** − **v** = **u** + (−1)\***v**.
+これはベクトルの掛け算の 1 つ目です。スカラー _a_ とベクトル **u** があるとき、スカラーとベクトルの掛け算の結果のベクトルの要素は、元の要素にそれぞれスカラーを掛けたものです。ですから **v** = _c_&nbsp;**u** なら、_v_<sub>i</sub>= _c\*u_<sub>i</sub> です。**u** と **v** は同じ直線上にあり、長さだけが違うことに注意してください。また、引き算は **w** = **u** − **v** = **u** + (−1)\***v** とも書けることに注意してください。
 
 <table id="eq:vec-scale">
   <tr>
@@ -236,9 +236,9 @@ This is the first of the vector multiplications. If you have a scalar _a_ and a 
   </tr>
 </table>
 
-### The dot-product (aka scalar product) {#ssec-vec-dot}
+### 内積（別名スカラー積） {#ssec-vec-dot}
 
-The second vector-multiplication is the dot-product, which has two vectors as input, but a _scalar_ as its output. The notation for this is _c_ = **u · v**, where **u** and **v** are vectors and _c_ is the resultant scalar. Note the operator is in the form of a dot, which gives this type of multiplication its name. To do the dot-product, multiply the elements of both vectors piecewise and add them all together. In other words:
+ベクトルの掛け算の 2 つ目は内積（ドット積）で、入力は 2 つのベクトルですが、出力は_スカラー_です。表記は _c_ = **u · v** で、**u** と **v** はベクトル、_c_ は結果のスカラーです。演算子が点（dot）の形をしていることに注意してください。これがこの種類の掛け算の名前の由来です。内積を求めるには、両方のベクトルの要素を対応するものどうしで掛けて、それらを全部足します。言い換えると次のとおりです。
 
 <table id="eq:vec-dot">
   <tr>
@@ -302,12 +302,12 @@ The second vector-multiplication is the dot-product, which has two vectors as in
   </tr>
 </table>
 
-Now, this may seem like a silly operation to have, but it's actually very useful. For one thing, the length of the vector is calculated via a dot-product with itself. But you can also find the projection of one vector onto another with the dot-product, which is invaluable when you try to decompose vectors in terms of other vectors or determine the base-vectors of an M-dimensional space (do what to the whaaat?!? Don't worry, I'll explain later). One of the most common uses of the dot-product is finding the angle between two vectors. If you have vectors **u** and **v**, \|**u**\| and \|**v**\| their lengths and α the angle between the two, the cosine can be found via
+さて、これはばかげた演算に思えるかもしれませんが、実はとても便利です。1 つには、ベクトルの長さは自分自身との内積で計算します。また、内積を使えばあるベクトルの別のベクトルへの射影も求められます。これは、ベクトルをほかのベクトルで分解したり、M 次元の空間の基底ベクトルを決めたりしようとするときに欠かせません（何を何するって？！？ 心配いりません、あとで説明します）。内積の最もよくある使い道の 1 つは、2 つのベクトルの間の角度を求めることです。ベクトル **u** と **v** があり、\|**u**\| と \|**v**\| がその長さ、α が 2 つの間の角度なら、コサインは次の式で求められます。
 
 <div class="cpt_fr" style="width:112px">
   <img src="img/math/crd_dot.png" id="fig:img-vec-dot" alt="dot-product">
   <br>
-  <b>{*@fig:img-vec-dot}</b>: dot product.
+  <b>{*@fig:img-vec-dot}</b>: 内積。
 </div>
 
 <table id="eq:vec-cos">
@@ -350,18 +350,18 @@ Now, this may seem like a silly operation to have, but it's actually very useful
   </tr>
 </table>
 
-Why does this work? Well, you can prove it in a number of ways, but here's is the most elegant (thanks Ash for reminding me). Remember that the square of the length of a vector is given by the dot-product with itself. This means that \|**v−u**\|<sup>2</sup> = \|**v**\|<sup>2</sup> + \|**u**\|<sup>2</sup> − 2·**u·v**. From the cosine rule for the triangle in {@fig:img-vec-dot}, we also have \|**v−u**\|<sup>2</sup> = \|**v**\|<sup>2</sup> + \|**u**\|<sup>2</sup> − 2·\|**v**\|·\|**u**\| cos(α). Combined, these relations immediately result in {@eq:vec-cos}. And people say math is hard.
+なぜこれでうまくいくのでしょうか？ いくつかの方法で証明できますが、これが一番エレガントなものです（思い出させてくれた Ash に感謝）。ベクトルの長さの 2 乗は自分自身との内積で与えられることを思い出してください。つまり、\|**v−u**\|<sup>2</sup> = \|**v**\|<sup>2</sup> + \|**u**\|<sup>2</sup> − 2·**u·v** です。{@fig:img-vec-dot} の三角形の余弦定理からも、\|**v−u**\|<sup>2</sup> = \|**v**\|<sup>2</sup> + \|**u**\|<sup>2</sup> − 2·\|**v**\|·\|**u**\| cos(α) が得られます。これらの関係を組み合わせると、すぐに {@eq:vec-cos} になります。それなのに、数学は難しいと言う人がいるのです。
 
-By the way, not only can you find the angle with this, but it also provides a very simply way to see if something's behind you or not. If **u** is the looking-direction and **v** the vector to an object, **u · v** is negative if the angle is more than 90°. It's also useful for field-of-view checking, and to see if vectors are perpendicular, as **u · v** = 0. You also find the dot-product by the truck-load in physics when yo do things like force decomposition, and path-integrals over force to find the potential energy. Basically, every time you find a cosine in an equation in physics, it's probably the result of a dot-product.
+ちなみに、これで角度を求められるだけでなく、何かが自分の後ろにあるかどうかをとても簡単に確かめる方法にもなります。**u** が見ている方向で、**v** が物体へのベクトルなら、角度が 90° を超えると **u · v** は負になります。視野の確認や、ベクトルが垂直かどうか（**u · v** = 0）を確かめるのにも便利です。物理学でも、力の分解や、位置エネルギーを求めるための力の経路積分などで、内積がどっさり出てきます。基本的に、物理学の式でコサインを見かけたら、それはおそらく内積の結果です。
 
-### The cross-product (aka vector-product) {#ssec-vec-cross}
+### 外積（別名ベクトル積） {#ssec-vec-cross}
 
-The cross product is a special kind of product that only works in 3D space. The cross-product takes two vectors **u** and **v** and gives the vector perpendicular to both, **w**, as a result. The length of **w** is the area spanned by the two operand vectors. The notation for it is this: **w** = **u** × **v**, which is why it's called the cross-product. The elements of **w** are _w_<sub>i</sub>= _ε_<sub>ijk</sub>·_u_<sub>j</sub>· _v_<sub>k</sub>, where _ε_<sub>ijk</sub> is the Levi-Cevita symbol ( +1 for even permutations of _i,j,k_, −1 for odd permutations, and 0 if any of the indices are equal). Since you've probably never even seen this thing (for your sanity, keep it that way), it's written down in full in {@eq:vec-dot}.
+外積（クロス積）は、3D 空間でしか使えない特別な種類の積です。外積は 2 つのベクトル **u** と **v** を取り、結果として両方に垂直なベクトル **w** を与えます。**w** の長さは、2 つのオペランドのベクトルが張る面積です。表記は **w** = **u** × **v** で、これがクロス（×）積と呼ばれる理由です。**w** の要素は _w_<sub>i</sub>= _ε_<sub>ijk</sub>·_u_<sub>j</sub>· _v_<sub>k</sub> で、ここで _ε_<sub>ijk</sub> はレヴィ＝チヴィタ記号（_i,j,k_ の偶置換なら +1、奇置換なら −1、添字のどれかが等しければ 0）です。おそらくこれを見たことすらないでしょう（正気を保つために、そのままにしておいてください）から、{@eq:vec-dot} に完全な形で書いておきました（訳注: 参照先は外積の式のほうと思われます）。
 
 <div class="cpt_fr" style="width:176px">
   <img src="img/math/crd_cross.png" id="fig:img-vec-cross" alt="cross product">
   <br>
-  <b>{*@fig:img-vec-cross}</b>: cross product.
+  <b>{*@fig:img-vec-cross}</b>: 外積。
 </div>
 
 <table id="eq:vec-cross">
@@ -460,7 +460,7 @@ The cross product is a special kind of product that only works in 3D space. The 
     </td>
 </table>
 
-In {@fig:img-vec-cross} you can see a picture of what the cross-product does; it's a 3D picture, so you have to use your imagination a bit. Vectors **u** and **v** define a parallelogram (in yellow). The cross-product vector **w** is perpendicular to both of these, a fact that follows from **u·w** and **v·w**. The length of **w** is the area of this parallelogram, _A_ and if you remember your area-calculations, you'll realize that
+{@fig:img-vec-cross} に、外積が何をするかの絵があります。3D の絵なので、少し想像力を働かせる必要があります。ベクトル **u** と **v** が平行四辺形（黄色）を定めます。外積のベクトル **w** はこれらの両方に垂直で、これは **u·w** と **v·w** から導かれる事実です（訳注: どちらも 0 になることから、という意味です）。**w** の長さはこの平行四辺形の面積 _A_ で、面積の計算を覚えていれば、次のようになることがわかるでしょう。
 
 <table id="eq:vec-sin">
   <tr>
@@ -503,17 +503,17 @@ In {@fig:img-vec-cross} you can see a picture of what the cross-product does; it
   </tr>
 </table>
 
-meaning that you can find the sine of the angle between two vectors with the cross-product. Note that the cross-product is that it is _anti_-commutative! That means that **u × v** = −**v × u**. Notice the minus sign? This actually brings up a good point: the plane defined by **u** and **v**, the normal vector to this plane is pointing up; but how do you determine what ‘up’ is? What I usually do is take a normal 3D coord-system (like the one in the lower-right part of {@fig:img-vec-cross}), put the _x_-axis on **u**, rotate till the _y_-axis is along **v** (or closest to it), and then **w** will be along the _z_-axis. {\*@eq:vec-cross} has all of this sorted out already. I do need a right-handed system for this, though, a left-handed one messes up my mind so bad.
+つまり、外積を使えば 2 つのベクトルの間の角度のサインを求められます。外積は_反_交換的であることに注意してください！ つまり **u × v** = −**v × u** です。マイナスの符号に気づきましたか？ これは実は良い点を提起します。**u** と **v** で定まる平面について、この平面の法線ベクトルは上を向いていますが、「上」がどちらかはどうやって決めるのでしょうか？ 私がたいていするのは、普通の 3D の座標系（{@fig:img-vec-cross} の右下の部分にあるようなもの）を取り、_x_ 軸を **u** に合わせ、_y_ 軸が **v** に沿う（か、一番近くなる）まで回転させることです。すると **w** は _z_ 軸に沿います。{\*@eq:vec-cross} では、これがすべてすでに整理されています。ただし、これには右手系が必要です。左手系だと頭がひどく混乱するのです。
 
-Now, when the vectors are parallel, **u** × **v** = 0, which means that **w** is the null-vector **0**. It also means that if **u** is your view direction, the object with vector **v** is dead-center in your sights. However, if **u** is the velocity of a rocket and **v** is the relative vector to _you_, prepare to respawn. Basically, whereas the dot-product tells you whether an object is in front or behind (along the tangent), the cross-product gives you the offset from center (the normal). Very useful if you ever want to implement something like red shells (and by that I mean the _original_ SMK red shells, not the wussy instant-homing shells in the later Mario Karts, booo!!). The cross-product also appears abundantly in physics in things like angular momentum (**L = r × p**) and magnetic induction.
+さて、ベクトルが平行なら、**u** × **v** = 0、つまり **w** はゼロベクトル **0** です。これはまた、**u** が見ている方向なら、ベクトル **v** の物体が照準のど真ん中にあることも意味します。しかし、**u** がロケットの速度で、**v** が_あなた_への相対ベクトルなら、リスポーンの準備をしてください。基本的に、内積は物体が前にあるか後ろにあるか（接線方向）を教えてくれるのに対し、外積は中心からのずれ（法線方向）を与えてくれます。赤こうらのようなものを実装したいときにとても便利です（ここで言っているのは_初代_スーパーマリオカートの赤こうらで、後のマリオカートの弱虫の即追尾こうらではありません。ブーブー！！）。外積は物理学でも、角運動量（**L = r × p**）や磁気誘導などで豊富に出てきます。
 
-That was the 3D case, but the cross-product is also useful for 2D. Everything works exactly the same, except that you only need the _z_-component of **w**.
+以上が 3D の場合でしたが、外積は 2D でも便利です。**w** の _z_ 成分しか必要ないことを除けば、すべてまったく同じように働きます。
 
-### The norm (or length) {#ssec-vec-norm}
+### ノルム（長さ） {#ssec-vec-norm}
 
-I've used this already a couple of times but never actually defined what the length of a vector is. The norm of vector **u** is defined as the square root of the dot-product with itself, see {@eq:vec-norm}. The age-old Pythagorean Theorem is just the special case for 2D.
+これまで何度か使ってきましたが、ベクトルの長さが何なのかを実際には定義していませんでした。ベクトル **u** のノルムは、自分自身との内積の平方根として定義されます。{@eq:vec-norm} を見てください。昔ながらのピタゴラスの定理は、その 2D の特殊な場合にすぎません。
 
-The length or norm of a vector is a useful thing to have around. Actually, you often start with the length and use the sine and cosine to decompose the vector in _x_ and _y_ components. A good example of this is the speed. One other thing where the length plays a role is in the creation of <dfn>unit-vectors</dfn>, which have length 1. Many calculations require the length in some way, but if that's one, you won't have to worry about that anymore. To create a normal vector, simply define it by its length: **û** = **u** / \|**u**|.
+ベクトルの長さ、つまりノルムは、手元にあると便利なものです。実際、長さから始めて、サインとコサインを使ってベクトルを _x_ と _y_ の成分に分解することがよくあります。その良い例が速さです。長さが役割を果たすもう 1 つのことは、長さ 1 の<dfn>単位ベクトル</dfn>を作ることです。多くの計算は何らかの形で長さを必要としますが、それが 1 なら、もう気にする必要はありません。正規化したベクトルを作るには、単にその長さで割ります。**û** = **u** / \|**u**| です。
 
 <table id="eq:vec-norm">
   <tr>
@@ -567,38 +567,38 @@ The length or norm of a vector is a useful thing to have around. Actually, you o
   </tr>
 </table>
 
-### Algebraic properties of vectors {#ssec-vec-props}
+### ベクトルの代数的な性質 {#ssec-vec-props}
 
-What follows is a list of algebraic properties of vectors. Most will seem obvious, but you need to see them at least once. Take directly from my linear algebra textbook: let **u, v, w** be M-dimensional vectors and _c_ and _d_ scalars, then:
+以下は、ベクトルの代数的な性質の一覧です。ほとんどは明らかに思えるでしょうが、少なくとも一度は見ておく必要があります。私の線形代数の教科書から直接取ってきました。**u、v、w** を M 次元のベクトル、_c_ と _d_ をスカラーとすると、次のようになります（訳注: 以下の表には原文の誤記と思われる箇所がいくつかあります。たとえば (c + d)·u = c·u + d·u、u · (v + w) = u·v + u·w、u × v = −(v × u) が正しい形です）。
 
 <div class="lblock">
   <table>
     <tr>
       <td><b>u + v = v + u</b></td>
-      <td>Commutativity</td>
+      <td>交換法則</td>
     </tr>
     <tr>
       <td><b>(u + v) + w = u + (v + w)</b></td>
-      <td>Associativity</td>
+      <td>結合法則</td>
     </tr>
     <tr>
       <td><b>u + 0 = 0 + u = u</b></td>
     </tr>
     <tr>
       <td><b>u + (&minus;u) = &minus;u + u = 0</b></td>
-      <td>where &minus;<b>u</b> denotes (&minus;1)<b>u</b></td>
+      <td>ここで &minus;<b>u</b> は (&minus;1)<b>u</b> を表す</td>
     </tr>
     <tr>
       <td>c·(<b>u + v</b>) = c·<b>u</b> + c·<b>v</b></td>
-      <td>Distributivity</td>
+      <td>分配法則</td>
     </tr>
     <tr>
       <td>(c + d)·<b>u</b> = c·<b>u</b> d·<b>u</b></td>
-      <td>Distributivity</td>
+      <td>分配法則</td>
     </tr>
     <tr>
       <td>c·(d·<b>u</b>) = (c·d)·<b>u</b></td>
-      <td>Associativity</td>
+      <td>結合法則</td>
     </tr>
     <tr>
       <td>1·<b>u</b> = <b>u</b>
@@ -606,7 +606,7 @@ What follows is a list of algebraic properties of vectors. Most will seem obviou
   </table>
 </div>
 
-And on the products:
+そして積については次のとおりです。
 
 <div class="lblock">
   <table>
@@ -624,7 +624,7 @@ And on the products:
     </tr>
     <tr>
       <td><b>u &times; v</b> = &minus;(<b>u &times; v</b>)</td>
-      <td>Anti-commutativity</td>
+      <td>反交換法則</td>
     </tr>
     <tr>
       <td><b>u</b> &times; (<b>v + w</b>) = <b>u &times; v + u &times; w</b></td>
@@ -648,18 +648,18 @@ And on the products:
     </tr>
     <tr>
       <td><b>u ·</b> (<b>v &times; w</b>) = (<b>u &times; v</b>) <b>· w</b></td>
-      <td>Triple scalar product, gives the volume of parallelepiped defined by <b>u, v, w</b>.</td>
+      <td>スカラー三重積。<b>u、v、w</b> で定まる平行六面体の体積を与えます。</td>
     </tr>
     <tr>
       <td><b>u</b> &times; (<b>v &times; w</b>) = <b>u</b>(<b>v · w</b>) &minus; <b>w</b>(<b>u · v</b>)</td>
-      <td>Triple vector product</td>
+      <td>ベクトル三重積</td>
     </tr>
   </table>
 </div>
 
-## Matrices {#sec-mat}
+## 行列 {#sec-mat}
 
-In a nutshell, a matrix is a 2-dimensional grid of numbers. They were initially used as shorthand to solve a system of linear equations. For example, the system using variables _x, y, z_:
+一言で言えば、行列は数の 2 次元の格子です。行列は当初、連立 1 次方程式を解くための略記として使われていました。たとえば、変数 _x, y, z_ を使った連立方程式
 
 <table id="eq:eqset">
   <tr>
@@ -753,7 +753,7 @@ In a nutshell, a matrix is a 2-dimensional grid of numbers. They were initially 
   </tr>
 </table>
 
-can be written down more succinctly using matrices as:
+は、行列を使うともっと簡潔に次のように書けます。
 
 <table>
   <tr>
@@ -820,7 +820,7 @@ can be written down more succinctly using matrices as:
         </tr>
       </table>
     </td>
-    <td width=64 align="center">or</td>
+    <td width=64 align="center">または</td>
     <td>
       <table>
         <tr>
@@ -897,9 +897,9 @@ can be written down more succinctly using matrices as:
   </tr>
 </table>
 
-{\*@eq:eqset}b is called the <dfn>coefficient matrix</dfn>, in which only the coefficients of the variables are written down. The <dfn>augmented matrix</dfn> ({@eq:eqset}c) also contains the right-hand side of the system of equations. Note that the variables themselves are nowhere in sight, which is more or less the point. Mathematicians are the laziest persons in the world, and if there's a shorthand to be exploited, they will use it. If there isn't, they'll make one up.
+{\*@eq:eqset}b は<dfn>係数行列</dfn>と呼ばれ、変数の係数だけが書かれています。<dfn>拡大係数行列</dfn>（{@eq:eqset}c）には、連立方程式の右辺も含まれます。変数そのものはどこにも見当たらないことに注意してください。それがだいたいの要点なのです。数学者は世界一の怠け者で、利用できる略記があれば使いますし、なければでっち上げます。
 
-Anyway, a matrix can be divided into <dfn>rows</dfn>, which run horizontally, or <dfn>columns</dfn>, which run vertically. A matrix is indicated by its size: an M×N matrix has M rows and N columns. Note that the number of rows comes first; this in contrast to image sizes, where width is usually given first. Yeah I know, that sucks, but there's not a lot I can do about that. The coefficient matrix of {@eq:eqset}b is a 3x3 matrix, and the augmented matrix of {@eq:eqset}c is 3x4. The whole matrix itself is usually indicated by a bold, capital; the columns of a matrix are simply vectors (which were M×1 columns, remember?) and will be denoted as such, with a single index for the column-number; the <dfn>elements</dfn> of the matrix will be indicated by a lowercase (italic) letter with a double index.
+ともかく、行列は横に走る<dfn>行</dfn>と、縦に走る<dfn>列</dfn>に分けられます。行列は大きさで表されます。M×N の行列には M 個の行と N 個の列があります。行の数が先に来ることに注意してください。これは、普通は幅が先に来る画像の大きさとは対照的です。ええ、ひどいのはわかっていますが、私にはどうしようもありません。{@eq:eqset}b の係数行列は 3x3 の行列で、{@eq:eqset}c の拡大係数行列は 3x4 です。行列全体は普通、太字の大文字で表します。行列の列は単なるベクトルで（ベクトルは M×1 の列だったことを覚えていますか？）、そのように表し、列の番号を表す添字を 1 つ付けます。行列の<dfn>要素</dfn>は、小文字の（イタリックの）文字に添字を 2 つ付けて表します。
 
 <table id="eq:mat-def">
   <tr>
@@ -1011,7 +1011,7 @@ Anyway, a matrix can be divided into <dfn>rows</dfn>, which run horizontally, or
   </tr>
 </table>
 
-Most computer languages also have the concept of matrices, only they don't always agree in how the things are ordered. Indexing in Visual Basic and C, for example, is row-based, just like {@eq:mat-def} is. Fortran, on the other hand, is vector-based, so the indices need to be reversed. Thanks to the C's pointer-type, you can also access a matrix as an array.
+ほとんどのコンピュータの言語にも行列の概念がありますが、要素の並べ方については必ずしも一致していません。たとえば Visual Basic と C のインデックスは、{@eq:mat-def} と同じく行に基づいています。一方 Fortran はベクトルに基づいているので、インデックスを逆にする必要があります。C のポインタ型のおかげで、行列に配列としてアクセスすることもできます。
 
 ```c {.proglist}
 mat(i, j)     // VB matrix
@@ -1022,7 +1022,7 @@ mat[i+N*j]   // C matrix, in array form
 mat(j, i)    // Fortran matrix
 ```
 
-Let's return to ({@eq:eqset}) for a while, if we use **x** = (_x, y, z_), **b**= (0, 8, −9), and **A** for the coefficient matrix, we can rewrite ({@eq:eqset}a) to
+しばらく ({@eq:eqset}) に戻りましょう。**x** = (_x, y, z_)、**b**= (0, 8, −9)、係数行列に **A** を使えば、({@eq:eqset}a) は次のように書き直せます。
 
 <table>
   <tr>
@@ -1074,21 +1074,21 @@ Let's return to ({@eq:eqset}) for a while, if we use **x** = (_x, y, z_), **b*
   </tr>
 </table>
 
-I've used the column-vector notation on the left of **b**, and the full matrix notation on the right. You will do well to remember this form of equation, as we'll see it later on as well. And yes, that's a matrix-multiplication on the right-hand side there. Although I haven't given a proper definition of it yet, this should give you some hints.
+**b** の左側では列ベクトルの表記を、右側では完全な行列の表記を使いました。この形の式は、あとでも出てくるので覚えておくとよいでしょう。そして、ええ、右辺にあるのは行列の掛け算です。まだきちんと定義していませんが、これでいくらかヒントになるはずです。
 
-## Matrix operations {#sec-mat-ops}
+## 行列の演算 {#sec-mat-ops}
 
-### Transpose {#ssec-mat-transpose}
+### 転置 {#ssec-mat-transpose}
 
-To transpose a matrix is to mirror is across the diagonal. It's a handy thing to have around at times. The notation for the transpose is a superscript uppercase ‘T’, for example, **B** = **A**<sup>T</sup>. If **A** is an M×N matrix, its transpose **B** will be N×M, with the elements _b_<sub>ij</sub> = _a_<sub>ji</sub>. Like I said, mirror it across the diagonal. The diagonal itself will, of course, be unaltered.
+行列を転置するとは、対角線で鏡映することです。ときどき手元にあると便利なものです。転置の表記は大文字の「T」の上付き文字で、たとえば **B** = **A**<sup>T</sup> です。**A** が M×N の行列なら、その転置 **B** は N×M で、要素は _b_<sub>ij</sub> = _a_<sub>ji</sub> です。先ほど言ったように、対角線で鏡映するのです。もちろん、対角線そのものは変わりません。
 
-### Matrix addition {#ssec-mat-add}
+### 行列の足し算 {#ssec-mat-add}
 
-Matrix addition is much like vector addition, but in 2 dimensions. If **A, B, C** are all M×N matrices and **C = A + B**, then the elements of **C** are _c_<sub>ij</sub> = _a_<sub>ij</sub> + _b_<sub>ij</sub>. Subtraction is no different, of course.
+行列の足し算はベクトルの足し算とほぼ同じですが、2 次元です。**A、B、C** がすべて M×N の行列で **C = A + B** なら、**C** の要素は _c_<sub>ij</sub> = _a_<sub>ij</sub> + _b_<sub>ij</sub> です。もちろん、引き算も同じです。
 
-### Matrix multiplication {#ssec-mat-mul}
+### 行列の掛け算 {#ssec-mat-mul}
 
-Aahhh, and now things are getting interesting. There are a number of rules to matrix multiplication, which makes it quite tricky. For our multiplication, we will use **C = A · B**. The thing is that the number of columns of the first operand (**A**) _must_ equal the number of rows of the second (**B**). So if **A** is a _p×q_ matrix, **B** should be a _q×r_ matrix. The size of **C** will then be _p×r_. Now, the elements of **C** are given by
+ああ、ここから面白くなってきます。行列の掛け算にはいくつかの規則があり、かなりやっかいです。掛け算には **C = A · B** を使います。問題は、最初のオペランド（**A**）の列の数が、2 つ目（**B**）の行の数と等しく_なければならない_ことです。ですから、**A** が _p×q_ の行列なら、**B** は _q×r_ の行列であるべきです。そのとき **C** の大きさは _p×r_ になります。さて、**C** の要素は次の式で与えられます。
 
 <table id="eq:mat-mul-elem">
   <tr>
@@ -1140,7 +1140,7 @@ Aahhh, and now things are getting interesting. There are a number of rules to ma
   </tr>
 </table>
 
-In other words, you take row _i_ of **A**, column _j_ of **B** and take their dot-product. _k_ in {@eq:mat-mul-elem} is the summation-index for this dot-product. This is also the reason why the columns of **A** and the rows of **B** must be of equal size; if not you'll have a loose end at either vector. Another way of looking at it is this: The whole of **A** forms the coefficient matrix of a linear system, similar to that of {@eq:eqset}b. The columns of **B** are all vectors of variables which, when processed by the linear system, gives the columns of **C**:
+言い換えると、**A** の行 _i_ と **B** の列 _j_ を取り、それらの内積を取るのです。{@eq:mat-mul-elem} の _k_ はこの内積の和の添字です。**A** の列と **B** の行の大きさが等しくなければならないのもこのためです。そうでないと、どちらかのベクトルの端が余ってしまいます。別の見方もあります。**A** 全体は、{@eq:eqset}b のような連立 1 次方程式の係数行列になります。**B** の列はどれも変数のベクトルで、連立 1 次方程式で処理すると **C** の列になります。
 
 <table id="eq:mat-mul">
   <tr>
@@ -1219,7 +1219,7 @@ In other words, you take row _i_ of **A**, column _j_ of **B** and take their do
     </td>
 </table>
 
-The value of this way of looking at it will become clear when I discuss coordinate transformations. Also, like I said, for matrix-multiplication you take the dot-product of a row of **A** and a column of **B**. Since a vector is basically an M×1 matrix, the normal dot-product is actually a special case of the matrix-multiplication. The only thing is that you have to take the transposed of the first vector:
+この見方の価値は、座標変換を説明するときに明らかになります。また、先ほど言ったように、行列の掛け算では **A** の行と **B** の列の内積を取ります。ベクトルは基本的に M×1 の行列なので、普通の内積は実は行列の掛け算の特殊な場合です。ただ、最初のベクトルの転置を取る必要があります。
 
 <table id="eq:vec-mul">
   <tr>
@@ -1274,13 +1274,13 @@ The value of this way of looking at it will become clear when I discuss coordina
     </td>
 </table>
 
-There's a wealth of other things you can do with matrix-multiplication, but I'll leave it with the following two notes. First, the operation is _not commutative_! What that means is that **A · B** ≠ **B · A**. you may have guessed that from the row-column requirement, but even if those do match up it is still not commutative. My [affine sprite demo](affobj.html#sec-demo) kind of shows this: a rotation-then-scale does not give the same results as scale-then-rotate (which is probably what you wanted). Only in very special cases is **A · B** equal to **B · A**.
+行列の掛け算でできることはほかにも山ほどありますが、次の 2 つの注意だけにしておきます。まず、この演算は_交換可能ではありません_！ つまり **A · B** ≠ **B · A** です。行と列の条件から察していたかもしれませんが、それらが合っていても、やはり交換可能ではありません。私の[アフィンスプライトのデモ](affobj.html#sec-demo)がこれをいわば示しています。回転してから拡大縮小するのと、拡大縮小してから回転する（おそらく望んでいたのはこちら）のとでは、同じ結果になりません。**A · B** が **B · A** と等しくなるのは、ごく特別な場合だけです。
 
-The other note is that matrix multiplication is expensive. You have to do a dot-product (_q_ multiplications) for each element of **C**, which leads to _p\*q\*r_ multiplications. That's an O(3) operation, the nastiest ones around. OK, so for 2x2 matrices it doesn't amount to much, but when you deal with 27x18 matrices (like I do for work), this becomes a problem. Fortunately there are ways of cutting down on the number of calculations, but that's beyond the scope of this tutorial.
+もう 1 つの注意は、行列の掛け算は高くつくということです。**C** の各要素について内積（_q_ 回の掛け算）をしなければならないので、_p\*q\*r_ 回の掛け算になります。これは O(3)（訳注: 通常は O(N³) と書きます）の演算で、最も厄介な部類です。まあ、2x2 の行列ならたいしたことはありませんが、（私が仕事でするように）27x18 の行列を扱うとなると問題になります。幸い計算の数を減らす方法はありますが、それはこのチュートリアルの範囲を超えています。
 
-### Determinant {#ssec-mat-det}
+### 行列式 {#ssec-mat-det}
 
-The determinant is a scalar that you get when you combine the elements of a <dfn>square matrix</dfn> (of size N×N) a certain way. I've looked everywhere for a nice, clear-cut definition of the determinant, but with very little luck. It seems it has a number of uses, but it is most often used as a simple check to see if a equations of a system (or a set of vectors) is linearly independent, and thus if the coefficient matrix is invertible. The mathematical definition of the determinant of N×N matrix **A** is a recurrence equation and looks like this.
+行列式は、<dfn>正方行列</dfn>（N×N の大きさ）の要素を特定の方法で組み合わせて得られるスカラーです。行列式の素敵ではっきりした定義をあちこち探しましたが、ほとんど見つかりませんでした。いくつかの使い道があるようですが、最もよく使われるのは、連立方程式の式（あるいはベクトルの組）が 1 次独立かどうか、したがって係数行列が逆行列を持つかどうかを確かめる簡単な確認としてです。N×N の行列 **A** の行列式の数学的な定義は漸化式で、次のようになります。
 
 <table id="eq:mat-det">
   <tr>
@@ -1346,11 +1346,11 @@ The determinant is a scalar that you get when you combine the elements of a <dfn
   </tr>
 </table>
 
-I could explain this in more detail, but there's actually little point in doing that. I'll just give the formulae for the 2x2 and 3x3 case. Actually, I've already done so: in the cross product. If you have matrix **A** = \[**a**<sub>1</sub> **a**<sub>2</sub> **a**<sub>3</sub>\], then \|**A**\| = **a**<sub>1</sub> · (**a**<sub>2</sub> × **a**<sub>3</sub>). For a 2×2 matrix, **B** = \[**b**<sub>1</sub> **b**<sub>2</sub>\] it's _b_<sub>11</sub>·_b_<sub>22</sub> − _b_<sub>12</sub>·_b_<sub>21</sub>, which in fact also uses the cross product. This is not a mere coincidence. Part of what the determinant is used for is determining whether a matrix can be inverted. Basically, if \|**A**\| = 0, then there is no inverse matrix. Now, remember that the cross-product gives is involved in the calculation of the area between vectors. This can only be 0 if the vectors are colinear. And linear independence is one of the key requirements of having an inverse matrix. Also, notice the notation for the determinant: det **A** = \|**A**\|. Looks a bit like the norm of a vector, doesn't it? Well, the related cross-product _is_ related to the area spanned between vectors, so I guess it makes sense then.
+これをもっと詳しく説明することもできますが、実はそうしてもあまり意味がありません。2x2 と 3x3 の場合の公式だけを示します。実は、すでに示しています。外積のところでです。行列 **A** = \[**a**<sub>1</sub> **a**<sub>2</sub> **a**<sub>3</sub>\] があれば、\|**A**\| = **a**<sub>1</sub> · (**a**<sub>2</sub> × **a**<sub>3</sub>) です。2×2 の行列 **B** = \[**b**<sub>1</sub> **b**<sub>2</sub>\] なら、それは _b_<sub>11</sub>·_b_<sub>22</sub> − _b_<sub>12</sub>·_b_<sub>21</sub> で、これも実は外積を使っています。これは単なる偶然ではありません。行列式の使い道の一部は、行列が逆行列を持てるかどうかを判定することです。基本的に、\|**A**\| = 0 なら逆行列はありません。さて、外積はベクトルの間の面積の計算に関わっていることを思い出してください。これが 0 になりうるのは、ベクトルが同一直線上にある場合だけです。そして 1 次独立性は、逆行列を持つための重要な条件の 1 つです。また、行列式の表記 det **A** = \|**A**\| にも注目してください。ベクトルのノルムに少し似ていますよね？ まあ、関係のある外積はベクトルの間に張られる面積に関係して_いる_ので、筋は通っていると思います。
 
-### Matrix inversion {#ssec-mat-inv}
+### 逆行列 {#ssec-mat-inv}
 
-Going back to {@eq:eqset} (yet again), we have a system of equations with variables **x**= (_x, y, z_) and matrix **A** such that **A · x** = **b**. We'll that's nice and all, but most of the times it's **x** that's unknown, not **b**. What we need isn't the way from **x** to **b** (which is **A**), but its <dfn>inverse</dfn>. What we need is **x** = **A**<sup>−1</sup> **· b**. **A**<sup>−1</sup> is the notation for the inverse of a matrix. The basic definition of it is **A · A**<sup>−1</sup> = **I**, where **I** is the <dfn>identity matrix</dfn>, which has 1s on its diagonal and 0s everywhere else. There are a number of ways of calculating an inverse. There's trial-and-error, of course (don't even think about it!), but also the way one usually solves linear systems: through row reduction. Since I haven't mentioned how to do that, I'll resort to just giving a formula for one, namely the 2x2 case:
+（またしても）{@eq:eqset} に戻ると、**A · x** = **b** となるような、変数 **x**= (_x, y, z_) と行列 **A** の連立方程式があります。それは結構なのですが、たいていわからないのは **b** ではなく **x** のほうです。必要なのは **x** から **b** への道（それが **A** です）ではなく、その<dfn>逆</dfn>です。必要なのは **x** = **A**<sup>−1</sup> **· b** です。**A**<sup>−1</sup> は行列の逆行列の表記です。その基本の定義は **A · A**<sup>−1</sup> = **I** で、**I** は<dfn>単位行列</dfn>、つまり対角成分が 1 でそれ以外がすべて 0 の行列です。逆行列を計算する方法はいくつかあります。もちろん試行錯誤もあります（考えることすらしないでください！）が、連立 1 次方程式を解く普通のやり方、行基本変形によるものもあります。そのやり方はまだ説明していないので、1 つの場合、つまり 2x2 の場合の公式を示すだけにします。
 
 <table id="eq:2d-inv">
   <tr>
@@ -1452,11 +1452,11 @@ Going back to {@eq:eqset} (yet again), we have a system of equations with variab
   </tr>
 </table>
 
-This is the simplest case of an inverse. And, yup, that's a determinant as the denominator. You can see what happens if that thing's zero. Now, some other things you need to know about matrix inverses. Only square matrices have a chance of being invertible. You can use the determinant to see if it's actually possible. Furthermore, the inverse of the inverse is the original matrix again. There's more, of course (oh gawd is there more), but this will have to do for now.
+これは逆行列の最も単純な場合です。そして、そう、分母は行列式です。それがゼロだったらどうなるかわかりますね。さて、逆行列について知っておくべきことがほかにもいくつかあります。逆行列を持つ可能性があるのは正方行列だけです。実際に可能かどうかは、行列式で確かめられます。さらに、逆行列の逆行列は元の行列に戻ります。もちろんもっとあります（ああ、本当にもっとあります）が、今はこれで十分です。
 
-### Algebraic properties of matrices {#ssec-mat-props}
+### 行列の代数的な性質 {#ssec-mat-props}
 
-**A** and **B** are M×N matrices; **C** is N×P; **D** and **E** are N×N. **e**<sub>i</sub> are the column vectors of **E**. _c_ is a scalar.
+**A** と **B** は M×N の行列、**C** は N×P、**D** と **E** は N×N です。**e**<sub>i</sub> は **E** の列ベクトルです。_c_ はスカラーです。
 
 <div class="lblock">
 <table cellpadding=2 cellspacing=0>
@@ -1471,12 +1471,12 @@ This is the simplest case of an inverse. And, yup, that's a determinant as the d
   </tr>
   <tr>
     <td>
-      <b>A·C</b> = <b>C·A</b> <i>only</i> if M=P, and then <i>only</i> under very special conditions
+      <b>A·C</b> = <b>C·A</b> となるのは M=P の場合<i>だけ</i>で、しかもごく特別な条件のもとで<i>だけ</i>
     </td>
   </tr>
   <tr>
     <td>
-      If <b>E·F</b> = <b>I</b>, then <b>E</b><sup>&minus;1</sup> = <b>F</b> and <b>F</b><sup>&minus;1</sup> = <b>E</b>
+      <b>E·F</b> = <b>I</b> なら、<b>E</b><sup>&minus;1</sup> = <b>F</b> かつ <b>F</b><sup>&minus;1</sup> = <b>E</b>
     </td>
   </tr>
   <tr>
@@ -1494,23 +1494,23 @@ This is the simplest case of an inverse. And, yup, that's a determinant as the d
   </tr>
   <tr>
     <td>
-      If <b>a</b><sub>i</sub> · <b>a</b><sub>j</sub> = &delta;<sub>ij</sub>, then <b>A</b><sup>&minus;1</sup> = <b>A</b><sup>T</sup> (in other words, if the vectors are unit vectors and mutually perpendicular, the inverse is the transposed.)
+      <b>a</b><sub>i</sub> · <b>a</b><sub>j</sub> = &delta;<sub>ij</sub> なら、<b>A</b><sup>&minus;1</sup> = <b>A</b><sup>T</sup>（言い換えると、ベクトルが単位ベクトルで互いに垂直なら、逆行列は転置行列です。）
     </td>
   </tr>
 </table>
 </div>
 
-## Spaces, bases, coordinate transformations {#sec-space}
+## 空間、基底、座標変換 {#sec-space}
 
-The collection of all possible vectors is called a <dfn>vector space</dfn>. The number of dimensions is given by the amount of numbers of the vectors (or was it the other way around?). A 2D space has vectors with 2 elements, 3D vectors have 3, etc. Now, usually, the elements of a vector tell you where in the space you are, but there's more to it than that. For a fully defined position you need
+ありうるすべてのベクトルの集まりは<dfn>ベクトル空間</dfn>と呼ばれます。次元の数は、ベクトルの数の個数で与えられます（あるいは逆だったでしょうか？）。2D の空間には要素が 2 つのベクトルがあり、3D のベクトルには 3 つある、という具合です。さて、普通はベクトルの要素が空間のどこにいるかを教えてくれますが、話はそれだけではありません。位置を完全に定めるには、次のものが必要です。
 
-- a base
-- an origin
-- coordinates
+- 基底
+- 原点
+- 座標
 
-The vectors you're used to cover the coordinates part, but without the other two coordinates mean nothing, they're just numbers. A set of coordinates like (2, 1) means as little as, say, a speed of 1. You need a frame of reference for them to mean anything. For physical quantities, that means units (like km/h or miles/h or m/s, see what a difference that makes for speed?); for spaces, that means a base and an origin.
+慣れているベクトルは座標の部分を受け持ちますが、ほかの 2 つがなければ座標は何も意味せず、ただの数にすぎません。(2, 1) のような座標の組は、たとえば速さ 1 と同じくらいしか意味を持ちません。それらが何かを意味するには、基準の枠組みが必要です。物理量なら、それは単位です（km/h、マイル/h、m/s など。速さにとってどれほど違いが出るかわかりますね？）。空間なら、それは基底と原点です。
 
-### Coordinate systems {#ssec-space-sys}
+### 座標系 {#ssec-space-sys}
 
 <div class="lblock">
   <table id="fig:img-sys">
@@ -1519,29 +1519,29 @@ The vectors you're used to cover the coordinates part, but without the other two
         <div class="cpt" style="width:192px">
           <img src="img/math/crd_cart.png" alt="Cartesian coords.">
           <br>
-          <b>{*@fig:img-sys}a</b>: a standard coordinate system S. Point <i>P</i> is given by coordinates <nobr>(3, 2)</nobr>.
+          <b>{*@fig:img-sys}a</b>: 標準の座標系 S。点 <i>P</i> は座標 <nobr>(3, 2)</nobr> で与えられます。
         </div>
       </td>
       <td>
         <div class="cpt" style="width:192px">
           <img src="img/math/crd_shear.png" alt="Sheared coords">
           <br>
-          <b>{*@fig:img-sys}b</b>, a sheared coordinate system S'. Point <i>P</i> is given by coordinates <nobr>(1, 2)</nobr>.
+          <b>{*@fig:img-sys}b</b>、せん断した座標系 S'。点 <i>P</i> は座標 <nobr>(1, 2)</nobr> で与えられます。
         </div>
       </td>
     </tr>
   </table>
 </div>
 
-{\*@fig:img-sys}a shows the 2D Cartesian coordinates system you're probably familiar with. You have an horizontal x-axis (**i** = (1, 0) ) and a vertical y-axis (**j** = (0, 1) ). And I have a point _P_ in it. If you follow the gridlines, you'll see that x=3 and y=2, so _P_= (3, 2), right? Well, yes. And no. In my opinion, mostly no.
+{\*@fig:img-sys}a は、おそらくおなじみの 2D のデカルト座標系です。横の x 軸（**i** = (1, 0) ）と縦の y 軸（**j** = (0, 1) ）があります。そしてその中に点 _P_ があります。格子線をたどると x=3、y=2 なので、_P_= (3, 2) ですよね？ まあ、そうでもあり、そうでもありません。私の意見では、ほとんどそうではありません。
 
-The thing is that a point in space _has_ no real coordinates, it's just there. The coordinates depend on your frame of reference, which is basically arbitrary. To illustrate this, take a look at {@fig:img-sys}b; In this picture I have a coordinate system S', which still has a horizontal x-axis (**u** = (1, 0) ), but the y-axis (**v** = (1, 1) ) is sheared 45°. And in this system, point _P_ is given by coordinates (1, 2), and not (3, 2). If you use the coordinates of one system directly into another system, bad things happen.
+問題は、空間の点には本当の座標など_ない_ということです。それはただそこにあるだけです。座標は基準の枠組みによって決まり、それは基本的に任意です。これを示すために、{@fig:img-sys}b を見てください。この絵には座標系 S' があり、横の x 軸（**u** = (1, 0) ）はそのままですが、y 軸（**v** = (1, 1) ）は 45° せん断されています。そしてこの座標系では、点 _P_ は (3, 2) ではなく座標 (1, 2) で与えられます。ある座標系の座標を別の座標系でそのまま使うと、まずいことが起きます。
 
-Two questions now emerge: why would anyone use a different set of coordinates, and how do we convert between two systems. I'll cover the latter in the rest of this article. As for the former, while a Cartesian system is highly useful, there are many instances where real (or virtual) world calculations are complicated immensely when you stick to it. For one thing, describing planetary orbits or things involving magnetism considerably easier in spherical or cylindrical coordinates. For another, in texture mapping, you have a texture with texels which need to be applied to surfaces that in nearly all cases do not align nicely with your world coordinates. The [affine transformations](affine.html) are perfect examples of this. So, yeah, using non-Cartesian coordinates are very useful indeed.
+ここで 2 つの疑問が出てきます。なぜわざわざ別の座標の組を使うのか、そして 2 つの座標系の間をどう変換するのかです。後者はこの記事の残りで扱います。前者については、デカルト座標系はとても便利ですが、それにこだわると現実の（あるいは仮想の）世界の計算がとてつもなく複雑になる場面がたくさんあります。1 つには、惑星の軌道や磁気に関わることを記述するのは、球座標や円柱座標のほうがずっと簡単です。また、テクスチャマッピングでは、テクセルを持つテクスチャを、ほぼすべての場合にワールドの座標ときれいに揃っていない面に貼る必要があります。[アフィン変換](affine.html)はこの完璧な例です。ですから、そう、デカルト座標でない座標を使うのは本当にとても役に立つのです。
 
-### Building a coordinate base {#ssec-space-build}
+### 座標の基底を作る {#ssec-space-build}
 
-Stating that there are other coordinate systems besides the Cartesian one is nice and all, but how does one really use them? Well, very easily, actually. Consider what you are really doing when you're using coordinates in a Cartesian system. Look at {@fig:img-sys}a again. Suppose you're given a coordinate set, like (x, y)= (3, 2). To find its location, you move 3 along the x-axis, 2 along the y-axis, and you have your point _P_. Now, in system S' ({@fig:img-sys}b) we have (x', y') = (1, 2), but the procedure we used in S doesn't work here since we don't have an y-axis. However, we _do_ have vectors **u** and **v**. Now if you move 1 along **u** and 2 along **v**, we're at point _P_ again. Turning back to system S again, the x and y axes are really vectors _i_ and _j_, respectively, so we've been using the same procedure in both systems after all. Basically, what we do is:
+デカルト座標系のほかにも座標系があると言うのは結構ですが、実際にはどう使えばいいのでしょうか？ 実はとても簡単です。デカルト座標系で座標を使うとき、本当は何をしているのかを考えてみてください。もう一度 {@fig:img-sys}a を見てください。(x, y)= (3, 2) のような座標の組が与えられたとします。その位置を見つけるには、x 軸に沿って 3、y 軸に沿って 2 進めば、点 _P_ にたどり着きます。さて、座標系 S'（{@fig:img-sys}b）には (x', y') = (1, 2) がありますが、y 軸がないので、S で使った手順はここではうまくいきません。しかし、ベクトル **u** と **v** は_あります_。**u** に沿って 1、**v** に沿って 2 進めば、また点 _P_ に来ます。座標系 S に戻ると、x 軸と y 軸は実はそれぞれベクトル _i_ と _j_ なので、結局どちらの座標系でも同じ手順を使っていたのです。基本的に、していることは次のとおりです。
 
 <table id="eq:coords">
   <tr>
@@ -1607,7 +1607,7 @@ Stating that there are other coordinate systems besides the Cartesian one is nic
   </tr>
 </table>
 
-Now, if you've paid attention, you should recognize the structure of these equations. Yes, we've seen them before, in {@eq:eqset}d. If we rewrite our vectors and coordinates, to matrices and vectors, we get
+さて、注意を払っていたなら、これらの式の構造に見覚えがあるはずです。そう、前に {@eq:eqset}d で見ました。ベクトルと座標を行列とベクトルに書き直すと、次のようになります。
 
 <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
   <mstyle displaystyle="true" scriptlevel="0">
@@ -1791,9 +1791,9 @@ Now, if you've paid attention, you should recognize the structure of these equat
     </td>
 </table>
 
-Vectors **x** and **x**' contain the coordinates, just like they always have. What's new is that we have now defined the coordinate system in the form matrices **M** and **M'**. The vectors that the matrices are made of are the <dfn>base vectors</dfn> of the coordinate system. Of course, since the base vectors of system S are the standard unit vectors, the matrix that they form is the identity matrix **M == I**, which can be safely omitted (and usually is), but don't forget it's there behind the curtains. Actually, there's one more thing that's usually implicitly added to the equation, namely the origin _O_. The standard origin is the null vector, but it need not be.
+ベクトル **x** と **x**' には、これまでどおり座標が入っています。新しいのは、座標系を行列 **M** と **M'** の形で定義したことです。行列を作っているベクトルは、その座標系の<dfn>基底ベクトル</dfn>です。もちろん、座標系 S の基底ベクトルは標準の単位ベクトルなので、それらが作る行列は単位行列 **M == I** で、安全に省けます（そして普通は省きます）が、それが舞台裏にあることを忘れないでください。実は、式に普通は暗黙のうちに加えられているものがもう 1 つあります。原点 _O_ です。標準の原点はゼロベクトルですが、そうである必要はありません。
 
-{\*@eq:pt-def} is the full equation for the definition of a point. _O_ is the origin of the coordinate system, **M** defines the base vectors, **x** is a coordinate set in that base, starting at the origin. Note that each of these is completely arbitrary; the **M** and **x** in the preceding discussion are just examples of these.
+{\*@eq:pt-def} は、点の定義の完全な式です。_O_ は座標系の原点、**M** は基底ベクトルを定め、**x** はその基底での、原点から始まる座標の組です。これらはそれぞれ完全に任意であることに注意してください。先ほどの説明の **M** と **x** は、それらの例にすぎません。
 
 <table id="eq:pt-def">
   <tr>
@@ -1822,10 +1822,10 @@ Vectors **x** and **x**' contain the coordinates, just like they always have. Wh
   </tr>
 </table>
 
-### Last notes {#ssec-space-notes}
+### 最後の注意 {#ssec-space-notes}
 
-It really is best to think of points in terms of {@eq:pt-def} (that is, an origin, a base matrix, and a coordinate vector), rather than merely a set of coordinates. You'll find that this technique can be applied to an awful lot of problems and having a general description for them simplifies solving those problems. For example, rotating and scaling of sprites and backgrounds is nothing more than a change of coordinate systems. There's no magic involved in _pa-pd_, they're just the matrix that defines the screen→texture space transformation.
+点は、単なる座標の組としてではなく、{@eq:pt-def} の形（つまり原点、基底の行列、座標のベクトル）で考えるのが本当に一番です。この技法はものすごくたくさんの問題に応用でき、それらに一般的な記述があると、問題を解くのが簡単になることがわかるでしょう。たとえば、スプライトや背景の回転と拡大縮小は、座標系の変更にほかなりません。_pa-pd_ には何の魔法もありません。それらは画面→テクスチャ空間の変換を定める行列にすぎないのです。
 
-Be very careful that you understand what does what when dealing with coordinate system changes. When transforming between two systems, it is very easy to write down the exact inverse of what you meant to do. For example, given the systems S and S' of the previous paragraph, we see that **x = M · x'**, that is **M** transforms from S' to S. But the base vectors of **M** are _inside_ system S, so you may be tempted to think it transforms from S to S'. Which it doesn't. A similar thing goes on with the **P** matrix that the GBA uses. The base vectors of this matrix lie inside texture space (see fig 5 in the [affine](affine.html) page), meaning that the transformation it does goes from screen to texture space and _not_ the other way around.
+座標系の変更を扱うときは、何が何をするのかを理解しているか、とても注意してください。2 つの座標系の間で変換するとき、意図していたこととちょうど逆のことを書いてしまうのはとても簡単です。たとえば、前の段落の座標系 S と S' について、**x = M · x'**、つまり **M** は S' から S へ変換することがわかります。しかし **M** の基底ベクトルは座標系 S の_中に_あるので、S から S' へ変換すると思いたくなるかもしれません。でもそうではないのです。GBA が使う **P** 行列でも同じようなことが起きます。この行列の基底ベクトルはテクスチャ空間の中にあります（[アフィン](affine.html)のページの図 5 を見てください）。つまり、それが行う変換は画面からテクスチャ空間へのもので、その逆では_ありません_。
 
-The base matrix need not be square; you can use any M×N matrix. This corresponds to a conversion from N dimensions to M dimensions. For example, if M=3 and N=2 (i.e., two 3D vectors), you would have a flat plane inside a 3D world. If N\>M, you'd have a projection.
+基底の行列は正方である必要はありません。どんな M×N の行列でも使えます。これは N 次元から M 次元への変換に相当します。たとえば M=3、N=2（つまり 3D のベクトルが 2 つ）なら、3D の世界の中の平らな平面になります。N\>M なら射影になります。
