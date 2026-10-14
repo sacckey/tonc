@@ -1,346 +1,346 @@
-# G. Change Log
+# G. 変更履歴
 
-### Dec 27, 2023 - Initial content port and mdbook setup
+### 2023 年 12 月 27 日 - 内容の初回移植と mdbook の準備
 
-This pre-release includes all the contents from the TONC tutorial ported faithfully to the markdown format, rendered by mdbook. Some features are implemented with additional mdbook preprocessors.
+このプレリリースには、TONC のチュートリアルの全内容を、mdbook で描画するマークダウン形式に忠実に移植したものが含まれています。一部の機能は、追加の mdbook のプリプロセッサで実装しています。
 
-The "Install" chapter also received a complete overhaul and the new version is included in this release. The original port of this part is anyway available in commit [7a3ac73](https://github.com/gbadev-org/tonc/commit/7a3ac731efe03af6f7debbcc7dce3b222cd23b65).
+「Install」の章も全面的に見直され、新しい版がこのリリースに含まれています。この部分の元の移植は、いずれにせよコミット [7a3ac73](https://github.com/gbadev-org/tonc/commit/7a3ac731efe03af6f7debbcc7dce3b222cd23b65) で見られます。
 
-The porting was curated by @exelotl @avivace @LunarLambda @pinobatch @mtthgn @copyrat90 @gwilymk .
+移植は @exelotl @avivace @LunarLambda @pinobatch @mtthgn @copyrat90 @gwilymk が取りまとめました。
 
-### Mar 2013 (1.4.1)
+### 2013 年 3 月（1.4.1）
 
-Maintaince update. also includes things from the [errata page](http://www.coranac.com/documents/tonc-errata/)
+保守のための更新です。[正誤表のページ](http://www.coranac.com/documents/tonc-errata/)の内容も含んでいます。
 
-- ![fix](./img/log/bul_excl.png) Changed from `arm-eabi` to `arm-none-eabi`.
-- ![upgrade](./img/log/bul_upgr.png) Little html fixes here and there. Thank Glod for directory search-and-replace tools.
-- ![fix](./img/log/bul_excl.png) `all code`: since GCC 4.7 broke my assembly functions, I've recompiled all code with the latest devkitArm (currently 40) for asm compatilibity. The examples and libtonc should all work again. I still have to adjust the text to match though.
-- `asm.htm`: fixed non-matching variable names in [data sections](asm.html#ssec-gas-dsec)'s code snippet. Thanks, Gdogg
-- `gfx.htm`: removed a lost semicolon in the [blending demo](gfx.html#ssec-bld-demo).
-- `hardware.htm`: IO-ram upper limit was given as `0401:03FF`, which should be `0400:03FF`. Thanks, G M.
-- code: Fixed links to grit for `m7_demo`, `m7_ex`, `tte_demo`.
-- [objaff.htm 11.5](objaff.html#sec-combo): fixed spurious `sina` and `cosa` calculations in `obj_rotscale_ex()` and `oac_rotscale()`. Thanks, dasi.
-- GNU assembler manual has moved to <http://sourceware.org/binutils/docs/as/index.html> (thanks, Joseph).
-- Code snippet at §23.2.1:Basic operations. “x68 asm” should, of course, be “x86 asm” (thanks, Wladimir).
-- Some of the memory map entries in §1.3 were … imprecise (thanks Pius).
+- ![fix](./img/log/bul_excl.png) `arm-eabi` から `arm-none-eabi` に変更しました。
+- ![upgrade](./img/log/bul_upgr.png) あちこちでちょっとした html の修正をしました。ディレクトリ単位の検索と置換のツールに感謝。
+- ![fix](./img/log/bul_excl.png) `all code`: GCC 4.7 で私のアセンブリの関数が壊れたので、アセンブリの互換性のために、すべてのコードを最新の devkitArm（現在は 40）で再コンパイルしました。例と libtonc はすべてまた動くはずです。ただ、本文をそれに合わせて直す作業がまだ残っています。
+- `asm.htm`: [データの領域](asm.html#ssec-gas-dsec)のコードの変数名が一致していなかったのを直しました。ありがとう、Gdogg
+- `gfx.htm`: [ブレンドのデモ](gfx.html#ssec-bld-demo)の迷子のセミコロンを取り除きました。
+- `hardware.htm`: IO RAM の上限が `0401:03FF` になっていましたが、`0400:03FF` が正しいです。ありがとう、G M。
+- コード: `m7_demo`、`m7_ex`、`tte_demo` の grit へのリンクを直しました。
+- [objaff.htm 11.5](objaff.html#sec-combo): `obj_rotscale_ex()` と `oac_rotscale()` の余計な `sina` と `cosa` の計算を直しました。ありがとう、dasi。
+- GNU アセンブラのマニュアルは <http://sourceware.org/binutils/docs/as/index.html> に移りました（ありがとう、Joseph）。
+- §23.2.1 基本の演算のコード。「x68 asm」はもちろん「x86 asm」であるべきでした（ありがとう、Wladimir）。
+- §1.3 のメモリマップのエントリのいくつかが……不正確でした（ありがとう、Pius）。
 
-### Oct 2008 (1.4)
+### 2008 年 10 月（1.4）
 
-… Or maybe not. Silly little errors.
+……と思ったら、そうでもありませんでした。ばかげた小さな誤りです。
 
-- ![fix](./img/log/bul_excl.png) text: the `se_index_fast()` function in [regbg:map-layout](regbg.html#ssec-map-layout) was wrong; the second condition should have used \``(bgcnt&BG_REG_64x64) == BG_REG_64x64`'. Fixed.
-- ![fix](./img/log/bul_excl.png) text: the `ldm` example in [asm:memory](asm.html#ssec-arm-mem) did not list the right values for `ldmda` and `ldmdb`. Fixed.
-- ![fix](./img/log/bul_excl.png) code: removed `void*` arithmetic in `tonc_surface.h` (hopefully) and fixed `berk.c` from the timer demo so that it compiles now. Thanks for noticing, elwing and Ealdor.
-- Fixed a few random typos here and there
+- ![fix](./img/log/bul_excl.png) 本文: [regbg:map-layout](regbg.html#ssec-map-layout) の `se_index_fast()` 関数が間違っていました。2 つ目の条件は \``(bgcnt&BG_REG_64x64) == BG_REG_64x64`' を使うべきでした。修正しました。
+- ![fix](./img/log/bul_excl.png) 本文: [asm:memory](asm.html#ssec-arm-mem) の `ldm` の例で、`ldmda` と `ldmdb` の正しい値が挙げられていませんでした。修正しました。
+- ![fix](./img/log/bul_excl.png) コード: `tonc_surface.h` の `void*` の算術を（たぶん）取り除き、タイマーのデモの `berk.c` を直して、コンパイルできるようにしました。気づいてくれてありがとう、elwing と Ealdor。
+- あちこちの細かいタイプミスをいくつか直しました
 
-### May 2008 (1.4)
+### 2008 年 5 月（1.4）
 
-- ![fix](./img/log/bul_excl.png) text: Last batch of spelling/grammar fixes. Thanks guys. Especially Jake.
-- text: changed the stuff on #include for less hyperbole and more explanations.
+- ![fix](./img/log/bul_excl.png) 本文: スペルと文法の修正の最後の一群です。皆さんありがとう。特に Jake。
+- 本文: #include についての部分を、誇張を減らして説明を増やすように変えました。
 
-I think that'll be all then.
+これで全部だと思います。
 
-### May 2008 (1.3)
+### 2008 年 5 月（1.3）
 
-- ![upgrade](./img/log/bul_upgr.png) code: All demos that use text now use TTE to do it. Variable width text just looks prettier than fixed width.
-- ![upgrade](./img/log/bul_upgr.png) code: Some of the advanced demos use grit to convert the graphics.
-- ![new](./img/log/bul_new.png) text: added TTE chapter with information about creating (fast) text renderers for every occasion.
-- ![upgrade](./img/log/bul_upgr.png) text: I've revamped the [setup chapter](setup.html). It now covers template makefiles and some potential problems with the installation.
-- ![swap](./img/log/bul_swap.png) text/code: the [irq chapter](interrupts.html) and its demo uses the new master ISR.
-- ![fix](./img/log/bul_excl.png) text: Fixed the brown text in the pdf. For anyone who has the same problem with CutePDF, go to `CutePDF printer->Properties->Paper/Quality->Advanced->Graphic->Image Color Management` and make sure `ICM Method` is not set to `Host system`. How silly of me not to look there first.
-- text: Finally removed the obsolete section for IRQ-handling with older devkits.
-- ![new](./img/log/bul_new.png) libtonc: There is a new system for text called TTE. It's pretty cool. Read more about it in [tte.htm](tte.html).
-- ![new](./img/log/bul_new.png) libtonc: New rendering functions. There are now ‘TSurface’ structs defining a rendering surface and basic primitive renderers for different surface types. Functionality includes: pixel, line rectangle renderers, a blitter and floodfill. Key surface types: 16bpp bitmap, 8bpp bitmap and 4bpp tiles.
-- ![new](./img/log/bul_new.png) libtonc: Color adjustment functions. Fading, blending, brightness and more.
-- ![new](./img/log/bul_new.png) libtonc: Added [tonccpy and toncset](http://www.coranac.com/2008/01/25/tonccpy/), memcpy and memset replacements that actually work for VRAM as well.
-- ![new](./img/log/bul_new.png) libtonc: Put libtonc documentation online: [http://www.coranac.com/man/tonclib/index.htm](http://www.coranac.com/man/tonclib/index.htm).
-- ![new](./img/log/bul_new.png) libtonc: Added `tonc_libgba.h`, a header with most of the libgba constants and functions names mapped to tonc equivalents.
-- ![swap](./img/log/bul_swap.png) libtonc: Changed the master ISR to one that doesn't automatically enable interrupt nesting. It's a bit of a downgrade, but it's probably more appropriate. This shouldn't affect anyone that didn't use nested interrupts. The old version is still available, it's just not the default.
+- ![upgrade](./img/log/bul_upgr.png) コード: テキストを使うすべてのデモが、それに TTE を使うようになりました。可変幅のテキストは固定幅よりきれいに見えます。
+- ![upgrade](./img/log/bul_upgr.png) コード: 高度なデモのいくつかは、グラフィックの変換に grit を使います。
+- ![new](./img/log/bul_new.png) 本文: あらゆる場面のための（速い）テキストの描画処理の作り方についての情報を載せた、TTE の章を加えました。
+- ![upgrade](./img/log/bul_upgr.png) 本文: [準備の章](setup.html)を刷新しました。ひな形の makefile と、インストールで起こりうるいくつかの問題を扱うようになりました。
+- ![swap](./img/log/bul_swap.png) 本文/コード: [割り込みの章](interrupts.html)とそのデモは、新しいマスター ISR を使います。
+- ![fix](./img/log/bul_excl.png) 本文: PDF の茶色の文字を直しました。CutePDF で同じ問題を抱えている人は、`CutePDF printer->Properties->Paper/Quality->Advanced->Graphic->Image Color Management` に行き、`ICM Method` が `Host system` に設定されていないことを確かめてください。最初にそこを見なかったなんて、私はなんて間抜けなんでしょう。
+- 本文: 古い開発キットでの IRQ の処理についての時代遅れの節を、ついに取り除きました。
+- ![new](./img/log/bul_new.png) libtonc: TTE というテキストの新しい仕組みがあります。なかなかかっこいいです。詳しくは [tte.htm](tte.html) を読んでください。
+- ![new](./img/log/bul_new.png) libtonc: 新しい描画の関数。描画先を定める「TSurface」構造体と、いろいろな描画先の種類のための基本的な図形の描画処理があります。機能には、ピクセル、線、長方形の描画処理、ブリッタ、塗りつぶしがあります。主な描画先の種類は、16bpp のビットマップ、8bpp のビットマップ、4bpp のタイルです。
+- ![new](./img/log/bul_new.png) libtonc: 色の調整の関数。フェード、ブレンド、明るさなど。
+- ![new](./img/log/bul_new.png) libtonc: VRAM にもちゃんと使える memcpy と memset の代わりである [tonccpy と toncset](http://www.coranac.com/2008/01/25/tonccpy/) を加えました。
+- ![new](./img/log/bul_new.png) libtonc: libtonc の文書をオンラインに置きました: [http://www.coranac.com/man/tonclib/index.htm](http://www.coranac.com/man/tonclib/index.htm)。
+- ![new](./img/log/bul_new.png) libtonc: libgba の定数と関数の名前のほとんどを tonc の対応するものに対応づけたヘッダ、`tonc_libgba.h` を加えました。
+- ![swap](./img/log/bul_swap.png) libtonc: マスター ISR を、割り込みの入れ子を自動的には有効にしないものに変えました。少し格下げですが、おそらくこのほうが適切です。入れ子の割り込みを使っていなかった人には影響しないはずです。古い版もまだ使えますが、デフォルトではありません。
 
-### Dec 2007 (1.3b)
+### 2007 年 12 月（1.3b）
 
-- ![new](./img/log/bul_new.png) Upgraded the [recommendations](first.html#sec-notes) section with a longer list and examples. If you've read other tutorials then **please read this**!
-- ![fix](./img/log/bul_excl.png) More spelling and grammar fixes (thanks [Patater](http://patatersoft.info/))
-- ![fix](./img/log/bul_excl.png) Fix in the template makefile for c++. It's `-fno-exceptions`, not `-fno-expections`, you silly boy. (Thanks muff).
-- ![swap](./img/log/bul_swap.png) All projects now default to cart-boot, not multiboot. This is partially because multiboot doesn't work in devkitPro r21 (at least, not directly), but also because that's how it's normally done anyway.
-- Changed `git` to `grit` where appropriate. Also fixed the download links of everything to point to the new site.
+- ![new](./img/log/bul_new.png) [推奨事項](first.html#sec-notes)の節を、より長い一覧と例で改良しました。ほかのチュートリアルを読んだことがあるなら、**ぜひこれを読んでください**！
+- ![fix](./img/log/bul_excl.png) さらにスペルと文法の修正（ありがとう、[Patater](http://patatersoft.info/)）
+- ![fix](./img/log/bul_excl.png) C++ のためのひな形の makefile の修正。`-fno-expections` ではなく `-fno-exceptions` です。おばかさんめ。（ありがとう、muff）。
+- ![swap](./img/log/bul_swap.png) すべてのプロジェクトのデフォルトを、マルチブートではなくカートリッジからの起動にしました。これは一つには devkitPro r21 でマルチブートが（少なくとも直接には）動かないからですが、どのみち普通はそうするものだからでもあります。
+- 適切な箇所で `git` を `grit` に変えました。また、すべてのもののダウンロードのリンクを、新しいサイトを指すように直しました。
 
-### Feb 2007 (v1.3b)
+### 2007 年 2 月（v1.3b）
 
-As every programmer knows, you're supposed to write down the changes you make while making them. As every programmer also knows, this has a tendency to be forgotten <kbd>\^\_\^;;</kbd>. I probably missed a few things here.
+プログラマなら誰でも知っているように、変更は変更しながら書き留めるべきものです。プログラマなら誰でも知っているように、これは忘れられがちです <kbd>\^\_\^;;</kbd>。ここではおそらくいくつか見落としています。
 
-Text:
+本文:
 
-- ![new](./img/log/bul_new.png) There's now a PDF version too, made by CutePDF. It's a nice tool, but apparently sometimes messes up pictures a little. Page-breaks also occur in unfortunate places, but this is a browser problem. It's _supposed_ to be countered by CSS's `page-break-inside`, but I guess that's not widely supported yet. If anyone knows of a potential fix, let me know. Additionally, if anyone knows of a html→PDF converter that keeps headers for the table of contents, I'd be very interested in that. Mind you, it needs to be able to print a 1.4 MB file, and print it **correctly**! Some PHP html2pdf tools don't render correctly. Word/OpenOffice are probably no good either, as they have a problem with floating divs and `pre` tags. Also, Word nearly crashes on reading the file. Hehehehe.
-- ![new](./img/log/bul_new.png) hardware: GBA pictures and capabillity description. Anyone have a GBA Micro pic I can borrow?
-- ![new](./img/log/bul_new.png) first: hardware pictures.
-- ![new](./img/log/bul_new.png) bitmaps: new demo discussion for drawing primitives in modes 3/5. The page flipping demo has been moved forward in the chapter, and the mode 3/4/5 demo moved back to after the data discussion.
-- ![new](./img/log/bul_new.png) objbg: note and pic on reading tiles as bitmaps, as this this still happens to some occasionally.
-- ![new](./img/log/bul_new.png) regbg: pic to show what the offset registers really do.
-- ![new](./img/log/bul_new.png) affine: added inverse 2x2 matrix equation.
-- ![new](./img/log/bul_new.png) affbg: new structs for affine backgrounds, plus new typedefs and a very nifty method of initializing the affine parameters.
-- ![new](./img/log/bul_new.png) mode7ex: across the board upgrades and new stuff. It now uses proper graphics, making everything look a lot nicer. New background, new fade, sprite rotation-animation and sorting and different methods of motion.
-- ![new](./img/log/bul_new.png) asm: the proper form of the chapter is materializing. New structure of sections, beginning with a one on general ASM. More examples and more ways of doing the same thing for comparative purposes. Has a section on common constructs now too.
-- ![new](./img/log/bul_new.png) New subsection on linear interpolation of luts.
-- ![upgrade](./img/log/bul_upgr.png) Chapter indexing. All references are how of the form ‘ch.foo’.
-- ![upgrade](./img/log/bul_upgr.png) Some chapters have been renamed. _tonctonc_ is now _intro_, _toncmake_ is now _makefile_. Also, _luts_ has been merged into _fixed_, and the parts on makefiles and editors in _setup_ has been moved to a separate file called _edmake_. Might move that into _makefile_ too.
-- ![upgrade](./img/log/bul_upgr.png) All register and register-like tables now use alternating background colors for easier reading.
-- ![upgrade](./img/log/bul_upgr.png) regobj: Different structure for `obj_demo` discussion.
-- ![upgrade](./img/log/bul_upgr.png) regbg: deleted `BGINFO` stuff, as it was never used much and impractical to boot.
-- ![upgrade](./img/log/bul_upgr.png) regbg: New graphics besed on Super Metriod's Brinstar instead of the original Norfair. 's prettier now. Also rearranged stuff.
-- ![upgrade](./img/log/bul_upgr.png) affine: updated ‘finishing up’ for new routines.
-- ![upgrade](./img/log/bul_upgr.png) dma: discussion of upgraded DMA demo
-- ![upgrade](./img/log/bul_upgr.png) interrupts: discussions of the new and (much) improved interrupt handler and its demo.
-- ![upgrade](./img/log/bul_upgr.png) Inline functions for fixed-point functionality.
-- ![fix](./img/log/bul_excl.png) Every chapter has been checked for spelling and grammar. Again. Sigh.
+- ![new](./img/log/bul_new.png) CutePDF で作った PDF 版もできました。良いツールですが、どうやらときどき画像を少しおかしくするようです。改ページも不都合な場所で起きますが、これはブラウザの問題です。CSS の `page-break-inside` で対処できる_はず_なのですが、まだあまり対応していないようです。直せそうな方法を知っている人がいれば、教えてください。さらに、目次のために見出しを保てる html→PDF の変換ツールを知っている人がいれば、とても興味があります。ただし、1.4 MB のファイルを印刷でき、しかも**正しく**印刷できる必要があります！ PHP の html2pdf のツールの中には正しく描画しないものがあります。Word や OpenOffice は、浮動する div や `pre` タグに問題があるので、おそらくだめでしょう。それに、Word はファイルを読むだけでクラッシュしかけます。へへへへへ。
+- ![new](./img/log/bul_new.png) hardware: GBA の写真と性能の説明。誰かゲームボーイミクロの写真を貸してくれませんか？
+- ![new](./img/log/bul_new.png) first: ハードウェアの写真。
+- ![new](./img/log/bul_new.png) bitmaps: モード 3/5 で図形を描くための新しいデモの説明。ページフリップのデモを章の前のほうに移し、モード 3/4/5 のデモをデータの説明のあとに移しました。
+- ![new](./img/log/bul_new.png) objbg: タイルをビットマップとして読むことについての注意と画像。これはまだときどき起きるので。
+- ![new](./img/log/bul_new.png) regbg: オフセットのレジスタが本当は何をするかを示す画像。
+- ![new](./img/log/bul_new.png) affine: 2x2 の逆行列の式を加えました。
+- ![new](./img/log/bul_new.png) affbg: アフィン背景のための新しい構造体と、新しい typedef、そしてアフィンパラメータを初期化するとても気の利いた方法。
+- ![new](./img/log/bul_new.png) mode7ex: 全面的な改良と新しいもの。ちゃんとしたグラフィックを使うようになり、すべてがずっと見栄えが良くなりました。新しい背景、新しいフェード、スプライトの回転のアニメーションとソート、いろいろな移動の方法。
+- ![new](./img/log/bul_new.png) asm: 章のちゃんとした形ができつつあります。アセンブリ全般の節から始まる、新しい節の構成。比べるための、より多くの例と、同じことをするより多くの方法。よくある構文の節もできました。
+- ![new](./img/log/bul_new.png) ルックアップテーブルの線形補間についての新しい小節。
+- ![upgrade](./img/log/bul_upgr.png) 章の番号付け。すべての参照が「ch.foo」の形になりました。
+- ![upgrade](./img/log/bul_upgr.png) いくつかの章の名前を変えました。_tonctonc_ は _intro_ に、_toncmake_ は _makefile_ になりました。また、_luts_ は _fixed_ に統合し、_setup_ の makefile とエディタについての部分は _edmake_ という別のファイルに移しました。それも _makefile_ に移すかもしれません。
+- ![upgrade](./img/log/bul_upgr.png) すべてのレジスタとレジスタのような表は、読みやすくするために背景色を交互に変えるようにしました。
+- ![upgrade](./img/log/bul_upgr.png) regobj: `obj_demo` の説明の構成を変えました。
+- ![upgrade](./img/log/bul_upgr.png) regbg: `BGINFO` まわりを削除しました。あまり使われなかったうえに、そもそも実用的ではなかったので。
+- ![upgrade](./img/log/bul_upgr.png) regbg: 元のノルフェアの代わりに、スーパーメトロイドのブリンスタに基づく新しいグラフィック。前よりきれいです。内容の並べ替えもしました。
+- ![upgrade](./img/log/bul_upgr.png) affine: 新しいルーチンに合わせて「仕上げ」を更新しました。
+- ![upgrade](./img/log/bul_upgr.png) dma: 改良した DMA のデモの説明
+- ![upgrade](./img/log/bul_upgr.png) interrupts: 新しく（大幅に）改良した割り込みハンドラとそのデモの説明。
+- ![upgrade](./img/log/bul_upgr.png) 固定小数点の機能のためのインライン関数。
+- ![fix](./img/log/bul_excl.png) すべての章のスペルと文法を確認しました。またです。はあ。
 
-Code:
+コード:
 
-- ![new](./img/log/bul_new.png) libtonc: All new libtonc, with new file structure. All files are prefixed with `tonc` so the don't interfere with outside files. The types, memory map and register #defines are centralized in _types_, _memmap_ and _memdef_. The main file to include is now `tonc.h`.
+- ![new](./img/log/bul_new.png) libtonc: 新しいファイル構成の、まったく新しい libtonc。外部のファイルと干渉しないように、すべてのファイルに `tonc` の接頭辞を付けました。型、メモリマップ、レジスタの #define は _types_、_memmap_、_memdef_ にまとめました。include するメインのファイルは `tonc.h` になりました。
 
-- ![new](./img/log/bul_new.png) libtonc: Doxygen comments all around. The resulting documentation can be found in `tonclib.chm`.
+- ![new](./img/log/bul_new.png) libtonc: 全体に Doxygen のコメント。生成された文書は `tonclib.chm` にあります。
 
-- ![new](./img/log/bul_new.png) libtonc: a few of the new items. A brand new interrupt handler for nested, prioritized interrupts. Mode 3/5 line drawers. A new .12f sine LUT with support functions as well as lerping functions. All fixed-point macros are now inlines.
+- ![new](./img/log/bul_new.png) libtonc: 新しい項目のいくつか。入れ子にでき、優先順位付けされた割り込みのためのまったく新しい割り込みハンドラ。モード 3/5 の線の描画処理。支援関数と線形補間の関数の付いた新しい .12f のサインのルックアップテーブル。固定小数点のマクロはすべてインライン関数になりました。
 
-- ![new](./img/log/bul_new.png) libtonc: The `BGINFO` struct and functions are gone. Wasn't worth much anyway. Also removed are internal OAM shadows; it's better that you can define them when needed and can save IWRAM by potentially storing them in EWRAM. All OAM functions now use general object pointers, rather than buffers.
+- ![new](./img/log/bul_new.png) libtonc: `BGINFO` 構造体と関数はなくなりました。どのみちあまり価値はありませんでした。内部の OAM の影も取り除きました。必要なときに自分で定義でき、場合によっては EWRAM に置いて IWRAM を節約できるほうが良いからです。OAM の関数はすべて、バッファではなく、一般のオブジェクトのポインタを使うようになりました。
 
-- ![new](./img/log/bul_new.png) libtonc: yet another Great Renaming. Among other things: The leading underscore for zero-#defines are gone. I thought it was a good way if guarding against potential unsafe operations, but they just look too weird to use. And there was much rejoicing. Some macros have lots their `_ON` prefix when it's obvious that that's what they do. OAM structs are now `OBJ_ATTR` and `OBJ_AFFINE` and supporting functions are now prefixed `obj_` and `obj_aff_`. `BGAFF_EX` is now `BG_AFFINE` and used in most affine BG functions. A complete list can be found in `tonc_legacy.h`, which you can #include to keep compatibility with older code.
+- ![new](./img/log/bul_new.png) libtonc: またしても大改名。とりわけ: ゼロの #define の先頭のアンダースコアはなくなりました。危険かもしれない操作を防ぐ良い方法だと思っていたのですが、使うには見た目が変すぎました。そして大いに喜ばれました。それが何をするのか明らかな場合、いくつかのマクロは `_ON` の接頭辞（訳注: 実際には接尾辞です）を失いました。OAM の構造体は `OBJ_ATTR` と `OBJ_AFFINE` になり、それを支える関数には `obj_` と `obj_aff_` の接頭辞が付きました。`BGAFF_EX` は `BG_AFFINE` になり、ほとんどのアフィン背景の関数で使われます。完全な一覧は `tonc_legacy.h` にあり、古いコードとの互換性を保つためにこれを #include できます。
 
-- ![new](./img/log/bul_new.png) projects: the structure of the projects hierarchy has been altered. The demos have been categorized as basic, extended or advanced, which correspond with the tonc-text parts. Basic demos are simpler, with simple makefiles. They are completely self-sufficient, which should help learning the ropes. The extended demos have more complete makefiles and make use of libtonc. The advanced demos have devkitPro-like makefiles. As much as I'd like to, the actual DKP templates don't quite suit my purposes (sorry, Dave <kbd>:P</kbd>) so I rolled my own. The advanced demos also make use of assembly files for data.
+- ![new](./img/log/bul_new.png) プロジェクト: プロジェクトの階層の構成を変えました。デモを、tonc の本文の部に対応する基礎、応用、発展に分類しました。基礎のデモはより単純で、makefile も単純です。完全に自己完結しているので、要領を覚えるのに役立つはずです。応用のデモは、より完全な makefile を持ち、libtonc を使います。発展のデモは devkitPro のような makefile を持ちます。そうしたいのはやまやまですが、実際の DKP のひな形は私の目的にあまり合わない（ごめんね、Dave <kbd>:P</kbd>）ので、自分で作りました。発展のデモは、データにアセンブリのファイルも使います。
 
-  The project folders also contain `.pnproj` files, which can be opened and run from Programmer's Notepad.
+  プロジェクトのフォルダには `.pnproj` ファイルも入っていて、Programmer's Notepad から開いて実行できます。
 
-- ![new](./img/log/bul_new.png) projects: New projects. `m3_demo`, for drawing in mode 3. There are also a couple of new ones in the `lab` folder. They don't have discussions yet, but they're worth checking out. `bigmap` should be of particular interest.
+- ![new](./img/log/bul_new.png) プロジェクト: 新しいプロジェクト。モード 3 で描くための `m3_demo`。`lab` フォルダにもいくつか新しいものがあります。まだ説明はありませんが、見てみる価値はあります。特に `bigmap` は興味深いはずです。
 
-- ![upgrade](./img/log/bul_upgr.png) projects: Update projects. All projects have been updated to the new libtonc. The DMA, irq and mode 7 demos have had drastic changes in content. `dma_demo` is now about using HDMA effects, in this case making a circular window. `irq_demo` uses the new irq handler to uts fullests with nested interrupts and changing irq priorities. As for `mode7ex`, well, you'd better just see for yourself.
+- ![upgrade](./img/log/bul_upgr.png) プロジェクト: プロジェクトの更新。すべてのプロジェクトを新しい libtonc に合わせて更新しました。DMA、IRQ、モード 7 のデモは内容が大幅に変わりました。`dma_demo` は今では HDMA の効果、この場合は円形のウィンドウを作ることについてです。`irq_demo` は新しい IRQ ハンドラを、入れ子の割り込みと IRQ の優先順位の変更で目いっぱい使います。`mode7ex` については、まあ、自分で見てもらうのが一番です。
 
-### Jul 23, 2006 (v1.2.4)
+### 2006 年 7 月 23 日（v1.2.4）
 
-- ![new](./img/log/bul_new.png) Added a rather long chapter on [ARM/Thumb assembly](asm.html). This is still a draft version, though. Most of the content is there, but I still need to reshuffle sections and spell/grammer check the whole thing.
-- And yet more spell fixes <kbd>\>\_\<</kbd>.
+- ![new](./img/log/bul_new.png) [ARM/Thumb アセンブリ](asm.html)についてのかなり長い章を加えました。ただし、これはまだ草稿です。内容のほとんどはありますが、まだ節を並べ替えて、全体のスペルと文法を確認する必要があります。
+- そして、さらにスペルの修正 <kbd>\>\_\<</kbd>。
 
-### Jun 3, 2006 (v1.2.3)
+### 2006 年 6 月 3 日（v1.2.3）
 
-- ![upgrade](./img/log/bul_upgr.png) Changed makefiles and build instructions to use devkitARM r19.
-- ![upgrade](./img/log/bul_upgr.png) All sections and subsections are now numbered, w00t!
-- ![fix](./img/log/bul_excl.png) Added alignment attributes to most structs, as those are now pretty much _required_ if you want struct-copies to work properly. For more, see [here](bitmaps.html#ssec-data-align)
+- ![upgrade](./img/log/bul_upgr.png) makefile とビルドの手順を、devkitARM r19 を使うように変えました。
+- ![upgrade](./img/log/bul_upgr.png) すべての節と小節に番号が付きました、やったね！
+- ![fix](./img/log/bul_excl.png) ほとんどの構造体にアラインメントの属性を加えました。構造体のコピーを正しく動かしたいなら、今ではほぼ_必須_だからです。詳しくは[こちら](bitmaps.html#ssec-data-align)を見てください
 
-### Apr 28, 2006 (v1.2.2)
+### 2006 年 4 月 28 日（v1.2.2）
 
-- ![new](./img/log/bul_new.png) Finally realized what caused the 1 pixel offset I've been seeing in affine objects sometimes (thanks NEiM0D). Updated [affobj.htm](affobj.html) and `obj_aff` for it.
-- ![swap](./img/log/bul_swap.png) Moved the new off-center affine object stuff to its [proper place](affobj.html).
-- ![upgrade](./img/log/bul_upgr.png) Some small sed usage to convert from GCC error-reports to Visual C++ format, based on [this](http://www.devkitpro.org/devstudio.shtml).
-- ![upgrade](./img/log/bul_upgr.png) Now that my html auto-numbering system works (at least a first trial), text.htm is now de-reffed. Yay.
-- Small changes to interrupts and gfx.
-- Added Javascript to make the id attributes visible. Will probably add more later.
+- ![new](./img/log/bul_new.png) アフィンオブジェクトでときどき見ていた 1 ピクセルのずれの原因が、ついにわかりました（ありがとう NEiM0D）。それに合わせて [affobj.htm](affobj.html) と `obj_aff` を更新しました。
+- ![swap](./img/log/bul_swap.png) 中心以外を基準にしたアフィンオブジェクトの新しい内容を、[本来の場所](affobj.html)に移しました。
+- ![upgrade](./img/log/bul_upgr.png) [これ](http://www.devkitpro.org/devstudio.shtml)をもとに、GCC のエラーの報告を Visual C++ の形式に変換する sed のちょっとした使い方を加えました。
+- ![upgrade](./img/log/bul_upgr.png) 私の html の自動番号付けの仕組みが（少なくとも最初の試作では）動くようになったので、text.htm の参照を外しました。やった。
+- 割り込みと gfx に小さな変更。
+- id 属性を見えるようにする Javascript を加えました。おそらくあとでもっと加えます。
 
-### Apr 28, 2006 (v1.2.1)
+### 2006 年 4 月 28 日（v1.2.1）
 
-- ![fix](./img/log/bul_excl.png) Apparently no\$gba doesn't like it if you use section mirroring, like I did for REG_INTMAIN and REG_IFBIOS. These now use the proper addresses.
-- ![fix](./img/log/bul_excl.png) Spelling fixes in intro.htm. Thanks again, Mick.
-- ![upgrade](./img/log/bul_upgr.png) New makefiles for extended and advanced projects. It does mean that makefile.htm is now pretty much behind the times.
-- ![upgrade](./img/log/bul_upgr.png) Updated [setup.htm](setup.html) for devkitARM changes. Changed the figures a little too.
-- ![new](./img/log/bul_new.png) New chapter called [the lab](lab.html), where I'll place new stuff that's almost, but not quite, ready. Currently contains text for priorities and sprite sorting, and a discussion on affine transformations around a non-center reference point. Both come with new demos called `prio_demo` and `oacombo`.
-- ![new](./img/log/bul_new.png) Added instructions on how to run makefiles via context or PN in [setup.htm](setup.html).
-- ![new](./img/log/bul_new.png) Added gfx2gba and grit conversion instructions in a few places.
-- More notes in bitmaps.htm's [data section](bitmaps.html#sec-data).
+- ![fix](./img/log/bul_excl.png) どうやら no\$gba は、私が REG_INTMAIN と REG_IFBIOS でしたように、領域のミラーを使うのが気に入らないようです。これらは正しいアドレスを使うようになりました。
+- ![fix](./img/log/bul_excl.png) intro.htm のスペルの修正。また ありがとう、Mick。
+- ![upgrade](./img/log/bul_upgr.png) 応用と発展のプロジェクトのための新しい makefile。つまり、makefile.htm はもうほぼ時代遅れになったということです。
+- ![upgrade](./img/log/bul_upgr.png) devkitARM の変更に合わせて [setup.htm](setup.html) を更新しました。図も少し変えました。
+- ![new](./img/log/bul_new.png) [ラボ](lab.html)という新しい章を加えました。ほぼ、でも完全にではなく準備のできた新しいものを置く場所です。今は優先順位とスプライトのソートについての本文と、中心以外の基準点の周りのアフィン変換についての説明が入っています。どちらにも `prio_demo` と `oacombo` という新しいデモが付いています。
+- ![new](./img/log/bul_new.png) [setup.htm](setup.html) に、ConTEXT や PN から makefile を実行する方法の説明を加えました。
+- ![new](./img/log/bul_new.png) いくつかの場所に gfx2gba と grit での変換の説明を加えました。
+- bitmaps.htm の[データの節](bitmaps.html#sec-data)に注意を追加しました。
 
 <div class="nh">
 
-Probable upcoming changes
+今後予定している変更
 
 </div>
 
-I intend to make a few changes in tonc's code. First, I'll try to decouple the code in the basic demos from libtonc, which should make them easier to understand as you won't have to browse through all the other stuff. Second, this will allow me to rework and optimize libtonc, which is now hampered in some areas by me having to keep a number of things simpler than I'd like to. Now, this is what I'd _like_ to do; I can't really tell when (if) I will get round to it.
+tonc のコードにいくつか変更を加えるつもりです。まず、基礎のデモのコードを libtonc から切り離そうと思います。そうすれば、ほかのものを全部眺める必要がなくなるので、理解しやすくなるはずです。次に、これで libtonc を作り直して最適化できるようになります。今は、いくつかのことを望むより単純にしておかなければならないせいで、一部の領域で足かせになっているのです。さて、これは私が_したい_ことで、いつ（そもそも）取りかかれるかは何とも言えません。
 
-Also, I have half a mind of changing the current DMA demo to [this one](https://gbadev.net/forum-archive/thread/9/9023.html), which simply looks a lot cooler, even though there's is a lot more magic going on. Meh, we'll see.
+また、今の DMA のデモを[これ](https://gbadev.net/forum-archive/thread/9/9023.html)に変えようかと半分思っています。裏ではずっと多くの魔法が働いていますが、単純にずっとかっこよく見えるのです。まあ、様子を見ます。
 
-### Mar 21, 2006 (v1.2)
+### 2006 年 3 月 21 日（v1.2）
 
-More non-final updates. Quite a lot actually.
+最終版ではない更新がまた。実はかなりたくさんあります。
 
-- ![fix](./img/log/bul_excl.png) More typos fixed.
-- ![fix](./img/log/bul_excl.png) `bg_init()` never initialized the `BGINFO` position. Oops.
-- ![swap](./img/log/bul_swap.png) Tossed chapter order around a bit. I've moved [keys](keys.html) up to right after [bitmaps](bitmaps.html), which is a much better place for it anyway.
-- ![upgrade](./img/log/bul_upgr.png) Updated [First Demo](first.html), [Bitmap Modes](bitmaps.html), [Regular sprites](regobj.html), [Regular Backgrounds](regbg.html), [Affine Sprites](affobj.html), [Affine Backgrounds](affbg.html), [Graphic effects](gfx.html), and [Timers](timers.html) with full or nearly full code of their demos.
-- ![upgrade](./img/log/bul_upgr.png) [First Demo](first.html) now has two demos, one purely with hardcode numbers (muwahaha!), and one according to more sound programming principles. Also described these in much more detail.
-- ![upgrade](./img/log/bul_upgr.png) Added two demos to [Regular Backgrounds](regbg.html), one of which introduces libtonc and its text functions, which will come back a lot lateron. Speaking of which …
-- ![upgrade](./img/log/bul_upgr.png) Recoded `bld_demo`, `m7_demo`, `mos_demo`, `obj_aff`, and `tmr_demo` to use libtonc's text so that it's clearer what you're changing.
-- ![upgrade](./img/log/bul_upgr.png) Replaced copiers/fillers with libtonc's `memcpy16/32` and `memset16/32` in most demos after [its introduction](regbg.html#ssec-demo-hello).
-- ![upgrade](./img/log/bul_upgr.png) Added [field defines](intro.html#ssec-note-reg) to a lot of register tables.
-- ![upgrade](./img/log/bul_upgr.png) Restructed part of [keys.htm](keys.html) for better explanations of the various functions I use.
-- ![new](./img/log/bul_new.png) Added a nasty piece on [division by reciprocal multiplication](fixed.html#sec-rmdiv). Not for the squeemish.
-- Added a simple template makefile and discussion for the [second demo](first.html#ssec-2nd-make).
-- ![new](./img/log/bul_new.png) Added a subsection on [tribool keystates](keys.html#ssec-adv-tri). In fact, nearly all of the demos that might benefit from these have been altered to use them. One line of code instead of four lines, and faster to boot. Seems like a win to me.
-- ![new](./img/log/bul_new.png) Added a subsection on the [proper build procedure](bitmaps.html#ssec-data-proc), which was still missing from that whole section. This is pretty much **required reading** for anyone how has been following non-tonc tutorials and adopted their coding standards.
-- Merged the fixed-point and LUT chapters, and rewrote most of both.
-- jake2431 has been gathering a lot of useful links in this thread: [forum:8353](https://gbadev.net/forum-archive/thread/18/8353.html). If you're new to C and/or GBA/NDS programming, I recommend you check it out.
+- ![fix](./img/log/bul_excl.png) さらにタイプミスを直しました。
+- ![fix](./img/log/bul_excl.png) `bg_init()` が `BGINFO` の位置を初期化していませんでした。おっと。
+- ![swap](./img/log/bul_swap.png) 章の順序を少し入れ替えました。[ボタン](keys.html)を[ビットマップ](bitmaps.html)のすぐあとに移しました。どのみちそのほうがずっと良い場所です。
+- ![upgrade](./img/log/bul_upgr.png) [最初のデモ](first.html)、[ビットマップモード](bitmaps.html)、[通常のスプライト](regobj.html)、[通常の背景](regbg.html)、[アフィンスプライト](affobj.html)、[アフィン背景](affbg.html)、[グラフィック効果](gfx.html)、[タイマー](timers.html)に、デモの完全な、またはほぼ完全なコードを載せました。
+- ![upgrade](./img/log/bul_upgr.png) [最初のデモ](first.html)にはデモが 2 つになりました。1 つは純粋にハードコードした数値だけのもの（むわっはっは！）、もう 1 つはもっとまっとうなプログラミングの原則に従ったものです。それらもずっと詳しく説明しました。
+- ![upgrade](./img/log/bul_upgr.png) [通常の背景](regbg.html)に 2 つのデモを加えました。そのうちの 1 つは libtonc とそのテキストの関数を紹介するもので、あとでたびたび出てきます。そういえば……
+- ![upgrade](./img/log/bul_upgr.png) 何を変えているのかわかりやすいように、`bld_demo`、`m7_demo`、`mos_demo`、`obj_aff`、`tmr_demo` を libtonc のテキストを使うように書き直しました。
+- ![upgrade](./img/log/bul_upgr.png) [その紹介](regbg.html#ssec-demo-hello)のあとのほとんどのデモで、コピーや埋めの処理を libtonc の `memcpy16/32` と `memset16/32` に置き換えました。
+- ![upgrade](./img/log/bul_upgr.png) たくさんのレジスタの表に[フィールドの定義](intro.html#ssec-note-reg)を加えました。
+- ![upgrade](./img/log/bul_upgr.png) 私が使っているいろいろな関数をもっとよく説明するために、[keys.htm](keys.html) の一部の構成を変えました。
+- ![new](./img/log/bul_new.png) [逆数の掛け算による割り算](fixed.html#sec-rmdiv)についての厄介な記事を加えました。気の弱い人向けではありません。
+- [2 つ目のデモ](first.html#ssec-2nd-make)のための単純なひな形の makefile と説明を加えました。
+- ![new](./img/log/bul_new.png) [3 値のボタンの状態](keys.html#ssec-adv-tri)についての小節を加えました。実際、これが役立ちそうなデモのほぼすべてを、これを使うように変えました。4 行のコードの代わりに 1 行で、しかも速いのです。得しかないと思います。
+- ![new](./img/log/bul_new.png) その節全体からまだ抜けていた、[正しいビルドの手順](bitmaps.html#ssec-data-proc)についての小節を加えました。これは、tonc 以外のチュートリアルに従ってきて、そのコーディングの規約を取り入れてしまった人にとっては、ほぼ**必読**です。
+- 固定小数点とルックアップテーブルの章を統合し、両方のほとんどを書き直しました。
+- jake2431 がこのスレッドに役に立つリンクをたくさん集めています: [forum:8353](https://gbadev.net/forum-archive/thread/18/8353.html)。C や GBA/NDS のプログラミングが初めてなら、見てみることをおすすめします。
 
-### Jan 27, 2006 (v1.1)
+### 2006 年 1 月 27 日（v1.1）
 
-Heh, so that wasn't not the final update after all <kbd>:P</kbd>.
+へへ、結局あれは最後の更新ではありませんでした <kbd>:P</kbd>。
 
-- Added a little note to [setup](setup.html) on how to get rid of them useless directories that MSVC 6.0 insists on creating all the time.
-- ![fix](./img/log/bul_excl.png) Fixed devkitARM URL and revision. (don't know why I bother with that, though, as there will be a new version the second I post this. Gawddammit, Dave, quit it! <kbd>\>\_\<</kbd>)
-- ![upgrade](./img/log/bul_upgr.png) More code in the text. At least for the earlier pages.
-- Two new chapters: one on [Text system fundamentals](text.html) and [producing beeps](sndsqr.html). The latter isn't quite finished yet, but should be enough to get you going. There are 5 new demos that go with these: 4 for text, one for sound.
-- ![swap](./img/log/bul_swap.png) More name changes. This time in demo-names only, though, so don't worry there.
-- Added/moved a section on [How to deal with data](bitmaps.html#sec-data). This explains some of the nastiness you may or may not encounter. But if you do, it's nice to know why they happen and how to fix it, no?
+- MSVC 6.0 がいつも作りたがる役に立たないディレクトリをなくす方法について、[準備](setup.html)にちょっとした注意を加えました。
+- ![fix](./img/log/bul_excl.png) devkitARM の URL とリビジョンを直しました。（ただ、これを投稿した瞬間に新しい版が出るのに、なぜわざわざ直すのかわかりません。ちくしょう、Dave、やめてくれ！ <kbd>\>\_\<</kbd>）
+- ![upgrade](./img/log/bul_upgr.png) 本文にもっとコードを載せました。少なくとも前のほうのページには。
+- 新しい章が 2 つ。[テキストシステムの基礎](text.html)と、[ビープ音を出すこと](sndsqr.html)についてのものです。後者はまだ完全には仕上がっていませんが、取りかかるには十分なはずです。これらに付く新しいデモが 5 つあります。テキスト用が 4 つ、音用が 1 つです。
+- ![swap](./img/log/bul_swap.png) さらに名前の変更。ただし今回はデモの名前だけなので、心配いりません。
+- [データの扱い方](bitmaps.html#sec-data)についての節を加えました/移しました。これは、出会うかもしれないし出会わないかもしれない厄介なことのいくつかを説明しています。でも出会ったなら、なぜそれが起きるのか、どう直すのかを知っていると助かりますよね？
 
-### Jun 28, 2005 (v1.0)
+### 2005 年 6 月 28 日（v1.0）
 
-Final update. Probably. Not because I'm done with this thing, but because there is so much to change and to add that it's easier to start from scratch again. When I started tonc I still knew very little about GBA programming and tried to do the best I could as I went along. Now I'm a little older and wiser (well, older at any rate), know a lot more about proper procedure, what's useful to have and what isn't and also where people can get stuck on (thank you newbie forum dwellers for all your questions!) From the ideas I'm having, tonc 2 will be a _lot_ bigger, better, and have more explosions! Errr, demos. Tonclib will get a major overhaul with new names and new, optimised functions including text for all modes, memory routines and more. But it'll take a while to get there, so I thought I'd update the original one last time.
+最後の更新です。たぶん。これで終わりにするからではなく、変えたり加えたりすることがあまりに多いので、またゼロから始めたほうが簡単だからです。tonc を始めたとき、私はまだ GBA のプログラミングについてほとんど知らず、進みながらできる限りのことをしようとしていました。今では少し年を取って賢くなり（まあ、少なくとも年は取りました）、正しい手順や、何があると役立って何が役立たないか、そして人がどこでつまずきがちか（質問をくれたフォーラムの初心者の皆さん、ありがとう！）について、ずっと多くを知っています。今考えているアイデアからすると、tonc 2 は_ずっと_大きく、良くなり、爆発も増えます！ えーと、デモが。Tonclib は、新しい名前と、すべてのモードのためのテキストやメモリのルーチンなどを含む新しい最適化した関数で、大幅に見直されます。でもそこに至るまでにはしばらくかかるので、元の版を最後にもう一度更新しておこうと思いました。
 
-- ![fix](./img/log/bul_excl.png) Many, many spelling and grammar fixes. Too many in fact. C'mon people, tell me about these things!
-- ![fix](./img/log/bul_excl.png) `DMA_SRC_RESET` is `0x01800000`, not `0x00600000`. This is what made the outcome of `dma_demo` so weird. Also fixed `sbb_aff`'s black cross-hairs, which had its _x_ and _y_ values swapped in OAM. Stupid attribute x,y order.
-- ![swap](./img/log/bul_swap.png) Name changes. Lots of them. This partially falls under keeping to GBA community standards (`OBJ_ATTR`, charblock, screenblock, swi naming) and other classification issues (`DCNT_x` for `REG_DISPCNT` and such; prefix underscore for bit-defines that are zero, trust me this is a good thing). I've taken the liberty of creating a `legacy.h` that redefines all those old names into the newer ones so that you won't have to do all the renaming yourself if you don't want to. The older names are depreciated, though. This renaming is only part of the full tonc2 renaming, but I can't do functions yet because that _would_ break old code.
-- ![upgrade](./img/log/bul_upgr.png) Some small functionality changes. Most notably, `key_poll()` now _already inverts_ `REG_KEYINPUT` (formerly `REG_P1`). This is a good thing, because now the synchronous functions will actually make more sense. Also, `m4_plot()` (formerly `_vid_plot8`) really does plot per pixel, not per two.
-- ![upgrade](./img/log/bul_upgr.png) The memory routines `memcpy16/32` and `memset16/32` are optimised in assembly, and probably the fastest you'll come across. Rivals the speed of `CpuFastSet`, but none of the alignment / size requirements.
-- ![upgrade](./img/log/bul_upgr.png) `swi.s` has calls for all BIOS routines. Some extras have been relocated to `swi_ex.s`
-- Added `x_BUILD` macros for setting bit-flags in clusters. May be useful, maybe not.
-- Added rectangle drawers for the bitmap modes. Fairly optimised.
-- ![fix](./img/log/bul_excl.png) Fixed list-margins for Firefox. Or rather, fixed list-margins to what the standard requires, but which MSIE doesn't follow. (Now if I can only figure out what to do about that \<col\> tag)
-- ![upgrade](./img/log/bul_upgr.png) Restyled the register tables.
-- ![upgrade](./img/log/bul_upgr.png) I finally realised how I could do matrices in pure html instead of images so pretty much _all_ equations are now html. I expect it's quite close to MathML, but since MSIE doesn't support it natively and I don't want to worry you with an extra download (which may not even work on older versions), this'll do for now. (Now if you'll excuse me, I going to lie down to get the feeling in my brain back)
-- ![upgrade](./img/log/bul_upgr.png) All sections, equations, tables etc now have id's for linking too and (maybe) automatic numbering if I figure out how.
-- ![upgrade](./img/log/bul_upgr.png) `int_demo` now uses a separate file for the direct isr and makes proper use of sections and ARM/Thumb code. See the [demo description](interrupts.html#sec-demo) for more.
+- ![fix](./img/log/bul_excl.png) たくさんたくさんのスペルと文法の修正。実際、多すぎます。皆さん、こういうことは教えてくださいよ！
+- ![fix](./img/log/bul_excl.png) `DMA_SRC_RESET` は `0x00600000` ではなく `0x01800000` です。これが `dma_demo` の結果をあれほど変にしていた原因でした。また、`sbb_aff` の黒い照準マークも直しました。OAM で _x_ と _y_ の値が入れ替わっていたのです。ばかげた属性の x、y の順序め。
+- ![swap](./img/log/bul_swap.png) 名前の変更。たくさんあります。一部は GBA のコミュニティの標準に合わせるため（`OBJ_ATTR`、キャラブロック、スクリーンブロック、swi の命名）、ほかは分類の問題のため（`REG_DISPCNT` のための `DCNT_x` など。ゼロになるビットの定義には先頭にアンダースコア。信じてください、これは良いことです）です。勝手ながら、古い名前をすべて新しい名前に定義し直す `legacy.h` を作ったので、望まなければ、名前の変更を全部自分でする必要はありません。ただし、古い名前は非推奨です。この改名は tonc2 の完全な改名の一部にすぎませんが、関数の改名はまだできません。それをすると古いコードが壊れて_しまう_からです。
+- ![upgrade](./img/log/bul_upgr.png) ちょっとした機能の変更。最も目立つのは、`key_poll()` が `REG_KEYINPUT`（以前の `REG_P1`）を_すでに反転する_ようになったことです。これで同期の関数がもっと筋の通ったものになるので、良いことです。また、`m4_plot()`（以前の `_vid_plot8`）は本当に 2 ピクセルずつではなく 1 ピクセルずつ描くようになりました。
+- ![upgrade](./img/log/bul_upgr.png) メモリのルーチン `memcpy16/32` と `memset16/32` はアセンブリで最適化されていて、おそらく出会う中で一番速いものです。`CpuFastSet` の速さに匹敵しますが、アラインメントや大きさの要件はまったくありません。
+- ![upgrade](./img/log/bul_upgr.png) `swi.s` にはすべての BIOS ルーチンの呼び出しがあります。いくつかのおまけは `swi_ex.s` に移しました
+- まとまったビットフラグを設定するための `x_BUILD` マクロを加えました。役に立つかもしれませんし、立たないかもしれません。
+- ビットマップモードのための長方形の描画処理を加えました。かなり最適化されています。
+- ![fix](./img/log/bul_excl.png) Firefox のためにリストの余白を直しました。というより、標準が求めるとおりの、でも MSIE が従っていないリストの余白に直しました。（これで \<col\> タグをどうすればいいかわかりさえすれば）
+- ![upgrade](./img/log/bul_upgr.png) レジスタの表のスタイルを変えました。
+- ![upgrade](./img/log/bul_upgr.png) 画像の代わりに純粋な html で行列を作る方法がついにわかったので、ほぼ_すべて_の式が html になりました。MathML にかなり近いと思いますが、MSIE はそれをネイティブに対応しておらず、余分なダウンロード（古い版では動かないかもしれません）で煩わせたくないので、今はこれで我慢してください。（では失礼して、脳の感覚を取り戻すために横になってきます）
+- ![upgrade](./img/log/bul_upgr.png) すべての節、式、表などに、リンクのための id と、方法がわかれば（たぶん）自動の番号付けも付きました。
+- ![upgrade](./img/log/bul_upgr.png) `int_demo` は直接の ISR に別のファイルを使い、セクションと ARM/Thumb のコードをきちんと使うようになりました。詳しくは[デモの説明](interrupts.html#sec-demo)を見てください。
 
-That's about it I think, but it should be enough. I hve bits and pieces of the tonc2 text, examples and lib, though maybe not in their final forms. They are available, but only on request. If anyone has suggestions or requests I'll see what I can do. This also goes for mistakes (the ones that the compiler/linker can't catch) you've made that you think others might make too. I know a good number of them already from the forum (like that you should <span class="ack">NOT</span> use bytes or halfwords for local variables, since it can really kill performance, `int` or `u32` only, **_please!_**. Pretty please. With sugar on top. And frosting and whipped-cream.) Don't need to know every little thing though, especially if it's already covered by the well-done [gbadev forum FAQ](https://gbadev.net/forum-archive/thread/14/418.html) or already covered in here somewhere.
+だいたいこれで全部だと思いますが、十分なはずです。tonc2 の本文、例、ライブラリの断片がありますが、最終的な形ではないかもしれません。手に入りますが、ご要望に応じてのみです。提案や要望があれば、できることをやってみます。これは、ほかの人もやりそうだと思うあなたの間違い（コンパイラやリンカでは捕まえられないもの）にも当てはまります。フォーラムからすでにかなりの数を知っています（たとえば、本当に性能を殺しかねないので、ローカル変数にバイトやハーフワードを使うべきでは<span class="ack">ない</span>こと。`int` か `u32` だけにして、**_お願いします！_** 本当にお願いします。砂糖をかけて。アイシングとホイップクリームも付けて。）。ただ、細かいことを全部知る必要はありません。特に、よくできた [gbadev フォーラムの FAQ](https://gbadev.net/forum-archive/thread/14/418.html) ですでに扱われているものや、ここのどこかですでに扱っているものは。
 
-If anyone knows how I can keep track of all the header/equation/figure numbering automatically (without CSS2, which isn't properly supported by MSIE <kbd>:(</kbd> ) that would be _very_ helpful. Actually, the numbering itself isn't the problem, _referencing_ them is.
+見出し/式/図の番号付けをすべて自動で管理する方法（MSIE がちゃんと対応していない CSS2 を使わずに <kbd>:(</kbd> ）を知っている人がいれば、_とても_助かります。実は、番号付けそのものは問題ではなく、それらを_参照_することが問題なのです。
 
-Also, I could use more real-life examples of tile-map/sprite collision detection _and_ response. I know the bounding box stuff and the basics of detection (even pixel-perfect), but no matter what I do I seem to be getting stuck on some of the particulars of diagonal movement and when things move at more than one pixel/frame. I'd very much like to see how it's done in real platform games for complex scenes that have multiple sprite-sprite and sprite-background collisions, not just single sprite-bg.
+また、タイルマップ/スプライトの当たり判定_と_その応答の実例がもっと欲しいです。外接矩形のことや判定の基本（ピクセル単位の完璧なものでさえ）は知っていますが、何をしても、斜めの移動や、1 フレームに 1 ピクセルより多く動く場合の細かいところで行き詰まってしまうようです。単一のスプライトと背景の当たり判定だけでなく、スプライトどうしやスプライトと背景の当たり判定が複数ある複雑な場面で、本物のアクションゲームではどうやっているのか、ぜひ見てみたいです。
 
-### Dec 5, 2004 (v0.99.6)
+### 2004 年 12 月 5 日（v0.99.6）
 
-Added the [numbers](numbers.html) page about number systems, bits and bit operations. I should warn you that it's rather large. It's been a while since I added something and I think I got a little carried away <kbd>:\\</kbd>. I may break it up into smaller pieces later. Maybe.
+記数法、ビット、ビット演算についての[数](numbers.html)のページを加えました。かなり大きいことは警告しておくべきでしょう。何かを加えるのは久しぶりで、少し調子に乗ってしまったと思います <kbd>:\\</kbd>。あとでもっと小さく分けるかもしれません。たぶん。
 
-DragonBASIC is in the process of being transferred to a new domain, so the old URL is invalid now. At the moment you can still find the forums [here](http://forums.zhilaware.starfusion.orgb/), but the compiler itself is still in limbo for the time being.
+DragonBASIC は新しいドメインに移転中なので、古い URL は今は無効です。今のところ、フォーラムはまだ[ここ](http://forums.zhilaware.starfusion.orgb/)にありますが、コンパイラ自体は当分宙ぶらりんです。
 
-### Aug 3, 2004 (v0.99.5)
+### 2004 年 8 月 3 日（v0.99.5）
 
-- ![fix](./img/log/bul_excl.png) Made some minor corrections all round. The first mode7 demo and page now use a different name for the camera position, so it won't clash with **v** from mode7d.
-- Added a rudimentary text demo in the form of `txt_demo`.
+- ![fix](./img/log/bul_excl.png) あちこちで細かい修正をしました。最初のモード 7 のデモとページは、mode7d の **v** とぶつからないように、カメラの位置に別の名前を使うようになりました。
+- `txt_demo` という形で、初歩的なテキストのデモを加えました。
 
-I think this will be the last update for a while, for a number of reasons. Firstly, I think I have to actually use some of this stuff, to see what's wrong with it. Secondly, I think I may have to put in some more work into a converter and how to add pure binary files to the demos in a friendly way. Thirdly, PERN's back with a vengeance. As such, there seems little point in developing Tonc any further right now, as it seems that the new PERN is going to be very, very complete.
+いくつかの理由から、これがしばらくの間は最後の更新になると思います。まず、これらのいくつかを実際に使ってみて、何がまずいのかを確かめる必要があると思います。次に、変換ツールと、純粋なバイナリファイルをデモにわかりやすい形で加える方法に、もう少し手をかける必要があるかもしれません。3 つ目に、PERN が猛然と帰ってきました。そのため、新しい PERN はとてもとても完全なものになりそうなので、今 Tonc をさらに開発する意味はあまりなさそうです。
 
-### Jul 16, 2004 (v0.99.5)
+### 2004 年 7 月 16 日（v0.99.5）
 
-- ![fix](./img/log/bul_excl.png) Fixed `aff_rotscale2`, which should _not_ have shrunk the source-angle, but rather a copy of it. Defined `MAPBLOCK` to contain 1024 (=32\*32) tegels, not 512. Was confused with tile-blocks.
-- ![upgrade](./img/log/bul_upgr.png) Made a _lot_ of small changes to tiles/map functionality. All map/tile structures are now simple typedefs so you can access their internals via a simple array-access rather than (inline) functions. The inline functions themselves have been removed.
-- Changed then `BGINFO` struct a bit, and added some map functions.
+- ![fix](./img/log/bul_excl.png) `aff_rotscale2` を直しました。元の角度を縮めるのではなく、そのコピーを縮めるべきでした。`MAPBLOCK` を、512 ではなく 1024（=32\*32）個のテゲル（訳注: マップのエントリのことです）を含むように定義しました。タイルブロックと混同していました。
+- ![upgrade](./img/log/bul_upgr.png) タイル/マップの機能に_たくさん_の小さな変更を加えました。すべてのマップ/タイルの構造体は単純な typedef になったので、（インライン）関数ではなく単純な配列のアクセスでその中身にアクセスできます。インライン関数そのものは取り除きました。
+- `BGINFO` 構造体を少し変え、マップの関数をいくつか加えました。
 
-I'm sorry if any of these changes causes you any inconvenience, but I think it's better in the long run.
+これらの変更でご不便をおかけしたら申し訳ありませんが、長い目で見ればこのほうが良いと思います。
 
-### Jul 11, 2004 (v0.99.4)
+### 2004 年 7 月 11 日（v0.99.4）
 
-- Deprioritized MSVC makefile projects in [setup](setup.html).
-- Mopped up several minor and not so minor errors in [mode7ex](mode7ex.html). Well, I did say there'd be some I hadn't discovered yet.
-- ![swap](./img/log/bul_swap.png) Renamed the interrupt requests for registers `REG_DISPSTAT` from `X_INT` to `X_IRQ`, which is more proper.
-- ![upgrade](./img/log/bul_upgr.png) Modified [swi.htm](swi.html) to show how to use pure assembly for this purpose and added a small section on the aapcs. Also renamed some of the affine structs and functions; you have been warned.
-- And yet more typo fixes, where the h311 do they keep coming from? I swear if I find one more "it's"/"its" mixup I'm going to scream. \[Later that day\] Right, that's it: _AAAAAAAARRRRHRHRHRRGGGHHHH!!!_
-- ![fix](./img/log/bul_excl.png) Fixed a number of rot-scale equations that had the rotation and scaling ops wrong in the intermediate steps. Oops.
-- ![fix](./img/log/bul_excl.png) Fixed a window control macros (forgot some shifts). Should work properly now. Should.
-- Added `geom.h|.c` to the library, as I intend to use points and rectangles more often. Also added `ABS`, `SGN` and `SWAP` macros.
-- All multiboot demos (i.e., all of them) now have the extension `mb.gba` to indicate them as such.
-- Renamed `key_pressed()` to `key_hit()`, which should cause less confusion about what the function actually does (thank's\^H\^Hs for the name Dark Angel (see? The apostrophe occurs almost automatically <kbd>:(</kbd> ).
+- [準備](setup.html)で、MSVC の makefile のプロジェクトの優先度を下げました。
+- [mode7ex](mode7ex.html) の小さな誤りやそれほど小さくない誤りをいくつか片づけました。まあ、まだ見つけていないものがあるだろうとは言いましたから。
+- ![swap](./img/log/bul_swap.png) レジスタ `REG_DISPSTAT` の割り込み要求の名前を、`X_INT` からもっと適切な `X_IRQ` に変えました。
+- ![upgrade](./img/log/bul_upgr.png) この目的に純粋なアセンブリを使う方法を示すように [swi.htm](swi.html) を変え、AAPCS についての小さな節を加えました。また、アフィンの構造体と関数のいくつかの名前を変えました。警告しましたよ。
+- そして、さらにタイプミスの修正。いったいどこから湧いてくるんでしょう？ 誓って言いますが、"it's" と "its" の取り違えをもう 1 つ見つけたら叫びます。\[その日のうちに\] よし、もう限界: _うおおおおおおおおおおおおお！！！_
+- ![fix](./img/log/bul_excl.png) 途中の段階で回転と拡大縮小の演算を取り違えていた、回転・拡大縮小の式をいくつか直しました。おっと。
+- ![fix](./img/log/bul_excl.png) ウィンドウの制御のマクロを直しました（シフトをいくつか忘れていました）。これで正しく動くはずです。はずです。
+- 点と長方形をもっと頻繁に使うつもりなので、ライブラリに `geom.h|.c` を加えました。`ABS`、`SGN`、`SWAP` のマクロも加えました。
+- マルチブートのデモ（つまり全部）には、そうであることを示す拡張子 `mb.gba` を付けました。
+- 関数が実際に何をするのかについての混乱を減らすため、`key_pressed()` を `key_hit()` に名前を変えました（名前をありがとう's\^H\^Hs、Dark Angel（ほら？ アポストロフィがほとんど自動的に出てきちゃうんです <kbd>:(</kbd> ）。
 
-I'm working on a nice text system right now. If anyone has any requests I'll see what I can do.
+今、素敵なテキストの仕組みに取り組んでいます。要望があれば、できることをやってみます。
 
-### June 27, 2004 (v0.99.3)
+### 2004 年 6 月 27 日（v0.99.3）
 
-Ahhh, home at last, where I have a proper computer and Kink-FM blasting through my stereo, excccellent! <kbd>=)</kbd>
+ああ、ついに家に帰ってきました。ちゃんとしたコンピュータがあって、ステレオから Kink-FM が鳴り響いています、最っ高！ <kbd>=)</kbd>
 
-- ![upgrade](./img/log/bul_upgr.png) Added `-Map` and `-Wl` command-line options to the [flags list](makefile.html#sec-flags).
-- ![swap](./img/log/bul_swap.png) Moved the graphics data that is only used once into the demo-folder where they are used; the gfx directory now only has shared graphics in it.
-- ![swap](./img/log/bul_swap.png) Had to write `swi.s` again because the \`utils clean' command destroys all .s files if there is a .c with the same title. Make sure that there is no `swi.c` in your `utils` directory when copying the the new stuff.
-- ![upgrade](./img/log/bul_upgr.png) The [mode7ex.htm](mode7ex.html) page is finally complete. Yes I know it's long and full of nasty linear algebra; if you have trouble getting through it and/or have suggestions on making it more readable, plz, do tell.
-- ![upgrade](./img/log/bul_upgr.png) The accompanying `mode7d` demo is just about where I wanted it.Sure there are still some minor problems, but it should be enough to get you started.
+- ![upgrade](./img/log/bul_upgr.png) [フラグの一覧](makefile.html#sec-flags)に `-Map` と `-Wl` のコマンドラインのオプションを加えました。
+- ![swap](./img/log/bul_swap.png) 一度しか使わないグラフィックのデータを、それを使うデモのフォルダに移しました。gfx のディレクトリには共有のグラフィックしかなくなりました。
+- ![swap](./img/log/bul_swap.png) \`utils clean' コマンドは、同じ名前の .c があるとすべての .s ファイルを消してしまうので、`swi.s` をもう一度書かなければなりませんでした。新しいものをコピーするときは、`utils` ディレクトリに `swi.c` がないことを確かめてください。
+- ![upgrade](./img/log/bul_upgr.png) [mode7ex.htm](mode7ex.html) のページがついに完成しました。ええ、長くて厄介な線形代数だらけなのはわかっています。読み通すのに苦労したり、もっと読みやすくする提案があったりしたら、どうか教えてください。
+- ![upgrade](./img/log/bul_upgr.png) それに付く `mode7d` のデモは、ほぼ望んでいたところまで来ました。たしかにまだ小さな問題はいくつかありますが、取りかかるには十分なはずです。
 
-### June 21, 2004 (v0.99.2)
+### 2004 年 6 月 21 日（v0.99.2）
 
-- ![upgrade](./img/log/bul_upgr.png) I made a lot of changes to `mode7d`; all the real mode 7 code is now in separate files so using it in other projects is easier now. Though mode7ex.htm still needs a lot of work, you can find most of the text in draft-form in [m7theory.zip](../files/m7theory.zip). Yes, it's a Word document; yes, I know that sucks; yes, I will convert it to html when I the text is stable and understandable (please tell me what I need to change in this respect); and yes, I will do this conversion manually, since Word should be allowed to approach HTML to within 500 yards. Perhaps more.
-- ![fix](./img/log/bul_excl.png) Made some minor fixes to the [matrix](matrix.html) page. Silly me, I got the cross-product definition all wrong.
-- ![upgrade](./img/log/bul_upgr.png) Added info on `REG_P1CNT` to the [keypad](keys.html) page. Yet another thing which only this site covers <kbd>:)</kbd>.
+- ![upgrade](./img/log/bul_upgr.png) `mode7d` にたくさんの変更を加えました。本当のモード 7 のコードはすべて別のファイルになったので、ほかのプロジェクトで使うのが楽になりました。mode7ex.htm にはまだ多くの作業が必要ですが、本文のほとんどは草稿の形で [m7theory.zip](../files/m7theory.zip) にあります。そう、Word の文書です。そう、それがひどいのはわかっています。そう、本文が安定して理解できるものになったら html に変換します（この点で何を変える必要があるか教えてください）。そして、そう、この変換は手でやります。Word を HTML に 500 ヤード以内に近づけるべきではないからです。もっと遠くかもしれません。
+- ![fix](./img/log/bul_excl.png) [行列](matrix.html)のページにちょっとした修正をしました。ばかな私、外積の定義をすっかり間違えていました。
+- ![upgrade](./img/log/bul_upgr.png) [キーパッド](keys.html)のページに `REG_P1CNT` の情報を加えました。またしても、このサイトしか扱っていないものです <kbd>:)</kbd>。
 
-Devving on a P2-300 with 24MB RAM: VBA runs at 50% (and 23% for mode7d) and minimizing a window takes a few seconds. Man, this sucks.
+24MB の RAM の P2-300 での開発: VBA は 50%（mode7d では 23%）で動き、ウィンドウを最小化するのに数秒かかります。まったく、ひどいものです。
 
-### June 11, 2004 (v0.99.1)
+### 2004 年 6 月 11 日（v0.99.1）
 
-- ![fix](./img/log/bul_excl.png) Fixed the style sheets so that the background image, colors and borders, etc, etc, appear as I had intented on Mozilla. Sorry about that, didn't know the the wrong comments would screw it up so much. Made a vallidation run and got rid of all nonvalidities ... except one: the \<nobr\> tags that I need to keep certain things together.
-- ![swap](./img/log/bul_swap.png) All BIOS calls are now inside `swi.s`, in assembly. Which is where they belongs, really.
+- ![fix](./img/log/bul_excl.png) Mozilla で背景の画像、色、枠線などが意図したとおりに表示されるように、スタイルシートを直しました。すみません、間違ったコメントがあれほどめちゃくちゃにするとは知りませんでした。検証をかけて、無効なところをすべてなくしました……1 つを除いて。特定のものをまとめておくのに必要な \<nobr\> タグです。
+- ![swap](./img/log/bul_swap.png) すべての BIOS コールは、アセンブリで `swi.s` の中に入りました。本当は、そこが本来の居場所なのです。
 
-### June 3, 2004 (v0.99)
+### 2004 年 6 月 3 日（v0.99）
 
-- ![fix](./img/log/bul_excl.png) Found out about the [wrapping artifact](affobj.html#sec-wrap), and changed the sprite pages accordingly. `obj_aff` now allows moving the sprite so you can see this artifact for yourself.
-- ![swap](./img/log/bul_swap.png) Finally got over my dislike of near-empty directories (the files get so lonely that way) and put all the demo-code in separate directories. Now, if only I could get over my ifphobia as well...
-- Added a section on vsyncing with interrupts in [swi.htm](swi.html#sec-vsync2) and an accompanying demo, `swi_vsync`. You need to see these.
-- Added `int_enable_ex` and `int_disable_ex`, which should make working with interrupts easier. However, I am not 100% sure if I got all the registers and flags right.
-- ![fix](./img/log/bul_excl.png) C++ doesn't like it when you try to use a struct-copy on a volatile variable, like `bga_update_ex` does. Or did, I should say.
-- Learned some new CSS tricks and am busy updating and structuring the layout of _all_ pages. It's mostly subtle stuff though, like standardizing the equation layout and giving code and register listings a subtle border that makes it stand out in printing. Non-subtle is that ever image should have a caption now.
-- ![upgrade](./img/log/bul_upgr.png) Resumed work on [mode7ex.htm](mode7ex.html) and its accompanying demo, `mode7d`. Adding variable pitch turned out to be easier than I thought, w00t! It's still a little buggy, though.
+- ![fix](./img/log/bul_excl.png) [回り込みのアーティファクト](affobj.html#sec-wrap)のことがわかったので、スプライトのページをそれに合わせて変えました。`obj_aff` でスプライトを動かせるようにしたので、このアーティファクトを自分で確かめられます。
+- ![swap](./img/log/bul_swap.png) ほとんど空のディレクトリが嫌いなのを（そうするとファイルがとても寂しくなるので）ついに克服して、すべてのデモのコードを別々のディレクトリに入れました。さて、if 嫌いも克服できさえすれば……
+- [swi.htm](swi.html#sec-vsync2) に割り込みでの VSync についての節と、それに付くデモ `swi_vsync` を加えました。これらは見ておく必要があります。
+- 割り込みの扱いを楽にするはずの `int_enable_ex` と `int_disable_ex` を加えました。ただし、すべてのレジスタとフラグを正しくできているか、100% の確信はありません。
+- ![fix](./img/log/bul_excl.png) C++ は、`bga_update_ex` がする（というより、していた）ように volatile な変数に構造体のコピーを使おうとすると嫌がります。
+- 新しい CSS の技をいくつか覚えたので、_すべて_のページのレイアウトの更新と構造化に忙しくしています。ただ、ほとんどはさりげないものです。式のレイアウトの標準化や、印刷したときに目立つように、コードやレジスタの一覧にさりげない枠線を付けることなどです。さりげなくないのは、すべての画像に見出しが付いたことです。
+- ![upgrade](./img/log/bul_upgr.png) [mode7ex.htm](mode7ex.html) とそれに付くデモ `mode7d` の作業を再開しました。可変のピッチを加えるのは思ったより簡単でした、やったね！ ただ、まだ少しバグがあります。
 
-With all these changes, it is adviced to save or remove older Tonc stuff when upgrading to avoid double files and other inconsistencies.
+これらすべての変更があるので、ファイルの重複やほかの不整合を避けるため、更新するときは古い Tonc のものを保存するか取り除くことをおすすめします。
 
-### May 24, 2004 (v0.98.5)
+### 2004 年 5 月 24 日（v0.98.5）
 
-- ![upgrade](./img/log/bul_upgr.png) devkitARM is now the primary devkit for Tonc. Makefiles and text are updated to match the change.
-- ![upgrade](./img/log/bul_upgr.png) Using a separate interrupt file now instead of a custom crt0.S and got The Point® of the critter in the process. The text is modified to reflect newer insights, as is `int_demo.c`
-- Started work on a [glossary](glossary.html).
-- Added instructions on how to run makefiles without Visual C++ in the the Tonc-code readme. Silly that I never thought of that before.
-- ![fix](./img/log/bul_excl.png) `REG_IF` is at `0400:0202`, not `0400:0200`, doh!
-- As you can see, I'm trying to use context-specific bullets for log entries. I still need to figure out what images to use for what purpose, though.
-- Rewritten the `build_all` and `clean_all` targets in `tonc.mak`.They're quite nasty now, but act more correctly and allow me to switch to a "one demo, one dir" structure if people finds having everything in the `examples` folder a bit messy.
+- ![upgrade](./img/log/bul_upgr.png) devkitARM が Tonc の主な開発キットになりました。makefile と本文をその変更に合わせて更新しました。
+- ![upgrade](./img/log/bul_upgr.png) 独自の crt0.S の代わりに別の割り込みのファイルを使うようになり、その過程でこいつの要点を理解しました。本文は、`int_demo.c` と同じく、新しい理解を反映して変更しました。
+- [用語集](glossary.html)の作業を始めました。
+- Tonc のコードの readme に、Visual C++ なしで makefile を実行する方法の説明を加えました。これまで思いつかなかったなんてばかげています。
+- ![fix](./img/log/bul_excl.png) `REG_IF` は `0400:0200` ではなく `0400:0202` にあります、しまった！
+- ご覧のとおり、変更履歴のエントリに状況に応じた行頭の記号を使おうとしています。ただ、どの目的にどの画像を使うかはまだ決める必要があります。
+- `tonc.mak` の `build_all` と `clean_all` のターゲットを書き直しました。今ではかなり厄介になっていますが、より正しく動き、すべてが `examples` フォルダにあるのが少しごちゃごちゃしていると思う人がいれば、「1 つのデモに 1 つのディレクトリ」の構成に切り替えられるようになりました。
 
-I am soooo tired right now so I wouldn't be surprised if I messed up somewhere. I'll get it fixed when I've had a chance to sssslssszzzzzzz....
+今とてもとても疲れているので、どこかで失敗していても驚きません。すううううすぴいいい……する機会があったら直します。
 
-### May 16, 2004 (v0.98)
+### 2004 年 5 月 16 日（v0.98）
 
-- ![fix](./img/log/bul_excl.png) Lot's of changes. First of all, I finally have a means to test on hardware, Wheeeee!! However, it did point out that you can't use the object tileblocks for backgrounds after all `:(`. Added my early experiences with hardware tests on a number of the pages.
-- ![fix](./img/log/bul_excl.png) Including in the [windowing](gfx.html#sec-win) section. It seems that you need to be really careful with the vertical settings of windowing. Updated the windowing demo to not use u16 arithmetic for the window size (which is given in bytes), and more precise movement.
-- ![swap](./img/log/bul_swap.png) Threw the DMA code around. I'm now using `dma_memcpy()` for general copies, and renamed the old `DMA_CPY()` macro to `DMA_TRANSFER`, and rearranged the order of arguments to match `memcpy`. Makes more sense that way.
-- ![swap](./img/log/bul_swap.png) Also changed `oi_set` to `oi_set_attr` and `oi_pos` to `oi_set_pos`.
-- The `Tonc Utils` configuration now compiles the utility code into a library. Required for `mode7d`.
-- Created a `build_all` rule in `tonc.mak`. Rebuilding everything by hand was really getting on my nerves.
-- More random clean-ups. The images on the entrance page are now links as well. Important notes are now in red boxes, for extra visibility. Added the demo-code of `bm_mode.c`, to show the basic steps of loading a picture and using keys. I should still post full code that earlier in the tutorials. Added an example of a fixed point identity matrix on [affine.htm](affine.html#sec-finish) to make sure people don't try to use floats.
-- ![fix](./img/log/bul_excl.png) Fixed [swi.htm](swi.html). _Again!_ I swear, if I find one more error here some somebody is gonna get hurt. And it won't be me. This time the range of arctan2 was wrong (should be full circle). What makes this error even worse is that I should (and did) know it's supposed to be the full-circle all along; it is the raison d'être of arctan2 after all.
-- [Matrix page](matrix.html) is done.
-- Practically fell out of my chair laughing at [villainsupply.com](http://www.villainsupply.com). Ouch.
-- Nearly drowned in my own drool after watching the Nintendo stuff at E3. Gargle.
-- The picture used in `key_demo` had the palette-indices of `KEY_START` and `KEY_SELECT` switched. I never really noticed because emulators don't have real start and select buttons. So once again, hardware testing saves the day.
+- ![fix](./img/log/bul_excl.png) たくさんの変更。まず、ついに実機でテストする手段を手に入れました、わーい！！ しかし、結局オブジェクトのタイルブロックは背景には使えないことが判明しました `:(`。いくつかのページに、実機でのテストの初期の経験を加えました。
+- ![fix](./img/log/bul_excl.png) [ウィンドウ](gfx.html#sec-win)の節も含めて。ウィンドウの縦の設定にはとても気をつける必要があるようです。ウィンドウのデモを、ウィンドウの大きさ（バイトで与えられます）に u16 の算術を使わないように、そしてもっと正確に動くように更新しました。
+- ![swap](./img/log/bul_swap.png) DMA のコードをいじりました。汎用のコピーには `dma_memcpy()` を使うようになり、古い `DMA_CPY()` マクロの名前を `DMA_TRANSFER` に変えて、引数の順序を `memcpy` に合わせて並べ替えました。そのほうが筋が通っています。
+- ![swap](./img/log/bul_swap.png) また、`oi_set` を `oi_set_attr` に、`oi_pos` を `oi_set_pos` に変えました。
+- `Tonc Utils` の構成は、ユーティリティのコードをライブラリにコンパイルするようになりました。`mode7d` に必要です。
+- `tonc.mak` に `build_all` のルールを作りました。全部を手で再ビルドするのに本当に嫌気がさしていたのです。
+- さらに細々とした後片付け。入口のページの画像もリンクになりました。重要な注意は、もっと目立つように赤い枠に入れました。画像を読み込んでボタンを使う基本の手順を示すために、`bm_mode.c` のデモのコードを加えました。チュートリアルのもっと前のほうに完全なコードを載せるべきですね。人々が浮動小数点数を使おうとしないように、[affine.htm](affine.html#sec-finish) に固定小数点の単位行列の例を加えました。
+- ![fix](./img/log/bul_excl.png) [swi.htm](swi.html) を直しました。_また_です！ 誓って言いますが、ここでもう 1 つ誤りを見つけたら、誰かが痛い目を見ます。私ではない誰かが。今回は arctan2 の範囲が間違っていました（1 周全体であるべきです）。この誤りをさらにひどくしているのは、それが 1 周全体であるべきことを最初から知っていた（し、実際知っていた）はずだということです。結局のところ、それが arctan2 の存在理由なのですから。
+- [行列のページ](matrix.html)が完成しました。
+- [villainsupply.com](http://www.villainsupply.com) を見て、笑いすぎて椅子から落ちそうになりました。いてて。
+- E3 の任天堂のものを見て、自分のよだれで溺れそうになりました。ごぼごぼ。
+- `key_demo` で使った画像は、`KEY_START` と `KEY_SELECT` のパレットのインデックスが入れ替わっていました。エミュレータには本物のスタートボタンとセレクトボタンがないので、まったく気づいていませんでした。というわけで、またしても実機でのテストが窮地を救いました。
 
-### Apr 29, 2004 (v0.97)
+### 2004 年 4 月 29 日（v0.97）
 
-- Added links to devkitARM as well as instructions on how to get it working. There is a very real possibility that I'll switch to this toolchain in the future.
-- Converted most of the macros to inline functions. Safer, easier to read and just as fast. Yes, plz.
-- Some more diagrams about tile-counting and the affine transformations.
-- Still to do: finishing the matrix page (and perhaps the mode7ex page). And now that I have my [tile-map editor Mirach](http://www.coranac.com/projects/#mirach), I may be able to do something with that as well. And I really, really need to get working on a text-system.
+- devkitARM へのリンクと、それを動かす方法の説明を加えました。将来このツールチェーンに切り替える可能性は十分にあります。
+- マクロのほとんどをインライン関数に変換しました。より安全で読みやすく、同じくらい速いです。ええ、ぜひ。
+- タイルの数え方とアフィン変換についての図をいくつか追加しました。
+- まだやること: 行列のページを仕上げること（と、おそらく mode7ex のページも）。そして[タイルマップエディタ Mirach](http://www.coranac.com/projects/#mirach) ができたので、それでも何かできるかもしれません。それから、本当に本当にテキストの仕組みに取りかかる必要があります。
 
-### Apr 9, 2004 (v0.97)
+### 2004 年 4 月 9 日（v0.97）
 
-The object affine functions have a background counterpart now, and `mode7d` is coming along nicely.
+オブジェクトのアフィンの関数に背景版ができ、`mode7d` も順調に進んでいます。
 
-### Apr 4, 2004 (v0.96)
+### 2004 年 4 月 4 日（v0.96）
 
-Renamed OAM structs and related items. _Again_. When is this gonna be final?!? Also, thanks to Lupin's problems with sprite-placement in 3D I finally got my matrix-transform sense back. Now that I get it again, I hope to expand the mode7 section in the near future. I already got a working example for 3d-sprite placement already in the form of `mode7d`.
+OAM の構造体と関連する項目の名前を変えました。_また_です。いつになったら確定するんでしょう？！？ また、3D でのスプライトの配置についての Lupin の問題のおかげで、ついに行列による変換の感覚を取り戻しました。またわかるようになったので、近いうちにモード 7 の節を広げたいと思っています。3D のスプライトの配置の動く例は、`mode7d` という形ですでにできています。
 
-### Mar 31, 2004 (v0.96)
+### 2004 年 3 月 31 日（v0.96）
 
-Working on a vector/matrix page, some reshuffling of page-order and yet more random little cleanups.
+ベクトル/行列のページに取り組んでいて、ページの順序を少し入れ替え、さらに細々とした後片付けをしました。
 
-### Mar 24, 2004 (v0.96)
+### 2004 年 3 月 24 日（v0.96）
 
-Replaced the assembly listing in [swi.htm](swi_htm) with the proper Thumb listing. I'd forgotten I wasn't using ARM code anymore.
+[swi.htm](swi_htm) のアセンブリのリストを、正しい Thumb のリストに置き換えました。もう ARM のコードを使っていないことを忘れていました。
 
-### Mar 20, 2004 (v0.96)
+### 2004 年 3 月 20 日（v0.96）
 
-And just when you think you're finished you find another 2 things you can improve upon. Argh. Anyway, I've changed the way sine and cosine are retrieved. They're both macros now, using one 512-entry long `s16` sine-LUT. Also, I finally realized how to XOR the `vid_page` directly for page-flipping. And, oh yeah, the compiler flag for compile, but not assemble should be `-S`, not `-s`. Oops.  
-I think I finally know how I can modify my affine functions to apply to backgrounds without having to use the `OBJ_AFFINE` structure, but it may be a while before I actually do that.
+終わったと思ったとたん、改善できることがまた 2 つ見つかるのです。ああもう。ともかく、サインとコサインの取得の仕方を変えました。どちらもマクロになり、512 エントリの `s16` のサインのルックアップテーブルを 1 つ使います。また、ページフリップのために `vid_page` を直接 XOR する方法がついにわかりました。それから、そうそう、コンパイルするがアセンブルしないためのコンパイラのフラグは `-s` ではなく `-S` であるべきでした。おっと。  
+`OBJ_AFFINE` 構造体を使わずに、アフィンの関数を背景にも適用できるように変える方法がついにわかったと思いますが、実際にそれをするまでにはしばらくかかるかもしれません。
 
-### Mar 17, 2004 (v0.95)
+### 2004 年 3 月 17 日（v0.95）
 
-Added ArcTan2 function to `swi_demo` and fixed the errors that `swi.htm` still contained. Argh, and I thought I'd been thorough in weeding out all inconsistencies after the recent name and code modifications.
+`swi_demo` に ArcTan2 の関数を加え、`swi.htm` にまだ残っていた誤りを直しました。ああもう、最近の名前とコードの変更のあとで、不整合をすべて徹底的に取り除いたと思っていたのに。
 
-### Mar 14, 2004 (v0.95)
+### 2004 年 3 月 14 日（v0.95）
 
-First entry in the log. I've rewritten the parts about sprites and backgrounds, changed glyphs to tiles and tiles to tegels (hope I got them all `:]`), updated all the code one last time and written sections on how to set up DKA, MSVC and makefiles. I think Tonc's ready for use now, wheee!
+変更履歴の最初のエントリです。スプライトと背景についての部分を書き直し、グリフをタイルに、タイルをテゲルに変え（全部変えられているといいのですが `:]`）、すべてのコードを最後にもう一度更新し、DKA、MSVC、makefile の準備の仕方についての節を書きました。Tonc はもう使える状態だと思います、わーい！

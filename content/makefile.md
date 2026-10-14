@@ -1,28 +1,28 @@
-# D. More on makefiles and compiler options
+# D. makefile とコンパイラのオプションについてもう少し
 
 <!-- toc -->
 
-:::warning This chapter may be outdated
+:::warning この章は古くなっているかもしれない
 
-This part may need an overhaul and some of the suggested tools or practices may be deprecated.
-
-:::
-
-## Introduction {#sec-intro}
-
-Although I gave a quick introduction to makefiles and compiler flags in the [setup](setup.html) section, a more complex look into these items may prove useful as well. So I'll present and explain the makefiles that Tonc uses in more detail, as well as some other little things about makefiles and compiler/linker options. I hope that this will give you enough ammo to understand the makefiles that are out there and allow you to figure out the more complicated aspects of the make process yourself. This page is hardly a substitute for the full documentation on the maketool make, the assembler as, compiler gcc and the linker ld, but it'll have to do for now. You can get the full documentation on these tools at [GNU Manuals Online](https://www.gnu.org/manual/manual.html). You may also be interested in MrMrIce's make tutorial, which can be found in [gbadev.org](http://www.gbadev.org)'s documentation section.
-
-By the way, I'm no expert at this stuff. I know a few tricks about makefiles and compiler options but that's it. If you have suggestions on improving my makefiles, do tell.
-
-## My standard makefile {#sec-make}
-
-:::warning Update note
-
-As of 20060428, I'm using a different style of makefiles, which means that this section is now largely out-of-date. I'll update when it reaches the top of my priority stack (which may be a while).
+この部分は見直しが必要かもしれず、すすめているツールややり方の中には非推奨になったものがあるかもしれません。
 
 :::
 
-What follows is the makefile for my int_demo demo. This is a moderately complex makefile, using the assembler, implicit rules and pattern substitution. The things you'll see here should be sufficient for most everyday makefiles. Two notes before we begin: this is a makefile for devkitARM. Instructions for getting it to work on DKA are indicated by comments.
+## はじめに {#sec-intro}
+
+[開発環境の準備](setup.html)の節で makefile とコンパイラのフラグを簡単に紹介しましたが、これらをもっと詳しく見ておくのも役に立つかもしれません。そこで、Tonc が使う makefile をもっと詳しく示して説明し、makefile とコンパイラ/リンカのオプションについてのほかのちょっとしたことも説明します。これで、世に出回っている makefile を理解し、make の過程のもっと複雑な面を自分で解き明かせるだけの武器が手に入るといいのですが。このページは、make ツールの make、アセンブラの as、コンパイラの gcc、リンカの ld の完全な文書の代わりにはとてもなりませんが、今はこれで我慢してください。これらのツールの完全な文書は [GNU Manuals Online](https://www.gnu.org/manual/manual.html) で手に入ります。[gbadev.org](http://www.gbadev.org) の文書の節にある MrMrIce の make のチュートリアルにも興味があるかもしれません。
+
+ちなみに、私はこういうことの専門家ではありません。makefile とコンパイラのオプションについていくつかの技は知っていますが、それだけです。私の makefile を改善する提案があれば、ぜひ教えてください。
+
+## 私の標準の makefile {#sec-make}
+
+:::warning 更新についての注意
+
+20060428 から別のスタイルの makefile を使っているので、この節は今ではほとんど古くなっています。優先順位の山の一番上に来たら更新します（しばらくかかるかもしれません）。
+
+:::
+
+以下は、私の int_demo のデモの makefile です。これはアセンブラ、暗黙のルール、パターン置換を使う、ほどほどに複雑な makefile です。ここで見るものは、日常のほとんどの makefile には十分なはずです。始める前に注意を 2 つ。これは devkitARM 用の makefile です。DKA で動かすための手順はコメントで示しています。
 
 ```makefile
 #
@@ -85,9 +85,9 @@ clean :
     @rm -fv $(PROJ).elf 
 ```
 
-As you can see, I've divided the file into four sections: project details, tool settings, building and clean. I'll go through these in order of appearance.
+ご覧のとおり、ファイルを 4 つの節に分けました。プロジェクトの詳細、ツールの設定、ビルド、クリーンです。出てくる順に見ていきます。
 
-### 1: Project details {#ssec-make-proj}
+### 1: プロジェクトの詳細 {#ssec-make-proj}
 
 ```makefile
 PROJ    := int_demo
@@ -103,35 +103,35 @@ COBJS   := $(CFILES:.c=.o)
 OBJS    := $(SOBJS) $(COBJS)
 ```
 
-These are all just variable definitions. Variables can be defined in two ways (see make manual, 7.2: "The Two Flavors of Variables"):
+これらはすべてただの変数の定義です。変数は 2 通りの方法で定義できます（make のマニュアルの 7.2「The Two Flavors of Variables」を見てください）。
 
 ```makefile
 XX  = yy
 AA := bb
 ```
 
-The first flavour (`=`) is a <dfn>recursively expanded</dfn> variable; the second (`:=`) is a <dfn>simply expanded</dfn> variable. In either case, whenever you now write `$(XX)` the make tool will substitute it by `yy`. And yes, the parentheses are mandatory. The difference between the two can be made clear by looking what happens if you do this.
+1 つ目の種類（`=`）は<dfn>再帰的に展開される</dfn>変数で、2 つ目（`:=`）は<dfn>単純に展開される</dfn>変数です。どちらの場合も、これで `$(XX)` と書くたびに、make ツールはそれを `yy` に置き換えます。そう、かっこは必須です。2 つの違いは、次のようにすると何が起きるかを見ればはっきりします。
 
 ```makefile
 XX = $(XX) -c
 AA := $(AA) -c
 ```
 
-You would like this to behave as the C operator `+=`, but in the first case the expansion is done recursively, meaning that you get an endless loop. The second version does what you expect to happen. Simply expanded variables make things more predictable, which is a good thing. See the make manual for more details on this. Oh, in case you were wondering, the assignment operator is available for makefiles as well.
+これを C の演算子 `+=` のようにふるまわせたいところですが、1 つ目の場合は展開が再帰的に行われるので、無限ループになってしまいます。2 つ目の版は期待どおりに動きます。単純に展開される変数のほうが動きを予測しやすく、それは良いことです。詳しくは make のマニュアルを見てください。ああ、それから気になっていた人のために言うと、makefile でも代入演算子が使えます。
 
-In this case I've defined variables for the project's name (int_demo), the extension (gba) and the directory where I keep all my utility routines (../libtonc). It's a good practice to do this, because you can modify and use it to suit another project without too much trouble.
+この場合は、プロジェクトの名前（int_demo）、拡張子（gba）、すべてのユーティリティのルーチンを置いているディレクトリ（../libtonc）の変数を定義しました。こうしておくと、あまり手間をかけずに変更して別のプロジェクトに合わせて使えるので、良い習慣です。
 
-The second part defines the source files (not the object files, but the actual C and assembly files) of the project. Note the use of `$(UDIR)` in many of the names. Note also that the definition of `CFILES` is split over two lines using a backslash (`\`). When you do this, though, make *absolutely* sure it's the last character on the line. If you put, say, a space behind it, you'll regret it. Some editors have an option with which you can show non-printable characters; try it if you suspect these kinds of errors (will work for the tab requirement as well).
+2 つ目の部分は、プロジェクトのソースファイル（オブジェクトファイルではなく、実際の C とアセンブリのファイル）を定義しています。多くの名前で `$(UDIR)` を使っていることに注目してください。また、`CFILES` の定義がバックスラッシュ（`\`）を使って 2 行に分かれていることにも注目してください。ただし、そうするときは、それが行の最後の文字であることを*絶対に*確かめてください。たとえば後ろに空白を置いたりすると、後悔することになります。エディタの中には、表示されない文字を表示するオプションがあるものもあります。この種のエラーが疑われるときは試してみてください（タブの要件にも使えます）。
 
-And the third part is where it gets interesting. The form
+そして 3 つ目の部分で面白くなります。次の形は
 
 ```makefile
 $(var:a=b)
 ```
 
-is called <dfn>substitution reference</dfn>, one of the many forms of pattern substitution. In this case it looks at variable *var* and if it finds the string *a* at the end of a word, it'll be replaced by string *b*. I've used this to turn the lists of .s and .c files into lists of object files. GNU Make is full of string-transformation commands such as this. Look at libtonc.mak for some others.
+<dfn>置換参照</dfn>と呼ばれ、たくさんあるパターン置換の形の 1 つです。この場合、変数 *var* を見て、単語の終わりに文字列 *a* を見つけたら、それを文字列 *b* に置き換えます。これを使って、.s と .c のファイルの一覧をオブジェクトファイルの一覧に変えました。GNU Make にはこのような文字列変換のコマンドがたくさんあります。ほかのものは libtonc.mak を見てください。
 
-### 2: Tools settings {#ssec-make-tool}
+### 2: ツールの設定 {#ssec-make-tool}
 
 ```makefile
 CROSS := arm-none-eabi-                      # use arm-agb-elf- for DKA
@@ -149,11 +149,11 @@ CFLAGS  := -I./ -I$(UDIR) $(MODEL) -O2 -Wall
 LDFLAGS := $(SPECS) $(MODEL)
 ```
 
-More variables. First, I list the tools I use for assembling (`arm-none-eabi-as`), compiling (`arm-none-eabi-gcc`) and linking (`arm-none-eabi-gcc`). Note that I'm using the same program for compiling and linking. You can also use the command that does the actual linking (`arm-none-eabi-ld`), but if you do that you have to tell it what standard libraries to use and where to find them. gcc does that for us, which saves us a lot of hassle. To indicate it really is a different step conceptually, I'm using a different variable name for the link-step. Now, in principle the variable names are yours to choose, you can call them HUEY, LOUIS and DEWEY for all I care, but AS, CC and LD are conventional, so you'd do the world a favour by sticking to that. And there's actually a second reason why using these names are preferred, which I'll go into later. Additionally, using a separate variable for the command prefix (the `CROSS` variable) makes switching to another devkit easier. Abstraction is your friend.
+さらに変数です。まず、アセンブル（`arm-none-eabi-as`）、コンパイル（`arm-none-eabi-gcc`）、リンク（`arm-none-eabi-gcc`）に使うツールを挙げています。コンパイルとリンクに同じプログラムを使っていることに注意してください。実際にリンクを行うコマンド（`arm-none-eabi-ld`）を使うこともできますが、そうすると、どの標準ライブラリを使い、それらをどこで見つけるかを教えなければなりません。gcc はそれをしてくれるので、たくさんの手間が省けます。概念的には本当に別の段階であることを示すために、リンクの段階には別の変数名を使っています。さて、原理的には変数名は好きに選んでかまいません。HUEY、LOUIS、DEWEY と呼んでも私は構いませんが、AS、CC、LD が慣習なので、それに従えば世の中のためになります。そして、これらの名前を使うのが望ましい 2 つ目の理由が実はあり、それはあとで説明します。さらに、コマンドの接頭辞に別の変数（`CROSS` 変数）を使うと、別の開発キットへの切り替えが楽になります。抽象化はあなたの友達です。
 
-The rest are lists of assembler, compiler and linker flags. I want to tell you what these do later, since it has nothing to do with the make-process in itself. It's standard practice to do something like this, though. Again, by using variables for this stuff (especially with these precise names) rather than adding them to the actual build commands, makes it easier to switch to something that requires other flags. Abstraction is a very good friend.
+残りは、アセンブラ、コンパイラ、リンカのフラグの一覧です。これらが何をするかは、make の過程そのものとは関係がないので、あとで説明します。とはいえ、このようにするのは標準的なやり方です。ここでも、こういうものを実際のビルドのコマンドに加えるのではなく変数を使う（特にまさにこの名前で）ことで、別のフラグが必要なものへの切り替えが楽になります。抽象化はとても良い友達です。
 
-### 3: The build commands {#ssec-make-cmd}
+### 3: ビルドのコマンド {#ssec-make-cmd}
 
 ```makefile
 build : $(PROJ).$(EXT)
@@ -173,28 +173,28 @@ $(SOBJS) : %.o : %.s
     $(AS) $(ASFLAGS) $< -o $@
 ```
 
-And now for the real work. The actual build process is composed of a number of rules. If you've forgotten what a rule looks like, here it is again:
+そしてここからが本当の仕事です。実際のビルドの過程は、いくつかのルールでできています。ルールがどんな形だったか忘れてしまったなら、もう一度示します。
 
 ```makefile
 target : prerequisite
     command
 ```
 
-One thing to remember here is that the command *must* be preceded by a TAB, *not* spaces! Anyway, the commands will run only when the target is out of date. This is true when the target doesn't exist or is older than the prerequisites. By default, the first rule in the makefile starts the build-chain, but you can start at another rule in the command line (or the Project Settings). Let's trace through the rules one by one.
+ここで覚えておくべきことの 1 つは、コマンドの前は空白では*なく*タブで*なければならない*ことです！ ともかく、コマンドはターゲットが古くなっているときにだけ実行されます。ターゲットが存在しないか、前提条件より古い場合がそうです。デフォルトでは makefile の最初のルールがビルドの連鎖を始めますが、コマンドライン（やプロジェクトの設定）で別のルールから始めることもできます。ルールを 1 つずつたどってみましょう。
 
-It starts at the `build` rule, which has one prerequisite, `int_demo.gba`. This has a rule too, and one that requires `int_demo.elf`, which in turn requires `the object  list`. The objects list is composed of two parts, `COBJS` and `SOBJS`. The percentage signs ('%') in their rules make them <dfn>pattern rules</dfn>. Taking `SOBJS` as an example, the rule says that for every file in the list that ends in ‘.o’, the prerequisite is its ‘.s’ counterpart. Here ends the `build` chain, as the sources have prerequisites. Now the commands come into play, in an stack-unwind manner.
+始まりは `build` ルールで、前提条件は `int_demo.gba` の 1 つです。これにもルールがあり、それは `int_demo.elf` を必要とし、それがまた `the object  list` を必要とします（訳注: オブジェクトファイルの一覧のことです）。オブジェクトの一覧は `COBJS` と `SOBJS` の 2 つの部分でできています。それらのルールにあるパーセント記号（'%'）が、それらを<dfn>パターンルール</dfn>にしています。`SOBJS` を例に取ると、このルールは、一覧の中の「.o」で終わるファイルそれぞれについて、前提条件はそれに対応する「.s」だと言っています。ソースには前提条件がある（訳注: 文脈からは「ない」の意味と思われます）ので、ここで `build` の連鎖は終わります。ここからはスタックを巻き戻すような形でコマンドが働き始めます。
 
-In almost all the commands, you'll see unknown things with dollar signs: `$^`, `$<` and `$@`. These are <dfn>automatic variables</dfn>. These refer to the full prerequisite, a single item in the prerequisite and the target, respectively. Other things to not about some commands are the hyphen ('-') and the at sign ('@') in front of them. The '@' suppresses echoing that line. The hyphen lets make ignore errors. I'm using it in the gbafix command to keep the makefile running, even if you don't have the tool.
+ほとんどすべてのコマンドに、ドル記号の付いた見慣れないものがあります。`$^`、`$<`、`$@` です。これらは<dfn>自動変数</dfn>です。それぞれ、前提条件全体、前提条件の中の 1 つの項目、ターゲットを指します。いくつかのコマンドについて注意すべきほかのことは、前にあるハイフン（'-'）とアットマーク（'@'）です。'@' はその行のエコーを抑えます。ハイフンは make にエラーを無視させます。gbafix のコマンドでこれを使っているのは、そのツールを持っていなくても makefile が動き続けるようにするためです。
 
-An observant reader may have noticed that the lines for compiling the C files have been commented out. So how can the files be compiled without a rule? Via <dfn>implicit rules</dfn>. For a good number of suffices GNUmake knows how to build them. For example, if you need an object file *foo.o* and *foo.c* is nearby, it'll use the rule
+目ざとい読者は、C のファイルをコンパイルする行がコメントアウトされていることに気づいたかもしれません。では、ルールなしでどうやってファイルがコンパイルされるのでしょうか？ <dfn>暗黙のルール</dfn>によってです。GNU make はかなりの数の接尾辞について、それらのビルドの仕方を知っています。たとえば、オブジェクトファイル *foo.o* が必要で、近くに *foo.c* があれば、次のルールを使います。
 
 ```makefile
 $(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 ```
 
-There's an implicit rule for assembly files too, only it uses `AS` and `ASFLAGS`, which is why I used those names. You can find a full list of implicit rules and the variables they use in the make manual.
+アセンブリのファイルにも暗黙のルールがあり、ただしそれは `AS` と `ASFLAGS` を使います。私がこれらの名前を使ったのはそのためです。暗黙のルールとそれらが使う変数の完全な一覧は、make のマニュアルにあります。
 
-### 4: cleaning up {#ssec-make-clean}
+### 4: 後片付け {#ssec-make-clean}
 
 ```makefile
 # --- Clean ---
@@ -205,31 +205,31 @@ clean :
     @rm -fv $(PROJ).elf
 ```
 
-This rule is separate from the others and is used to remove the output and intermediaries of the project (but not the utility objects, because they may be used in another project as well). It's really simple: rm is the command for removing stuff, the flags tells it to keep going even if the file doesn't exist (`-f`) and to display what it's doing (`-v`). And that's it. Well, almost. There's one more thing, namely the `.PHONY` directive. Remember that I said that the commands are only run when the target doesn't exist or is older that its prerequisites. Since the target (clean) doesn't exist, it's always out of date and the commands always run. But what happens if there *is* a file called clean? Because there are no prerequisites the commands will never run. The `.PHONY` directive is used to indicate that the target is a target in name only and that the commands should always be executed.
+このルールはほかのものから独立していて、プロジェクトの出力と中間ファイル（ただしユーティリティのオブジェクトは除きます。ほかのプロジェクトでも使うかもしれないからです）を取り除くのに使います。本当に単純です。rm はものを取り除くコマンドで、フラグは、ファイルが存在しなくても続けること（`-f`）と、何をしているかを表示すること（`-v`）を指示します。それだけです。まあ、ほぼ。もう 1 つあって、`.PHONY` ディレクティブです。コマンドはターゲットが存在しないか前提条件より古いときにだけ実行されると言ったことを思い出してください。ターゲット（clean）は存在しないので、常に古くなっていて、コマンドは常に実行されます。でも、clean という名前のファイルが*ある*とどうなるでしょうか？ 前提条件がないので、コマンドは決して実行されません。`.PHONY` ディレクティブは、ターゲットが名前だけのターゲットで、コマンドを常に実行すべきことを示すのに使います。
 
-There's a lot more fun to be had with makefiles. You can use makefiles that run other makefiles (which is actually how tonc.mak is set up) or include them in other makefiles. This last one can make your life a lot easier. For example, by proper use of variables, steps 3 and 4 will rarely change between projects. This means that you could put them into a master makefile and include them in all your project-makefiles, in which you will only have to write down the things that are really specific to the current project (for an example of this, see [HAM](http://www.ngine.de)). Abstraction wants to have your babies.
+makefile にはもっとたくさんの楽しみがあります。ほかの makefile を実行する makefile を使ったり（tonc.mak は実はそういう構成になっています）、ほかの makefile にそれらを include したりできます。後者を使うと、ずっと楽になります。たとえば、変数を正しく使えば、手順 3 と 4 はプロジェクト間でめったに変わりません。つまり、それらを親の makefile に入れて、すべてのプロジェクトの makefile に include し、各プロジェクトの makefile には、本当にそのプロジェクトに固有のことだけを書けばよくなります（この例は [HAM](http://www.ngine.de) を見てください）。抽象化はあなたの子どもを産みたがっています。
 
-With the pattern substitution and wildcard rules you can practically make makefiles that write themselves! (see the [devkitARM](https://www.devkitpro.org) sample code). The full extent of makefile capabilities is beyond the scope of this tutorial, but trust me, there's a lot more cool stuff here.
+パターン置換とワイルドカードのルールを使えば、ほとんど自分で自分を書く makefile が作れます！（[devkitARM](https://www.devkitpro.org) のサンプルコードを見てください）。makefile の能力の全容はこのチュートリアルの範囲を超えていますが、信じてください、ここにはもっとたくさんのかっこいいものがあります。
 
-## Common compiler flags {#sec-flags}
+## よく使うコンパイラのフラグ {#sec-flags}
 
-Knowing how to write a working makefile is only part of the problem of getting the GNU tools to work. What's even more important is knowing what options you can use with the assembler, compiler and linker. In an IDE, you can enable these by selecting them in check- and list-boxes and such. No such luck for command line tools, though, here you have to set all the options by including certain flags. The key is knowing which flags to use. I'm not going to list each and every one of these since there are literally hundreds of flags. But I am going to list the ones you're most likely to see in GBA programming.
+動く makefile の書き方を知ることは、GNU のツールを動かす問題の一部にすぎません。もっと重要なのは、アセンブラ、コンパイラ、リンカでどのオプションを使えるかを知ることです。IDE なら、チェックボックスやリストボックスなどで選んで有効にできます。コマンドラインのツールにはそんな幸運はなく、特定のフラグを含めることですべてのオプションを設定しなければなりません。鍵は、どのフラグを使うかを知ることです。フラグは文字どおり何百もあるので、一つ残らず挙げるつもりはありません。でも、GBA のプログラミングで一番見かけそうなものは挙げます。
 
-- `-c`:   (gcc) Compile to object file, but do not link.
-- `-E`:   (gcc) Stop after the preprocessor stage.
-- `-g`:   (as, gcc) Generates debug-information for the gdb debugger. Haven't used myself this yet.
-- `-Idir`:   (gcc) Add the directory dir to the list of directories to be searched for header files. (That's a capital 'i', by the way)
-- `-llibrary`:   (gcc, ld) Search the library named *library* or *liblibrary.a* when linking. Important libraries are libm (math library), libgcc, libc and libstdc++; the last three are linked automatically when you use `gcc` as a linker, rather than calling `ld` directly. And that's a lowercase 'L', by the way. “lI1”, “oO0”, I do so hate the Latin alphabet sometimes.
-- `-Ldir`:   (gcc, ld) Add directory dir to the list of directories to be searched for code libraries.
-- `-M`:   (gcc) The family of `-M` flags generate dependency information for header files. Normally when you create rules, you only mention the source files, which are recompiled when they've been modified. But when you modify the headers that that file includes, the file itself is still considered up-to-date. You can either create a rule for the headers yourself or let make do it for you with these flags. Unfortunately, I haven't been able to make them work for me yet.
-- `-Map mapfile`:   (ld) Creates a <dfn>map-file</dfn>, which indicates where the linker puts your functions and global variables. Since it is a pure linker option, you need to use -Wl,-Map,filename when linking with gcc.
+- `-c`:   （gcc）オブジェクトファイルにコンパイルするが、リンクはしない。
+- `-E`:   （gcc）プリプロセッサの段階のあとで止める。
+- `-g`:   （as、gcc）gdb デバッガのためのデバッグ情報を生成する。私自身はまだ使ったことがありません。
+- `-Idir`:   （gcc）ヘッダファイルを探すディレクトリの一覧にディレクトリ dir を加える。（ちなみに、大文字の「i」です）
+- `-llibrary`:   （gcc、ld）リンクするときに *library* または *liblibrary.a* という名前のライブラリを探す。重要なライブラリは libm（数学ライブラリ）、libgcc、libc、libstdc++ です。最後の 3 つは、`ld` を直接呼ぶのではなく、リンカとして `gcc` を使えば自動的にリンクされます。ちなみに、小文字の「L」です。「lI1」、「oO0」、ラテン文字のアルファベットはときどき本当に嫌になります。
+- `-Ldir`:   （gcc、ld）コードのライブラリを探すディレクトリの一覧にディレクトリ dir を加える。
+- `-M`:   （gcc）`-M` 系のフラグは、ヘッダファイルの依存関係の情報を生成します。普通、ルールを作るときはソースファイルだけを書き、それらが変更されると再コンパイルされます。しかし、そのファイルが include しているヘッダを変更しても、ファイル自体はまだ最新とみなされます。ヘッダのためのルールを自分で作ることも、これらのフラグで make に任せることもできます。残念ながら、私はまだこれらをうまく動かせていません。
+- `-Map mapfile`:   （ld）<dfn>マップファイル</dfn>を作る。これは、リンカが関数やグローバル変数をどこに置いたかを示します。純粋なリンカのオプションなので、gcc でリンクするときは -Wl,-Map,filename を使う必要があります。
 - `-marm, -mthumb, -mthumb-interwork`
-:   (as, gcc, ld) Indicates the CPU model to write object files for (ARM or Thumb). The default is ARM. With `-mthumb-interwork` you allow mixing between ARM and Thumb code, which you'll want to allow for even when you're not actually using it. This flags it actually *required* under devkitARM.
-- `-nostartfiles`:   (gcc, ld) Do not use the standard system start-up files when linking. If you want to link a custom *crt0.o* you want this *so* bad. (Whether you want a custom crt0.o is another matter, though.)
-- `-o file`:   (as, gcc, ld) Place output in file file.
-- `-Onum`:   (gcc) Enables optimisation level `num`, where `num` is usually `g`, `1`, `s`, `2`, or `3`. If you want to use inline functions, you need at least one level of optimisation. See the gcc manual for details.
-- `-S`:   (gcc) compile, but not assemble. This gives you an assembly file of the C file you just compiled. Very useful for finding out how ARM assembly works, you should do this at least once.
-- `-specs=specfile`:   (gcc) use specfile to determine what switches need to be passed to gcc's subprocesses (`as`, `cc1`, `cc1plus`, `ld`) instead of the default specs. (gcc.info, line 5556. Fer IPU's sake, people, don't you guys read manuals? It's only 26k lines you know).
-- `-T scriptfile`:   (ld) Use scriptfile as the linker script. (Like Jeff Frohwein's lnkscript.)
-- `-Wall`:   (as, gcc) Enable common warnings. Options of the form `-Wfoo` are used for all kinds of warnings actually.
-- `-Wl,opts`:   (gcc) passes options to the linker; opts is a comma-separated list.
+:   （as、gcc、ld）オブジェクトファイルを書き出す CPU のモデル（ARM か Thumb）を示す。デフォルトは ARM です。`-mthumb-interwork` を使うと ARM と Thumb のコードを混ぜられます。実際には使っていなくても、これは許しておきたいでしょう。devkitARM ではこのフラグは実は*必須*です。
+- `-nostartfiles`:   （gcc、ld）リンクするときに標準のシステムのスタートアップファイルを使わない。独自の *crt0.o* をリンクしたいなら、これが*すごく*欲しくなります。（独自の crt0.o が欲しいかどうかはまた別の問題ですが。）
+- `-o file`:   （as、gcc、ld）出力をファイル file に置く。
+- `-Onum`:   （gcc）最適化のレベル `num` を有効にする。`num` は普通 `g`、`1`、`s`、`2`、`3` のどれかです。インライン関数を使いたいなら、少なくとも 1 段階の最適化が必要です。詳しくは gcc のマニュアルを見てください。
+- `-S`:   （gcc）コンパイルするがアセンブルしない。これで、今コンパイルした C のファイルのアセンブリのファイルが得られます。ARM アセンブリの仕組みを知るのにとても役立つので、少なくとも一度はやってみるべきです。
+- `-specs=specfile`:   （gcc）gcc のサブプロセス（`as`、`cc1`、`cc1plus`、`ld`）にどんなスイッチを渡す必要があるかを決めるのに、デフォルトの specs の代わりに specfile を使う。（gcc.info の 5556 行目。お願いだから、皆さん、マニュアルを読まないんですか？ たった 26k 行ですよ）。
+- `-T scriptfile`:   （ld）scriptfile をリンカスクリプトとして使う。（Jeff Frohwein の lnkscript のようなもの。）
+- `-Wall`:   （as、gcc）よくある警告を有効にする。実は `-Wfoo` の形のオプションは、あらゆる種類の警告に使われます。
+- `-Wl,opts`:   （gcc）リンカにオプションを渡す。opts はカンマ区切りの一覧です。

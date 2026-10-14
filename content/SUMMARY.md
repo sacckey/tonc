@@ -38,10 +38,10 @@
 
 ---
 
-[Appendix A - Numbers, bits and bit operations](./numbers.md)
-[Appendix B - Fixed-point math & LUTs](./fixed.md)
-[Appendix C - Vector and matrix math](./matrix.md)
-[Appendix D - More on makefiles and compiler options](./makefile.md)
-[Appendix E - Make via editors](./edmake.md)
-[Appendix F - References](./refs.md)
-[Appendix G - Change log](./log.md)
+[付録 A - 数、ビット、ビット演算](./numbers.md)
+[付録 B - 固定小数点演算とルックアップテーブル](./fixed.md)
+[付録 C - ベクトルと行列の数学](./matrix.md)
+[付録 D - makefile とコンパイラのオプションについてもう少し](./makefile.md)
+[付録 E - エディタから make を実行する](./edmake.md)
+[付録 F - 参考文献](./refs.md)
+[付録 G - 変更履歴](./log.md)

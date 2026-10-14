@@ -1,36 +1,36 @@
-# E. Make via editors
+# E. エディタから make を実行する
 
 <!-- toc -->
 
-:::warning This chapter may be outdated
+:::warning この章は古くなっているかもしれない
 
-This part may need an overhaul and some of the suggested tools or practices may be deprecated.
+この部分は見直しが必要かもしれず、すすめているツールややり方の中には非推奨になったものがあるかもしれません。
 
 :::
 
-## Introduction {#sec-intro}
+## はじめに {#sec-intro}
 
-As good as makefiles are, they're still command-line driven processes, with all the problems attached to it. If you're in a Unix/Linux environment those problems are usually fairly small, but on a pure Windows system we have to work in a DOS-like Windows command prompt, which has a number of very ghastly flaws that can make your life miserable: not only is wringing through the directory structure not much fun, the non-intuitive way to copy/paste text and the inability to arrow through your commands to fix a typo are somewhat annoying too. Another thing that will wear your patience very quickly is not being able to scroll through the list of compilation errors that speeds across your itty-bitty Windows command prompt like a thundering herd of rabid elephants in a China shop. And you *know* it'd all be okay if you could just find the one at the start of the list and fix that. Now, you can get around the gross inadequacies of a Windows command prompt by using an MSYS-box instead. You'd still need to learn how to use the Bash shell to make the most of it, though. And you'd still have the extra window for the command line box.
+makefile がどれほど優れていても、やはりコマンドラインで動かす処理であることに変わりはなく、それにつきものの問題をすべて抱えています。Unix/Linux の環境なら、それらの問題はたいていかなり小さいのですが、純粋な Windows のシステムでは、DOS のような Windows のコマンドプロンプトで作業しなければなりません。これには、人生をみじめにしかねない、とても恐ろしい欠陥がいくつもあります。ディレクトリの構造をかき分けていくのが楽しくないだけでなく、テキストのコピー/ペーストの直感的でないやり方や、矢印キーでコマンドをたどってタイプミスを直せないことも、少しいらいらします。もう 1 つ、すぐに我慢の限界に達するのは、ちっぽけな Windows のコマンドプロンプトを、瀬戸物屋に突進する狂った象の群れのように駆け抜けていくコンパイルエラーの一覧をスクロールできないことです。しかも、一覧の最初のエラーを見つけてそれを直しさえすれば、全部うまくいくことは*わかっている*のです。さて、Windows のコマンドプロンプトのひどい不備は、代わりに MSYS のウィンドウを使えば回避できます。それでも、それを最大限に活かすには Bash のシェルの使い方を学ぶ必要があります。そして、コマンドラインのウィンドウという余分なウィンドウがあることに変わりはありません。
 
-Fortunately, there are ways to avoid any kind of command line box altogether. Unless you're using something as dreadful as the standard Windows Notepad, there is a good chance you can run make or any other tool directly from your code editor. In this case, I'd like to take a look at three of them
+幸い、どんな種類のコマンドラインのウィンドウもまったく使わずに済ませる方法があります。標準の Windows のメモ帳のようなひどいものを使っているのでない限り、コードのエディタから直接 make やほかのツールを実行できる可能性が高いのです。ここでは、そのうちの 3 つを見てみたいと思います。
 
 -   [ConTEXT](https://archive.org/details/tucows_349269_ConTEXT)
--   [Programmer's Notepad](http://www.pnotepad.org/). Yes, the one that comes with devkitARM.
+-   [Programmer's Notepad](http://www.pnotepad.org/)。そう、devkitARM に付属しているものです。
 -   Microsoft Visual C++
 
-ConTEXT and PN are basically advanced forms of text editors, of which there are quite a few. Most of these will allow tabbed files, search&replace, customizable syntax highlighting, macros and shell commands. If you're still using Windows Notepad for, well, *anything* really, you owe it to yourself to download one of the more advanced text editors and use that as a replacement. The glorified edit-box known as Notepad should not be allowed anywhere near any kind of plain text file unless there is no way around it. Every one of the programmers' editors you can google up is likely to be superior to Notepad in every single way, and some of them even allow you to replace the actual notepad.exe. While this has become harder since Windows XP Service Pack 2 because system file protection keeps resurrecting it, in my opinion it's well worth the effort to shoot it down permanently.
+ConTEXT と PN は基本的にテキストエディタの高度な形で、その手のものはかなりたくさんあります。ほとんどは、タブでのファイルの切り替え、検索と置換、カスタマイズできる構文の強調表示、マクロ、シェルのコマンドを使えます。まだ、まあ、本当に*何にでも* Windows のメモ帳を使っているなら、もっと高度なテキストエディタを 1 つダウンロードして、その代わりに使うべきです。メモ帳として知られる大げさなエディットボックスは、どうしようもない場合を除いて、どんな種類のプレーンテキストのファイルにも近づけるべきではありません。ググって見つかるプログラマ向けのエディタは、どれもあらゆる点でメモ帳より優れている可能性が高く、中には実際の notepad.exe を置き換えられるものさえあります。Windows XP Service Pack 2 からは、システムファイルの保護がそれを何度も復活させるので難しくなりましたが、私の意見では、それを永久に撃ち落とす手間は十分にかける価値があります。
 
-Ahem, sorry about that. Sometimes I get a little carried away when I remember how much the standard Windows tools suck at times. Anyway, onto the show. In the remaining part of this chapter, I'll show how you can get ConTEXT and PN to run make for the currently open makefile. The last section of this chapter will cover setting up MSVC for the job. If you're not interested in any of this, feel free to skip to the [next chapter](first.html) at any time.
+ゴホン、失礼しました。標準の Windows のツールがときどきどれほどひどいかを思い出すと、少し熱くなってしまうことがあるのです。ともかく、本題に入りましょう。この章の残りでは、ConTEXT と PN で、現在開いている makefile の make を実行させる方法を示します。この章の最後の節では、その仕事のために MSVC を準備する方法を扱います。どれにも興味がなければ、いつでも[次の章](first.html)に飛ばしてかまいません。
 
-## Make via ConTEXT {#sec-context}
+## ConTEXT から make を実行する {#sec-context}
 
-[ConTEXT](https://archive.org/details/tucows_349269_ConTEXT) is a lightweight free text editor that I use for most of plain text editing. It can do all the things that programmer's editors are supposed to do, it has a Notepad replacer and a tool that allows me to export code to an html format, which has been very useful indeed for writing tonc. It does have one or two minor flaws, but none that I particularly mind.
+[ConTEXT](https://archive.org/details/tucows_349269_ConTEXT) は軽量で無料のテキストエディタで、私はプレーンテキストの編集のほとんどにこれを使っています。プログラマ向けのエディタがすべきことはすべてでき、メモ帳の置き換え機能や、コードを html 形式に書き出せるツールもあって、tonc を書くのに本当にとても役立ってきました。小さな欠点が 1 つか 2 つありますが、特に気になるものはありません。
 
-The shell commands manager can be found under Options-\>Environment Options...-\>Execute Keys (@fig:ctxt-make), and works on an extension basis. In my case, that means .mak. ConTEXT allows 4 commands per extension, and I'm using F9 to make the ‘build’ target and F10 for a clean operation.
+シェルのコマンドの管理は、Options-\>Environment Options...-\>Execute Keys（@fig:ctxt-make）にあり、拡張子ごとに働きます。私の場合、それは .mak です。ConTEXT では拡張子ごとに 4 つのコマンドを使えます。私は F9 を「build」ターゲットの make に、F10 をクリーンの操作に使っています。
 
 F9 : make build
 
--   **Execute:** `make.exe` (add full path if necessary)
+-   **Execute:** `make.exe`（必要ならフルパスを加える）
 -   **Parameters:** `-f %f build`
 -   **Capture output:** yes
 
@@ -40,28 +40,28 @@ F10 : make clean
 -   **Parameters:** `-f %f clean`
 -   **Capture output:** yes
 
-Be sure that the devkitARM and msys bin directories are in the system path, or context won't be able to find make.exe or the compiler tools.
+devkitARM と msys の bin ディレクトリがシステムのパスに入っていることを確かめてください。そうでないと、ConTEXT は make.exe やコンパイラのツールを見つけられません。
 
 <div class="cpt" style="width:464px">
 
 <img src="img/setup/ctxt_make.png" 
   alt="context commands" id="fig:ctxt-make"><br>
-<b>{*@fig:ctxt-make}</b>: ConTEXT shell commands.
+<b>{*@fig:ctxt-make}</b>: ConTEXT のシェルのコマンド。
 </div>
 
-## Make via Programmer's Notepad 2 {#sec-pn2}
+## Programmer's Notepad 2 から make を実行する {#sec-pn2}
 
-I never really knew about PN until it started coming with devkitARM, but it looks really good. I haven't used it that much myself, but only because I am still content with context. That said, PN is probably the better editor, and as it may come with the toolchain, chances are you'll have it already.
+devkitARM に付属するようになるまで PN のことはよく知りませんでしたが、本当に良さそうです。私自身はそれほど使っていませんが、それは単に ConTEXT にまだ満足しているからです。とはいえ、PN のほうがおそらく良いエディタで、ツールチェーンに付属していることもあるので、すでに持っている可能性が高いでしょう。
 
-For all its benefits, I should say this though: by default, it seems to ignore the desktop color scheme. This may not sound like a big deal, but because the background color defaulted to a hard white, I literally couldn't even look at the thing for more than a minute. When I first tried to fix this in the options, it seemed that you could only change this on a type-by-type basis instead of globally. Took me a while to figure out I'd been looking in the wrong place <kbd>:P</kbd> all along. Look under Tools-\>Options-\>Styles, not under Tools-\>Options-\>Schemes.
+いろいろ利点はありますが、これは言っておくべきでしょう。デフォルトでは、デスクトップの配色を無視するようです。大したことではないように聞こえるかもしれませんが、背景色がデフォルトできつい白だったので、文字どおり 1 分以上見ていることすらできませんでした。最初にオプションでこれを直そうとしたときは、全体ではなく種類ごとにしか変えられないように見えました。ずっと間違った場所を見ていたことに気づくまでしばらくかかりました <kbd>:P</kbd>。Tools-\>Options-\>Schemes ではなく、Tools-\>Options-\>Styles を見てください。
 
-To add commands for makefiles, go to Tools-\>Options-\>Tools (@fig:pn-make), and select the ‘Make’. Then add 2 commands for ‘make build’ and ‘make clean’
+makefile のためのコマンドを加えるには、Tools-\>Options-\>Tools（@fig:pn-make）に行き、「Make」を選びます。それから「make build」と「make clean」の 2 つのコマンドを加えます。
 
 F9 : make build
 
   -   **Name:** `mk build`
   -   **Command:** `E:\dev\devkitPro\msys\bin\make.exe`
-  -   **Folder:** `%d` (the makefile's directory)
+  -   **Folder:** `%d`（makefile のディレクトリ）
   -   **Parameters:** `-f %f build`
   -   **Shortcut:** F9
 
@@ -69,80 +69,82 @@ F10 : make clean
 
   -   **Name:** `mk clean`
   -   **Command:** `E:\dev\devkitPro\msys\bin\make.exe`
-  -   **Folder:** `%d` (the makefile's directory)
+  -   **Folder:** `%d`（makefile のディレクトリ）
   -   **Parameters:** `-f %f clean`
   -   **Shortcut:** F10
 
-The name and shortcut can be different, of course; the rest should be as above. It is possible that you have to make sure the .mak extension is tied to the ‘Make’ scheme.
+もちろん名前とショートカットは違ってもかまいません。残りは上のとおりにしてください。.mak の拡張子が「Make」の方式に結びついていることを確かめる必要があるかもしれません。
 
 <div class="cpt" style="width:392px">
 
 <img src="img/setup/pn_make.png" 
   alt="PN commands" id="fig:pn-make"><br>
-<b>*@fig:pn-make</b>: Programmer's Notepad shell 
-commands.
+<b>*@fig:pn-make</b>: Programmer's Notepad のシェルの
+コマンド。
 </div>
 
-By adding make commands to your editor, you should be able to run the makefile of every tonc demo. If you encounter problems, you probably forgot to set a path somewhere.
+エディタに make のコマンドを加えれば、tonc のすべてのデモの makefile を実行できるはずです。問題にぶつかったら、おそらくどこかでパスを設定し忘れています。
 
-## Make via MS Visual C++ 6 {#sec-msvc6}
+## MS Visual C++ 6 から make を実行する {#sec-msvc6}
 
-I'm sure a lot of you will have gotten your hands on some version of Visual Studio one way or the other, officially, via school or … other methods. MSVC actually works with its own kind of makefiles and maketool called NMAKE, but we're going to ignore that one and use GNU's make instead. The instructions in this section work for versions 5 and 6, but I'm not sure about later versions. From what I hear, they changed a lot in those so if you have one of those you might have to do some digging of your own. I know that there are also add-ons that can create GBA projects via wizards, but again you'll have to find them yourself.
+皆さんの多くは、公式に、学校を通して、あるいは……ほかの方法で、何らかの形で Visual Studio の何らかの版を手に入れていることでしょう。MSVC は実は独自の種類の makefile と NMAKE という make ツールで動きますが、ここではそれは無視して、代わりに GNU の make を使います。この節の手順はバージョン 5 と 6 で使えますが、それより後のバージョンについてはよくわかりません。聞くところによると、それらではたくさんのことが変わったので、それらのどれかを持っているなら、自分で少し調べる必要があるかもしれません。ウィザードで GBA のプロジェクトを作れるアドオンもあることは知っていますが、これも自分で探してください。
 
-### VC and makefile projects {#ssec-msvc-make}
+### VC と makefile のプロジェクト {#ssec-msvc-make}
 
-#### Phase 1: setting the path
+#### 段階 1: パスを設定する
 
-The first thing you need to do, if you haven't done so already, is setting the path so that Visual C can find the tools. Open the \[Tools/Options\] dialog and go to the \[Directories\] tab, then select the \[Executable files\] list from the \[Show Directories for\] box (see @fig:msvc-dirs below). Now you need to add the bin directories of MSYS and dkARM. You can also set these directories to autoexec.bat as well. The devkitARM directory can also be set inside the makefiles themselves, but since I use 4 different computers to write Tonc, I prefer not to do this.
+まだしていなければ、最初にする必要があるのは、Visual C がツールを見つけられるようにパスを設定することです。\[Tools/Options\] のダイアログを開いて \[Directories\] タブに行き、\[Show Directories for\] のボックスから \[Executable files\] の一覧を選びます（下の @fig:msvc-dirs を見てください）。そこで、MSYS と dkARM の bin ディレクトリを加える必要があります。これらのディレクトリを autoexec.bat に設定することもできます。devkitARM のディレクトリは makefile そのものの中で設定することもできますが、私は Tonc を書くのに 4 台の違うコンピュータを使っているので、そうしないほうが好きです。
 
 <div class="cpt" style="width:424px">
 
 <img src="img/setup/msvc_dirs.png" id="fig:msvc-dirs"
   alt="Adding the the DKA paths to the executable list"><br>
-<b>*@fig:msvc-dirs</b>: adding the the dkARM paths 
-to the executable list.
+<b>*@fig:msvc-dirs</b>: 実行ファイルの一覧に
+dkARM のパスを加える。
 </div>
 
-#### Phase 2: Creating a makefile project
+#### 段階 2: makefile のプロジェクトを作る
 
-The second step is creating a project/workspace that uses custom makefiles. This is called, what else, a <dfn>makefile project</dfn>. Go to the \[Projects\] tab of the \[File/New\] dialog (shown in @fig:msvc-new below), select Makefile, give it a name and press OK. Mind you, this does *not* create the makefile, only the project! Also, the project's name I use here is ‘tonc’, change this to the name of your own project.
+2 つ目の段階は、独自の makefile を使うプロジェクト/ワークスペースを作ることです。これは、ほかに何と呼ぶでしょう、<dfn>makefile プロジェクト</dfn>と呼ばれます。\[File/New\] のダイアログの \[Projects\] タブ（下の @fig:msvc-new に示します）に行き、Makefile を選んで名前を付け、OK を押します。これは makefile を作るのでは*なく*、プロジェクトを作るだけであることに注意してください！ また、ここで私が使っているプロジェクトの名前は「tonc」です。自分のプロジェクトの名前に変えてください。
 
 <div class="cpt" style="width:568px">
 
 <img src="img/setup/msvc_new_proj.png" id="fig:msvc-new"
   alt="creating a makefile project"><br>
-<b>*@fig:msvc-new</b>: creating a makefile project.
+<b>*@fig:msvc-new</b>: makefile のプロジェクトを作る。
 </div>
 
-#### Phase 3: Profit!\^H\^H\^H\^Hject settings!
+#### 段階 3: 利益！\^H\^H\^H\^Hプロジェクトの設定！
 
-After you click OK, you will be asked to go to the Project Settings. Do so and you'll see the dialog from fig 6. The first thing you will find is the \[Build command line\] edit box. Right now, this reads something like
+（訳注: 見出しは、"Profit!" を ^H（バックスペース）で消して "Project settings" に書き直すというジョークです。）
+
+OK をクリックすると、プロジェクトの設定に行くように求められます。そうすると、図 6 のダイアログが表示されます。最初にあるのは \[Build command line\] のエディットボックスです。今は、次のようなものになっています。
 
 ```sh
 NMAKE /f tonc.mak
 ```
 
-Change it to
+これを次のように変えます。
 
 ```sh
 make -f tonc.mak build
 ```
 
-Why? Because we won't be using the standard VC make (NMAKE), but the GNU make (make). Why? Because it's free, platform-independent and usually comes with the devkit, making your project more portable, is more powerful and better documented as well. Why? Because ... just because, OK? This is the command that is executed when you press Rebuild (F7). The -f flag says which makefile to use. Inside a makefile you can have multiple sub-projects; in this case the one called build is the active one.
+なぜでしょうか？ 標準の VC の make（NMAKE）ではなく、GNU の make（make）を使うからです。なぜでしょうか？ 無料で、プラットフォームに依存せず、たいてい開発キットに付属しているのでプロジェクトの移植性が高くなり、より強力で文書もより充実しているからです。なぜでしょうか？ それは……とにかくそうなんです、いいですか？ これは Rebuild（F7）を押したときに実行されるコマンドです。-f フラグは、どの makefile を使うかを指定します。makefile の中には複数のサブプロジェクトを持てます。この場合は、build と呼ばれるものが有効なものです。
 
-The other settings aren't important for our purposes so leave them as they are. Yes, the output filename too; the makefile will take care of that. By the way, note that the workspace in @fig:msvc-make-cfg shows three projects: tonc and libtonc for actual tonc stuff, and a vault project. A standard practice of mine to have one vault project where I can store source-files I don't want compiled but do want to have available for reference (such as templates and examples). All my workspaces have one and I can highly recommend them.
+ほかの設定は私たちの目的には重要ではないので、そのままにしておいてください。そう、出力のファイル名もです。makefile がそれを面倒みます。ちなみに、@fig:msvc-make-cfg のワークスペースには 3 つのプロジェクトがあることに注意してください。実際の tonc のための tonc と libtonc、そして保管庫のプロジェクトです。コンパイルはしたくないけれど参照のために手元に置いておきたいソースファイル（ひな形や例など）を保管できる、保管庫のプロジェクトを 1 つ持つのが私の標準のやり方です。私のワークスペースにはどれも 1 つあり、強くおすすめします。
 
 <div class="cpt" style="width:584px">
 
 <img src="img/setup/msvc_make_cfg.png" id="fig:msvc-make-cfg"
   alt="Project Settings."><br>
-<b>*@fig:msvc-make-cfg</b>: project settings.
+<b>*@fig:msvc-make-cfg</b>: プロジェクトの設定。
 
 </div>
 
-:::tip Converting GCC reports to MSVC reports
+:::tip GCC の報告を MSVC の報告に変換する
 
-When you build a normal MSVC project, it will report and errors and warnings and double-clicking on these will bring to to the line that spawned it. This does not work for devkitARM because GCC has a slightly different reporting format.
+普通の MSVC のプロジェクトをビルドすると、エラーや警告が報告され、それをダブルクリックすると、それを生んだ行に飛べます。GCC の報告の形式は少し違うので、devkitARM ではこれは動きません。
 
 ```
 # GCC error: {filename}:{line}: error: ...
@@ -151,43 +153,43 @@ foo.c:42: error: 'bar' undeclared (first use in this function)
 dir\foo.c(42) : error C2065: 'bar' : undeclared identifier
 ```
 
-Because of the difference in line-number formatting, MSVC gets confused and can't find the line, or even the file. Fortunately, we can change this by piping the output of make through sed, the bash-shell string editor that comes with msys. To do this, change the build invocation to:
+行番号の形式の違いのせいで、MSVC は混乱して、行どころかファイルすら見つけられません。幸い、make の出力を、msys に付属する bash のシェルの文字列エディタ sed にパイプで通せば、これを変えられます。そうするには、ビルドの呼び出しを次のように変えます。
 
 ```sh
 make -f tonc.mak build 2>&1 | sed -e 's|\(\w\+\):\([0-9]\+\):|\1(\2):|'
 ```
 
-The `2>&1 | ` feeds the standard output of make to the standard input of the sed. The rest is a sed command that finds the parts before the first two colons, and converts them to the parenthesized format the MSVC expects. Note that tonc's build line is slightly more complicated because of its directory structure but the line above is what really matters.
+`2>&1 | ` は make の標準出力を sed の標準入力に送ります。残りは、最初の 2 つのコロンの前の部分を見つけて、MSVC が期待するかっこ付きの形式に変換する sed のコマンドです。tonc のビルドの行はディレクトリの構造のせいで少し複雑ですが、本当に重要なのは上の行であることに注意してください。
 
 :::
 
-#### Phase 3b: Build configurations
+#### 段階 3b: ビルドの構成
 
-This one isn't strictly necessary, but may be useful. In Visual C++ you can have multiple <dfn>build configurations</dfn>, each with its own project settings. You're probably familiar with the Debug and Release Builds, but you can add your own as well with the \[Build/Configurations\] dialog (shown in @fig:msvc-bld-cfg). The tonc project has five configurations, which all drive different targets in tonc.mak. `Build` builds the current demo; `Clean` removes all intermediary and output files (.O, .ELF and.GBA). In order to build/clean a specific demo you'd have to change the project settings or, preferably, set the `DEMO` variable inside tonc.mak to the name of that demo. `Build All` and `Clean All` run `Build` and `Clean` for all demos, respectively. The ‘Utils’ configuration creates the tonc library required for some of the later examples.
+これは厳密には必要ありませんが、役に立つかもしれません。Visual C++ では、それぞれ独自のプロジェクトの設定を持つ、複数の<dfn>ビルドの構成</dfn>を持てます。Debug と Release のビルドはおそらくおなじみでしょうが、\[Build/Configurations\] のダイアログ（@fig:msvc-bld-cfg に示します）で自分のものを加えることもできます。tonc のプロジェクトには 5 つの構成があり、どれも tonc.mak の別々のターゲットを動かします。`Build` は現在のデモをビルドし、`Clean` はすべての中間ファイルと出力ファイル（.O、.ELF、.GBA）を取り除きます。特定のデモをビルド/クリーンするには、プロジェクトの設定を変えるか、できれば tonc.mak の中の `DEMO` 変数をそのデモの名前に設定する必要があります。`Build All` と `Clean All` は、すべてのデモについてそれぞれ `Build` と `Clean` を実行します。「Utils」の構成は、あとの例のいくつかで必要になる tonc のライブラリを作ります。
 
 <div class="cpt" style="width:344px">
 
 <img src="img/setup/msvc_bld_cfg.png" id="fig:msvc-bld-cfg"
   alt="Build Configurations.">
-<b>*@fig:msvc-bld-cfg</b>: Build Configurations.
+<b>*@fig:msvc-bld-cfg</b>: ビルドの構成。
 
 </div>
 
-And that's about it as far as Visual C++ is concerned. You still have to actually create the referenced makefile (tonc.mak in this case). You know how to create a textfile, don't you? Another thing to remember about makefile projects is that all build commands are inside the makefile; the files mentioned in the File Viewer are just for show and are not compiled by themselves like ‘normal’ VC projects.
+Visual C++ についてはだいたいこれで全部です。参照している makefile（この場合は tonc.mak）を実際に作る必要はまだあります。テキストファイルの作り方は知っていますよね？ makefile のプロジェクトについて覚えておくべきもう 1 つのことは、ビルドのコマンドはすべて makefile の中にあるということです。ファイルビューアに出てくるファイルは見せるためだけのもので、「普通の」VC のプロジェクトのようにそれ自体がコンパイルされるわけではありません。
 
-:::note Easy switching between devkits in tonc.mak
+:::note tonc.mak で開発キットを簡単に切り替える
 
-Tonc's makefiles are of such nature that each can stand on its own, but can also be called from a central makefile tonc.mak, with the `DEMO` variable. I've also put a `CROSS` (which houses the prefix) variable in there which overrides `CROSS` of the individual makefiles. Changing it in tonc.mak effectively changes it everywhere.
+Tonc の makefile は、それぞれ単独で成り立ちますが、`DEMO` 変数を使って中央の makefile である tonc.mak から呼ぶこともできるようになっています。そこには、個々の makefile の `CROSS` を上書きする `CROSS`（接頭辞を入れる）変数も置きました。tonc.mak でそれを変えれば、実質的にすべての場所で変わります。
 
 :::
 
-:::tip Getting rid of MSVC 6.0's useless directories
+:::tip MSVC 6.0 の役に立たないディレクトリをなくす
 
-It appears that Visual Studio 6 (and higher too?) has a very annoying habit of creating all kinds of extra directories for each project added to a workspace and for each project configuration. Directories that you probably never intend to use, and *certainly* never asked for, and which clutter up your project. Removing them from disk doesn't solve the problem, because they'll just reappear merely by selecting the project/configuration.
+Visual Studio 6（とそれ以降も？）には、ワークスペースに加えたプロジェクトごと、そしてプロジェクトの構成ごとに、あらゆる種類の余分なディレクトリを作るという、とても迷惑な癖があるようです。おそらく使うつもりもなく、*間違いなく*頼んでもいない、プロジェクトを散らかすディレクトリです。ディスクから消しても問題は解決しません。プロジェクトや構成を選ぶだけで、また現れるからです。
 
-\*grumble\*
+\*ぶつぶつ\*
 
-Well, the good news is that for normal projects you can just remove them from the project settings, then remove them from disk and everything will be clean again. The bad news is that we're not using normal projects but makefile projects, which don't have the settings-tab in question. So what you have to do is go to the .DSP in a text editor, and remove everything resembling the following lines
+良い知らせは、普通のプロジェクトなら、プロジェクトの設定からそれらを取り除き、それからディスクから消せば、すべてまたきれいになることです。悪い知らせは、私たちが使っているのは普通のプロジェクトではなく makefile のプロジェクトで、問題の設定のタブがないことです。そこで、テキストエディタで .DSP を開いて、次のような行をすべて取り除く必要があります。
 
 ```
 # PROP BASE Output_Dir [DIR]
@@ -196,8 +198,8 @@ Well, the good news is that for normal projects you can just remove them from th
 # PROP Intermediate_Dir [DIR]
 ```
 
-No, I don't exactly know what I'm doing, but yes when you remove the directories now they *stay* gone. In fact, I'm pretty sure a lot of lines can be removed from the DSP, but as there is no manual for the commands in a project file, I'm not taking any chances there.
+いいえ、自分が何をしているのか正確にわかっているわけではありませんが、ええ、これでディレクトリを消すと、消えた*ままに*なります。実は、DSP からはかなりたくさんの行を取り除けると確信していますが、プロジェクトファイルのコマンドのマニュアルはないので、危険は冒さないことにしています。
 
-Now, if anyone does have a reference guide for DSP files, or can tell me whether this obnoxious behaviour is still present in later MSVC iterations, I'm all ears.
+さて、DSP ファイルのリファレンスガイドを持っている人や、この不愉快なふるまいが後の MSVC の版でもまだあるかどうか教えてくれる人がいれば、ぜひ聞かせてください。
 
 :::

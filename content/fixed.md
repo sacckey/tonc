@@ -1,24 +1,24 @@
-# B. Fixed-Point Numbers and LUTs
+# B. 固定小数点数とルックアップテーブル
 
 <!-- toc -->
 
-## What are fixed-point numbers {#sec-intro}
+## 固定小数点数とは {#sec-intro}
 
-Roughly put, there are two types of numbers: integers and floating-points. For most serious math you would get nowhere with integers because, by definition, they don't allow fractions. So for 3D games you'd use floating-point math. Back in the old days, before the arrival of specialized floating-point hardware, that stuff was very slow! Or at least slower than integer arithmetic. Fortunately, there is a way of faking numbers with decimal points with integers. This is known as <dfn>fixed-point math</dfn>.
+大まかに言うと、数には 2 つの種類があります。整数と浮動小数点数です。本格的な数学のほとんどでは、整数ではどうにもなりません。定義上、整数は分数を許さないからです。そこで 3D のゲームでは浮動小数点の計算を使います。昔、専用の浮動小数点のハードウェアが登場する前は、それはとても遅いものでした！ 少なくとも、整数の算術より遅かったのです。幸い、整数で小数点付きの数をごまかす方法があります。これは<dfn>固定小数点演算</dfn>として知られています。
 
-### General fixed-point numbers {#ssec-fix-gen}
+### 一般的な固定小数点数 {#ssec-fix-gen}
 
-Here's an example. Say you have \$10.78 (ten dollars and seventy-eight cents) in wallet. If you want to write this amount as an integer you have a problem, because you'd either have to leave off the fractional part (\$10) or round it to \$11. However, you could also write it down not in dollars, but in *cents*. That way you'd write 1078, which is an integer, problem solved.
+例を挙げます。財布に \$10.78（10 ドル 78 セント）あるとします。この額を整数で書きたいと思うと、問題があります。小数部を切り捨てる（\$10）か、\$11 に丸めるしかないからです。しかし、ドルではなく*セント*で書くこともできます。そうすれば 1078 と書け、これは整数なので、問題は解決です。
 
-That's the way fixed-point math works. Instead of counting units, you count *fractions*. In the previous example, you count in cents, or hundredths. Fixed-points have a in integer part (the “10”), and a fractional part (“78”). Since we have 2 digits for the fractional part, we call this a fixed-point number in an <dfn>x.2</dfn> format.
+固定小数点演算はこうやって働きます。単位を数える代わりに、*分数*を数えるのです。前の例では、セント、つまり 100 分の 1 単位で数えています。固定小数点数には整数部（「10」）と小数部（「78」）があります。小数部に 2 桁あるので、これを <dfn>x.2</dfn> 形式の固定小数点数と呼びます。
 
-Note that PCs have floating-point units (FPU) since the mid-1990s. This makes floating-point arithmetic just as fast as integer arithmetic (sometimes even faster) so using fixed-point math is not really worth the trouble except, perhaps, in rasterization, since the conversion from `float`s to `int`s is still slow. However, the GBA doesn't do floating-point stuff well, so it's fixed math all the way.
+PC には 1990 年代半ばから浮動小数点演算ユニット（FPU）があることに注意してください。これで浮動小数点の算術は整数の算術と同じくらい速く（ときにはもっと速く）なったので、固定小数点演算を使う手間は、`float` から `int` への変換がまだ遅いラスタライズなどを除けば、あまり割に合いません。しかし、GBA は浮動小数点の処理が苦手なので、ここでは徹頭徹尾、固定小数点です。
 
-### GBA fixed-point usage {#ssec-fix-gba}
+### GBA での固定小数点の使い方 {#ssec-fix-gba}
 
-Because computers use the [binary system](numbers.html#ssec-num-basen), using decimals as a basis for fixed-points would be silly. Fortunately, you can do fixed-point math in any base, including binary. The basic format is *i*.*f*, where *i* is number of integer bits, and *f* the number of fractional bits. Often, only the fractional is important to know, so you'll also come across just the indication ‘.*f*’.
+コンピュータは [2 進法](numbers.html#ssec-num-basen)を使うので、固定小数点の基礎に 10 進数を使うのはばかげています。幸い、固定小数点演算は 2 進数を含めどの基数でもできます。基本の形式は *i*.*f* で、*i* は整数部のビット数、*f* は小数部のビット数です。小数部だけ知っていれば十分なことが多いので、「.*f*」という表示だけを見かけることもあるでしょう。
 
-The GBA uses fixed-point math in a number of cases. The [affine parameters](affine.html), for example, are all .8 fixed-point numbers (“<dfn>fixeds</dfn>”, for short). Effectively, this means you're counting in 1/2<sup>8</sup> = 1/256ths, giving you a 0.004 accuracy. So when you write 256 to a register like REG_BG2PA, this is actually interpreted as 256/256=1.00. REG_BG2PA=512 would be 2.00, 640 is 2.50, et cetera. Of course, it is a little hard to see in the decimal system, but grab a calculator and you'll see that it's true. For this reason, it is often more convenient to write them down as hex numbers: 256=0x100→1.00, 512=0x200→2.00, 640=0x280→2.50 (remember that 8 is 16/2, or one half).
+GBA はいくつかの場面で固定小数点演算を使います。たとえば、[アフィンパラメータ](affine.html)はどれも .8 の固定小数点数（略して「<dfn>固定小数点</dfn>」（fixeds））です。実質的に、これは 1/2<sup>8</sup> = 1/256 単位で数えていることを意味し、0.004 の精度が得られます。ですから、REG_BG2PA のようなレジスタに 256 を書き込むと、これは実際には 256/256=1.00 と解釈されます。REG_BG2PA=512 なら 2.00、640 なら 2.50、という具合です。もちろん 10 進数ではわかりにくいですが、電卓を手に取れば、それが正しいとわかるでしょう。このため、16 進数で書くほうが便利なことがよくあります。256=0x100→1.00、512=0x200→2.00、640=0x280→2.50 です（8 は 16/2、つまり 2 分の 1 であることを思い出してください）。
 
 ```c
 // .8 fixed point examples : counting in fractions of 256
@@ -32,39 +32,39 @@ int c= 0x080;       // 0x080/256 = 128/256 = 0.50
 int d= 0x280;       // 0x280/256 = 640/256 = 2.50
 ```
 
-The affine registers aren't the only places fixed-points are used, though that's where they are the most recognizable. The [blend weights](gfx.html#sec-blend) are essentially fixed-point numbers as well, only they are 1.4 fixeds, not .8 fixeds. This is an important point, actually: the position you set the fixed-point to is arbitrary, and you can even switch the position as you go along. Now, the numbers themselves won't tell you where the point is, so it is important to either remember it yourself or better yet, write it down in the comments. Trust me, you do not want to guess at the fixed-point position in the middle of a lengthy algorithm.
+固定小数点が使われているのはアフィンのレジスタだけではありませんが、一番わかりやすいのはそこです。[ブレンドの重み](gfx.html#sec-blend)も本質的には固定小数点数で、ただ .8 ではなく 1.4 の固定小数点です。実はこれは重要な点です。小数点を置く位置は任意で、途中で位置を変えることさえできます。さて、数そのものは小数点がどこにあるかを教えてくれないので、自分で覚えておくか、もっと良いのはコメントに書いておくことが大事です。信じてください。長いアルゴリズムの途中で、小数点の位置を推測したくはないはずです。
 
-:::tip Comment your fixed-point position
+:::tip 固定小数点の位置をコメントに書こう
 
-When you use fixed-point variables, try to indicate the fixed-point format for them, especially when you need them for longer calculations, where the point may shift position depending on the operations you use.
-
-:::
-
-### Fixed-point and signs {#ssec-fix-sign}
-
-Fixed-point numbers are supposed to be a poor man's replacement for floating-point numbers, which would include negative numbers as well. This means that they're supposed to be *signed*. Or at least, usually. For example, the affine registers use signed 8.8 fixeds, but the blend weights are unsigned 1.4 fixeds. You may think it hardly matters, but [signs](numbers.html#bits-int-sign) can really mess things up if you're not careful. Say you're using fixed-points for positions and velocities. Even if your positions are always positive, the velocities won't be, so signed numbers would be more appropriate. Furthermore, if your fixed-point numbers are halfwords, say 8.8 fixeds, a signed ‘−1’ will be used as `0xFFFFFFFF`, i.e. a proper ‘−1’, but an unsigned ‘−1’ is `0x0000FFFF`, which is actually a positive number. You won't be the first person to trip over this, nor would be the last. So signed fixeds, please.
-
-Another point of notice is the way signed fixeds are often indicated. You may see things of the form ‘1.*n*.*f*’. This is meant to indicate one sign bit, *n* integer bits and *f* fractional bits. Technically speaking, this is **false**. Fixed-point numbers are just plain integers, just interpreted as fractions. That means they follow [two's complement](numbers.html#bits-int-neg) and that, while a set top bit does indicate a negative number, it isn't *the* sign bit. As I mentioned, ‘−1’ in two's complement is `0xFFFFFFFF`, not `0x80000001` as is the case with sign and magnitude. You might not think much of this distinction and that it's obvious that it's still two's complement, but considering that floating-point formats *do* have a separate sign bit, I'd say it's worth remembering.
-
-:::warning Signed fixed format notation
-
-Signed fixed-point formats are sometimes indicated as ‘1.*n*.*f*’. From that, you might think they have a separate sign bit like floating-point formats, but this is **not correct**. They're still regular integers, using two's complement for negative numbers.
+固定小数点の変数を使うときは、その固定小数点の形式を示すようにしてください。使う演算によって小数点の位置が動くことのある、長い計算でそれらが必要なときは特にそうです。
 
 :::
 
-## Fixed-point math {#sec-fmath}
+### 固定小数点と符号 {#ssec-fix-sign}
 
-Knowing what fixed-point numbers are is one thing, you still have to use them somehow. Three things concern us here.
+固定小数点数は、浮動小数点数の貧乏人向けの代用品のはずで、浮動小数点数には負の数も含まれます。つまり、固定小数点数は*符号付き*であるべきです。少なくとも、普通は。たとえば、アフィンのレジスタは符号付きの 8.8 の固定小数点を使いますが、ブレンドの重みは符号なしの 1.4 の固定小数点です。大したことではないと思うかもしれませんが、気をつけないと[符号](numbers.html#bits-int-sign)は本当に物事をめちゃくちゃにしかねません。位置と速度に固定小数点を使っているとします。位置が常に正だとしても、速度はそうではないので、符号付きの数のほうがふさわしいでしょう。さらに、固定小数点数がハーフワード、たとえば 8.8 の固定小数点なら、符号付きの「−1」は `0xFFFFFFFF`、つまり正しい「−1」として使われますが、符号なしの「−1」は `0x0000FFFF` で、これは実際には正の数です。これにつまずくのはあなたが最初ではありませんし、最後でもないでしょう。ですから、符号付きの固定小数点を使ってください。
 
--   Converting between regular integers or floats and fixed-point numbers.
--   Arithmetical operations.
--   Overflow.
+もう 1 つの注意点は、符号付きの固定小数点がよく表される書き方です。「1.*n*.*f*」の形のものを見かけるかもしれません。これは、符号ビットが 1 つ、整数部が *n* ビット、小数部が *f* ビットであることを示すつもりのものです。厳密に言えば、これは**誤り**です。固定小数点数は分数として解釈されるだけの、ただの整数です。つまり、[2 の補数](numbers.html#bits-int-neg)に従い、最上位ビットが設定されていれば負の数を示すとはいえ、それは*独立した*符号ビットではありません。先ほど言ったように、2 の補数での「−1」は `0xFFFFFFFF` で、符号と絶対値の表現の場合のような `0x80000001` ではありません。この区別は大したことではなく、やはり 2 の補数なのは明らかだと思うかもしれませんが、浮動小数点の形式には独立した符号ビットが*ある*ことを考えると、覚えておく価値があると思います。
 
-None of these items are difficult to understand, but each does have its awkward issues. In fact, overflow *is* merely an issue, not really an item. This section will focus on 24.8 signed fixeds, for which I will use a “FIXED” typedef'ed int. Although it only uses this fixed-point format, the topics covered here can easily be applied to other formats as well.
+:::warning 符号付きの固定小数点の形式の表記
 
-### Converting to and from fixed-points {#ssec-fmath-conv}
+符号付きの固定小数点の形式は、「1.*n*.*f*」と表されることがあります。そこから、浮動小数点の形式のように独立した符号ビットがあると思うかもしれませんが、それは**正しくありません**。これらはやはり普通の整数で、負の数には 2 の補数を使います。
 
-I'm not really sure is “conversion” is even the right word here. The only difference between fixed-point numbers and normal ones is a scaling factor *M*. All that's necessary to go from a FIXED to an int or float is account for that scale by either multiplication or division. Yes, it really is that simple. As we're using power-of-two's for the scales, the integer↔FIXED conversion can even be done with shifts. You can add the shifts in the code yourself, but the compiler is smart enough to convert power-of-two multiplications and divisions to shifts itself.
+:::
+
+## 固定小数点演算 {#sec-fmath}
+
+固定小数点数が何かを知ることと、それを何らかの形で使うことは別です。ここで関係するのは 3 つのことです。
+
+-   普通の整数や浮動小数点数と、固定小数点数の間の変換。
+-   算術演算。
+-   オーバーフロー。
+
+どれも理解するのは難しくありませんが、それぞれにやっかいな問題があります。実際、オーバーフローは単に問題であって、項目とは言えません。この節では、24.8 の符号付きの固定小数点に焦点を当て、そのために「FIXED」と typedef した int を使います。この固定小数点の形式しか使いませんが、ここで扱う話題はほかの形式にも簡単に応用できます。
+
+### 固定小数点への変換と固定小数点からの変換 {#ssec-fmath-conv}
+
+ここで「変換」という言葉が正しいのかどうかさえよくわかりません。固定小数点数と普通の数の唯一の違いは、スケール係数 *M* です。FIXED から int や float に移るのに必要なのは、そのスケールを掛け算か割り算で考慮することだけです。そう、本当にそれだけ単純なのです。スケールに 2 の累乗を使っているので、整数↔FIXED の変換はシフトでもできます。シフトを自分でコードに書いてもかまいませんが、コンパイラは賢いので、2 の累乗の掛け算や割り算を自分でシフトに変換してくれます。
 
 ```c
 typedef s32 FIXED;         //! 32bit FIXED in 24.8 format
@@ -97,19 +97,19 @@ INLINE float fx2float(FIXED fx)
 {   return fx/FIX_SCALEF;   }
 ```
 
-#### Rounding off and negative number inconsistencies
+#### 丸めと負の数の食い違い
 
-The conversions are almost as simple as described above. The two places where things may be problematic are round-off inconsistencies and negative fractions. Note that I said they *may* be problematic; it depends on what you had in mind. I am not going to explain all the ins and out here, because they generally won't be much of a problem, but you need to be aware of them.
+変換は上で説明したのとほぼ同じくらい単純です。問題になりうるのは 2 か所で、丸めの食い違いと負の分数です。問題に*なりうる*と言ったことに注意してください。何を考えていたかによります。ここでは細かいことをすべて説明するつもりはありません。たいていはあまり問題にならないからですが、知っておく必要はあります。
 
-If you're not new to programming, you will undoubtedly be aware of the problem of round-off from floats to ints: a simple cast conversion truncates a number, it does not really round it off. For example, ‘(int)1.7’ gives 1 as a result, not 2. The earlier macros have the same problem (if you can call it that). Float-to-int rounding is done by adding one half (0.5) to the float before rounding, which we can also apply to fixed-point conversion. In this case, of course, the value of one half depends on the number of fixed-point bits. For example, .8 fixeds, ½ is 0x80=128 (256/2), for .16 fixeds it is 0x8000=32768. Add this before shifting down and it'll be rounded off properly. There are actually multiple ways of rounding off, which you can read about in ["An Introduction to Fixed Point Math" by Brian Hook](https://web.archive.org/web/20060204155500/http://www.bookofhook.com/Article/GameDevelopment/AnIntroductiontoFixedPoin.html).
+プログラミングが初めてでなければ、浮動小数点数から整数への丸めの問題は間違いなく知っているでしょう。単純なキャストによる変換は数を切り捨てるだけで、本当に丸めるわけではありません。たとえば、「(int)1.7」の結果は 2 ではなく 1 です。先ほどのマクロにも同じ問題があります（それを問題と呼べるなら）。浮動小数点数から整数への丸めは、丸める前に浮動小数点数に 2 分の 1（0.5）を足すことで行い、これは固定小数点の変換にも適用できます。もちろんこの場合、2 分の 1 の値は固定小数点のビット数によります。たとえば .8 の固定小数点なら ½ は 0x80=128（256/2）で、.16 の固定小数点なら 0x8000=32768 です。下にシフトする前にこれを足せば、正しく丸められます。実は丸めの方法はいくつもあり、それについては ["An Introduction to Fixed Point Math" by Brian Hook](https://web.archive.org/web/20060204155500/http://www.bookofhook.com/Article/GameDevelopment/AnIntroductiontoFixedPoin.html) で読めます。
 
-And then there are negative numbers. Frankly, division on negative integers is always a bitch. The basic problem here is that they are always rounded towards zero: both +3/4 and −3/4 give 0. In some ways this makes sense, but in one way it doesn't: it breaks up the sequence of outputs around zero. This is annoying on its own, but what's worse is that right-shifting *doesn't* follow this behaviour; it always shifts towards negative infinity. In other words, for negative integer division, the division and right-shift operators are *not* the same. Which method you choose is a design consideration on your part. Personally, I'm inclined to go with shifts because they give a more consistent result.
+それから負の数です。率直に言って、負の整数の割り算はいつも厄介です。ここでの基本的な問題は、常にゼロに向かって丸められることです。+3/4 も −3/4 も 0 になります。ある意味ではこれは筋が通っていますが、一点では通っていません。ゼロの周りで出力の並びが途切れてしまうのです。これだけでも腹立たしいのですが、もっと悪いのは、右シフトはこのふるまいに従わ*ない*ことです。右シフトは常に負の無限大に向かってシフトします。言い換えると、負の整数の割り算では、割り算と右シフトの演算子は同じでは*ない*のです。どちらの方法を選ぶかは、あなたの設計上の検討事項です。個人的には、より一貫した結果が得られるので、シフトを選びたくなります。
 
 <div class="cblock">
 <table id="tbl:neg-div" class="table-data">
 <caption align="bottom">
   <b>*@tbl:neg-div</b>:
-  Division and right-shifts around zero.
+  ゼロの周りでの割り算と右シフト。
 </caption>
 <col span=19 width=20>
 <tbody align="center">
@@ -132,21 +132,21 @@ And then there are negative numbers. Frankly, division on negative integers is a
 </table>
 </div>
 
-The negative division nasty is even worse when you try to deal with the fractional part. Masking with AND effectively destroys the sign of a number. For example, a 8.8 −2¼ is −0x0240 = 0xFDC0. Mask that with 0xFF and you'll get 0xC0 = ¾, a positive number, and the wrong fraction as well. On the other hand 0xFDC0\>\>8 is −3, for better or for worse, and −3 + ¾ is indeed −2¼, so in that sense it does work out. The question whether or not it works for *you* is something you'll have to decide on your own. If you want to display the fixed numbers somehow (as, say -2.40 in this case), you'll have to be a little more creative than just shifts and masks. Right now, I'm not even touching that one.
+負の割り算の厄介さは、小数部を扱おうとするとさらにひどくなります。AND でマスクすると、実質的に数の符号が壊れます。たとえば、8.8 の −2¼ は −0x0240 = 0xFDC0 です。これを 0xFF でマスクすると 0xC0 = ¾ になり、正の数で、しかも小数部も間違っています。一方で、0xFDC0\>\>8 は良くも悪くも −3 で、−3 + ¾ はたしかに −2¼ なので、その意味ではうまくいっています。それが*あなた*にとってうまくいくかどうかは、自分で決める必要があります。固定小数点数を何らかの形で（たとえばこの場合なら -2.40 のように）表示したいなら、単なるシフトとマスクより少し工夫が必要です。今のところ、それには触れるつもりもありません。
 
-:::warning Converting negative fixed-point numbers
+:::warning 負の固定小数点数の変換
 
-The conversion from negative fixed-point numbers to integers is a particularly messy affair, complicated by the fact that there are multiple, equally valid solutions. Which one you should choose is up to you. If you can, avoid the possibility; the fixed→int conversion is usually reserved for the final stages of arithmetic and if you can somehow ensure that those numbers will be positive, do so.
+負の固定小数点数から整数への変換は特にややこしいもので、同じくらい妥当な解決策が複数あるという事実がそれをさらに複雑にしています。どれを選ぶべきかはあなた次第です。できるなら、その可能性を避けてください。固定小数点→整数の変換はたいてい算術の最終段階のためのもので、何とかしてそれらの数が正になるようにできるなら、そうしてください。
 
 :::
 
-### Arithmetical operations {#ssec-fmath-ops}
+### 算術演算 {#ssec-fmath-ops}
 
-Fixed-point numbers are still integers, so they share their arithmetic operations. However, some caution needs to be taken to keep the fixed point in its proper position at times. The process is the same as arithmetic on decimals. For example, 0.01+0.02 = 0.03 ; what you will usually do for this sum is remove the decimal point, leaving 1 and 2, adding those to give 3, and putting the decimal point back. That's essentially how fixed-points work as well. But when adding, say, 0.1 and 0.02, the fixed decimals aren't 1 and 2, but **10** and 2. The key here is that for addition (and subtraction) the point should be in the same place.
+固定小数点数もやはり整数なので、整数と同じ算術演算を使います。ただし、ときには小数点を正しい位置に保つために、多少の注意が必要です。手順は 10 進数の小数の算術と同じです。たとえば、0.01+0.02 = 0.03 です。この和を求めるときは普通、小数点を取り除いて 1 と 2 を残し、それらを足して 3 にして、小数点を戻します。固定小数点も基本的にそうやって働きます。しかし、たとえば 0.1 と 0.02 を足すとき、固定小数点の小数部は 1 と 2 ではなく、**10** と 2 です。ここでの鍵は、足し算（と引き算）では小数点が同じ位置にあるべきだということです。
 
-A similar thing happens for multiplication and division. Take the multiplication 0.2×0.3. 2×3 equals 6, then put the point back which gives 0.6, right? Well, if you did your homework in pre-school you'll know that the result should actually be 0.06. Not only do the decimals multiply, the *scales* multiply as well.
+掛け算と割り算でも同じようなことが起きます。0.2×0.3 という掛け算を考えてみてください。2×3 は 6 で、小数点を戻すと 0.6、ですよね？ まあ、小学校でちゃんと宿題をしていれば、結果は実際には 0.06 になるべきだとわかるでしょう。小数部が掛け合わされるだけでなく、*スケール*も掛け合わされるのです。
 
-Both of these items apply to fixed-point arithmetic as well. If you always use the same fixed point, addition and subtractions will pose no problem. For multiplication and division, you'll need to account for extra scaling factor as well. A fixed-fixed multiply required a division by the scale afterwards, whereas a fixed-fixed division needs a scale multiply *before* the division. In both cases, the reason of the place of the scale correction is to keep the highest accuracy. Equations 1 and 2 show this in a more mathematical form. The fixed-point numbers are always given by a constant times the fixed scale *M*. Addition and subtraction maintain the scale, multiplication and division don't, so you'll have to remove or add a scaling factor, respectively.
+これらはどちらも固定小数点の算術にも当てはまります。常に同じ固定小数点を使えば、足し算と引き算は問題になりません。掛け算と割り算では、余分なスケール係数も考慮する必要があります。固定小数点どうしの掛け算では、あとでスケールで割る必要があり、固定小数点どうしの割り算では、割り算の*前に*スケールを掛ける必要があります。どちらの場合も、スケールの補正をその位置で行う理由は、最も高い精度を保つためです。式 1 と 2 は、これをもっと数学的な形で示しています。固定小数点数は常に、定数掛ける固定のスケール *M* で与えられます。足し算と引き算はスケールを保ちますが、掛け算と割り算は保たないので、それぞれスケール係数を取り除くか加える必要があります。
 
 <!--
 \begin{matrix}
@@ -366,27 +366,27 @@ INLINE FIXED fxdiv(FIXED fa, FIXED fb)
 {   return ((fa)*FIX_SCALE)/(fb);           }
 ```
 
-### Over- and underflow {#ssec-fmath-flow}
+### オーバーフローとアンダーフロー {#ssec-fmath-flow}
 
-This is actually a subset of the scaling problems of multiplication and division. Overflow is when the result of your operation is higher that the about of bits you have to store it. This is a potential problem for any integer multiplication, but in fixed-point math it will occur much more often because not only are fixed-point numbers scaled upward, multiplying fixeds scales it up *twice*. A .8 fixed multiplication has its ‘one’ at 2<sup>16</sup>, which is already out of range for halfwords.
+これは実は、掛け算と割り算のスケールの問題の一部です。オーバーフローとは、演算の結果が、それを格納するビット数より大きくなることです。これはどんな整数の掛け算でも起こりうる問題ですが、固定小数点演算ではずっと頻繁に起きます。固定小数点数はスケールが上がっているだけでなく、固定小数点数どうしを掛けるとスケールが*2 回*上がるからです。.8 の固定小数点の掛け算では「1」が 2<sup>16</sup> になり、これはすでにハーフワードの範囲外です。
 
-One way of covering for the extra scale is not to correct after the multiplication, but before it; though you will lose some accuracy in the process. A good compromise would be to right-shift both operands by half the full shift.
+余分なスケールに対処する 1 つの方法は、掛け算のあとではなく前に補正することです。ただし、その過程で精度が少し失われます。良い妥協案は、両方のオペランドを、全体のシフト量の半分ずつ右シフトすることでしょう。
 
-Fixed divisions have a similar problem called underflow. As a simple example of this, consider what happens in integers division *a*/*b* if *b*\>*a*. That's right: the result would be zero, even though a fraction would be what you would like. To remedy this behaviour, the numerator is scaled up by *M* first (which may or may not lead to an overflow problem <kbd>:P</kbd>).
+固定小数点の割り算には、アンダーフローと呼ばれる似た問題があります。簡単な例として、整数の割り算 *a*/*b* で *b*\>*a* のときに何が起きるかを考えてみてください。そうです。分数が欲しいのに、結果はゼロになってしまいます。このふるまいを直すには、まず分子を *M* だけスケールアップします（それがオーバーフローの問題につながるかどうかはわかりませんが <kbd>:P</kbd>）。
 
-As you can see, the principles of fixed-point math aren't that difficult or magical. But you do have to keep your head: a missed or misplaced shift and the whole thing crumbles. If you're working on a new algorithm, consider doing it with floats first (preferably on a PC), and convert to fixed-point only when you're sure the algorithm itself works.
+ご覧のとおり、固定小数点演算の原理はそれほど難しくも魔法のようでもありません。でも、頭をはっきりさせておく必要があります。シフトを 1 つ忘れたり間違った場所に置いたりすれば、全体が崩れます。新しいアルゴリズムに取り組んでいるなら、まず浮動小数点数で（できれば PC で）やってみて、アルゴリズム自体が動くと確信してから固定小数点に変換することを考えてください。
 
-## Faking division (optional) {#sec-rmdiv}
+## 割り算をごまかす（任意） {#sec-rmdiv}
 
-:::warning Math heavy and optional
+:::warning 数学が重く、任意
 
-This section is about a sometimes useful optimization technique. It not only introduces the technique, but also derives its use and safety limits. As such, there is some nasty math along the way. Chances are you're perfectly safe without detailed knowledge of this section, but it can help you get rid of some slow divisions if the need is there.
+この節は、ときどき役に立つ最適化の技法についてです。技法を紹介するだけでなく、その使い方と安全の限界も導きます。そのため、途中にいくらか厄介な数学があります。この節を詳しく知らなくてもまったく問題ない可能性が高いですが、必要なら遅い割り算を取り除くのに役立ちます。
 
 :::
 
-You may have heard of the phrase “division by a constant is multiplication by its reciprocal”. This technique can be used to get rid of division and replace it with a much faster multiplication. For example *x*/3 = *x*·(1/3) = *x*·0.333333. At first glance, this doesn't seem to help your case: the integer form of 1/*y* is always zero by definition; the alternative to this is floating-point, which isn't so hot either, and you *still* need a division to get even there! This is all true, but the important thing is that these problems can be avoided. The integer/floating-point problem can be solved by using fixed-point instead. As for the division, remember that we're talking about division by a *constant*, and arithmetic on constants is done at compile-time, not runtime. So problems solved, right? Uhm, yeah. Sure. The *superficial* problems are solved, but now the two age-old problems of overflow and round-off rear their ugly heads again.
+「定数による割り算はその逆数による掛け算である」という言葉を聞いたことがあるかもしれません。この技法を使えば、割り算を取り除いて、ずっと速い掛け算に置き換えられます。たとえば *x*/3 = *x*·(1/3) = *x*·0.333333 です。一見すると、これは役に立たないように思えます。1/*y* の整数の形は定義上常にゼロですし、代わりの浮動小数点もあまり良いものではありませんし、そこにたどり着くのにさえ*やはり*割り算が必要です！ これはすべて本当ですが、重要なのは、これらの問題は避けられるということです。整数/浮動小数点の問題は、代わりに固定小数点を使えば解決できます。割り算については、話しているのは*定数*による割り算で、定数の算術は実行時ではなくコンパイル時に行われることを思い出してください。というわけで問題は解決、ですよね？ うーん、ええ。たしかに。*表面的な*問題は解決しましたが、今度はオーバーフローと丸めという昔からの 2 つの問題が、また醜い頭をもたげてきます。
 
-Below is the code for the evaluation of “*x*/12”. The ARM-compiled code creates a .33 fixed-point for 1/12, then uses a 64bit multiplication for the division. On the other hand, the Thumb version doesn't (and indeed can't) do this and uses the standard, slow division routine. If you want to get rid of this time consuming division, you will have to take care of it yourself. for the record, yes I know that even if you know ARM assembly, why it does what it does may be hard to follow. That's what this section is for.
+下は「*x*/12」を評価するコードです。ARM でコンパイルしたコードは 1/12 の .33 の固定小数点を作り、それから割り算のために 64 ビットの掛け算を使います。一方、Thumb 版はこれをしない（そして実際にできない）ので、標準の遅い割り算のルーチンを使います。この時間のかかる割り算を取り除きたければ、自分で面倒をみなければなりません。念のため言っておくと、ええ、ARM アセンブリを知っていても、それがなぜそうしているのかを追うのは難しいかもしれないことはわかっています。この節はそのためにあります。
 
 ```armasm
 @ Calculating y= x/12
@@ -419,9 +419,9 @@ Below is the code for the evaluation of “*x*/12”. The ARM-compiled code crea
     .word   y
 ```
 
-The remainder of this section is on recognizing and dealing with these problems, as well as deriving some guidelines for safe use of this technique. But first, we need some definitions.
+この節の残りは、これらの問題を見分けて対処すること、そしてこの技法を安全に使うための指針を導くことについてです。でもまず、いくつかの定義が必要です。
 
-Integer division; positive integers *p*, *q*, *r*
+整数の割り算。正の整数 *p*、*q*、*r*
 
 <!--
 r = \left\lfloor p/q \right\rfloor \iff p = r \cdot q + p \text{%}q
@@ -473,7 +473,7 @@ r = \left\lfloor p/q \right\rfloor \iff p = r \cdot q + p \text{%}q
 </tr>
 </table>
 
-Approximation; positive integers *x*, *y*, *a*, *m*, *n* and real error term δ
+近似。正の整数 *x*、*y*、*a*、*m*、*n* と、実数の誤差項 δ
 <!--
 y = \left\lfloor x/a \right\rfloor = \left\lfloor (x \cdot m)/n \right\rfloor + \delta
 -->
@@ -524,11 +524,11 @@ y = \left\lfloor x/a \right\rfloor = \left\lfloor (x \cdot m)/n \right\rfloor + 
 </tr>
 </table>
 
-I'm using the floor (&#x230A;*p*/*q*&#x230B;) to indicate integer division, which is basically the rounded down version of real division. As usual, modulo is the remainder and calculated usually calculated with *p* − *r·q*. The key to the approximation of 1/*a* is in terms *m* and *n*. In our case *n* will be a power of two *n*=2<sup>F</sup> so that we can use shifts, but it need not be. δ is an error term that is inherent in any approximation. Note that I'm only using positive integers here; for negative numbers you need to add one to the result if you want to mimic a ‘true’ division. (Or, subtract the sign bit, which work just as well as you can see in the ARM assembly shown above.)
+整数の割り算を示すのに床関数（&#x230A;*p*/*q*&#x230B;）を使っています。これは基本的に、実数の割り算の切り捨て版です。いつものように、剰余は余りで、普通は *p* − *r·q* で計算します。1/*a* の近似の鍵は *m* と *n* の項にあります。この場合 *n* は、シフトを使えるように 2 の累乗 *n*=2<sup>F</sup> にしますが、そうである必要はありません。δ はどんな近似にもつきものの誤差項です。ここでは正の整数しか使っていないことに注意してください。負の数では、「本当の」割り算をまねたければ、結果に 1 を足す必要があります。（あるいは符号ビットを引きます。上の ARM アセンブリでわかるように、これも同じようにうまくいきます。）
 
-:::note Faking negative divisions and rounding
+:::note 負の割り算のごまかしと丸め
 
-This section is about positive numbers. If you want the standard integer-division result (round toward zero), you will have to add one if the numerator is negative. This can be done quickly by subtracting the sign-bit.
+この節は正の数についてのものです。標準の整数の割り算の結果（ゼロへの丸め）が欲しければ、分子が負なら 1 を足す必要があります。これは符号ビットを引くことですばやくできます。
 
 ```c
 // pseudo-code for division by constant M
@@ -537,13 +537,13 @@ y= fake_div(x, M);  // shift-like div
 y -= y>>31;         // convert to /-like division
 ```
 
-If you want to round to minus infinity you'll have to do something else. But I'm not quite sure what, to be honest.
+負の無限大へ丸めたいなら、何か別のことをする必要があります。でも正直に言うと、何をすればいいのかはよくわかりません。
 
 :::
 
-### Theory {#ssec-rmdiv-try}
+### 理論 {#ssec-rmdiv-try}
 
-There are two things we need to have for success. First, a way of finding *m*. Second, a way of determining when the approximation will fail. The latter can be derived from @eq:div-aprx. The error in the approximation is given by &#x230A;ε/*n*&#x230B;, so as long as this is zero you're safe.
+成功するには 2 つのものが必要です。まず、*m* を求める方法。次に、近似がいつ失敗するかを判断する方法です。後者は @eq:div-aprx から導けます。近似の誤差は &#x230A;ε/*n*&#x230B; で与えられるので、これがゼロである限り安全です。
 
 <!--
 x \cdot m - n \cdot \left\lfloor x/A \right\rfloor = \varepsilon \\
@@ -580,7 +580,7 @@ x \cdot m - n \cdot \left\lfloor x/A \right\rfloor = \varepsilon \\
         </mtr>
         <mtr>
           <mtd>
-            <mtext>Fail if:&#xA0;</mtext>
+            <mtext>失敗する条件:&#xA0;</mtext>
             <mi>&#x3B5;</mi>
             <mo>&#x2265;</mo>
             <mi>n</mi>
@@ -594,17 +594,17 @@ x \cdot m - n \cdot \left\lfloor x/A \right\rfloor = \varepsilon \\
 </tr>
 </table>
 
-As for finding *m*. Recall that &#x230A;1/*A*&#x230B; = &#x230A;(*n·A*)/*n*&#x230B;, so that it'd appear that using *m* = &#x230A;*n*/*A*&#x230B; would be a good value. However, it's not.
+*m* を求めることについてです。&#x230A;1/*A*&#x230B; = &#x230A;(*n·A*)/*n*&#x230B; であることを思い出すと、*m* = &#x230A;*n*/*A*&#x230B; を使うのが良い値に思えるでしょう。しかし、そうではありません。
 
-This is probably a good time for a little example. Consider the case of *A* = 3, just like at the start. We'll use .8 fixed numbers here, in other words *k* = 8 and *n*=256. Our trial *m* is then *m* = &#x230A;*n*/*A*&#x230B; = 85 = 0x55, with 1 as the remainder.
+ここで少し例を挙げるのがよいでしょう。最初と同じく、*A* = 3 の場合を考えます。ここでは .8 の固定小数点数、つまり *k* = 8 と *n*=256 を使います。試しの *m* は *m* = &#x230A;*n*/*A*&#x230B; = 85 = 0x55 で、余りは 1 です。
 
-An alternative way of looking at it is to go to hexadecimal floating point and taking the first *F* bits. This is not as hard as you might think. The way you find a floating-point number of a fraction is to multiply by the base, write down the integral part, multiply the remainder by the base, write down the integral part and so forth. The table below has the hex version of 1/7 (I'm not using 1/3 because that's rather monotonous). As you can see 1/7 in hex is 0.249249…h. Do this for one third and you'll find 0.5555…h.
+別の見方は、16 進数の浮動小数点に移って、最初の *F* ビットを取ることです。これは思ったほど難しくありません。分数の浮動小数点数を求めるやり方は、基数を掛けて整数部を書き留め、余りに基数を掛けて整数部を書き留め、ということを繰り返すことです。下の表は 1/7 の 16 進数版です（1/3 はかなり単調なので使っていません）。ご覧のとおり、1/7 は 16 進数で 0.249249…h です。3 分の 1 でこれをすると 0.5555…h になります。
 
 <div class="lblock">
 <table id="tbl:hexfloat" class="table-data">
 <caption align="bottom">
   <b>*@tbl:hexfloat</b>: 
-  Floating-point representation of 1/7 in base <i>B</i>=16
+  基数 <i>B</i>=16 での 1/7 の浮動小数点表現
 </caption>
 <tbody align="center">
 <tr><th> x <th> x&middot;B <th> x&middot;&#x230A;B/7&#x230B; <th> x&middot;B%7
@@ -617,13 +617,13 @@ An alternative way of looking at it is to go to hexadecimal floating point and t
 </table>
 </div>
 
-So 1/3 in hex is zero, followed by a string of fives, or just *m*=0x55 in truncated .8 fixed-point notation. Now look what happens when you do the multiplication by reciprocal thing. I'm using hex floats here, and *y*=&#x230A;(*x·m*)/*n*&#x230B;, as per @eq:div-aprx. The result you actually get is just the integer part, ignore the (hexi)decimals
+というわけで、1/3 は 16 進数ではゼロのあとに 5 が続くもので、切り捨てた .8 の固定小数点の表記では単に *m*=0x55 です。さて、逆数を掛けるやり方をすると何が起きるか見てみましょう。ここでは 16 進数の浮動小数点数と、@eq:div-aprx のとおり *y*=&#x230A;(*x·m*)/*n*&#x230B; を使います。実際に得られる結果は整数部だけです。（16 進の）小数部は無視してください。
 
 <div class="cblock">
 <table id="tbl:rmdiv-bad" class="table-data">
 <caption align="bottom">
   <b>*@tbl:rmdiv-bad</b>: 
-  <i>x</i>/3, using <i>m</i>= &#x230A;256/3&#x230B; = 0x55. Bad at 3, 6, &hellip;
+  <i>m</i>= &#x230A;256/3&#x230B; = 0x55 を使った <i>x</i>/3。3、6、&hellip; でだめ
 </caption>
 <tbody align="center">
 <tr><th>x
@@ -632,13 +632,13 @@ So 1/3 in hex is zero, followed by a string of fives, or just *m*=0x55 in trunca
   <td> 0.00h        <td> 0.55h <td> 0.AAh 
   <td> <b>0.FFh</b> <td> 1.54h <td> 1.A9h
   <td> <b>1.FEh</b> <td> 2.53h
-<tr><th>true <i>x</i>/3
+<tr><th>本当の <i>x</i>/3
   <td> 0 <td> 0 <td> 0 <td> 1 <td> 1 <td> 1 <td> 2 <td> 2
 </tbody>
 </table>
 </div>
 
-As you can see, problems arise almost *immediately*! You can't even get up to *x*=*A* without running into trouble. This is *not* a matter of accuracy: you can use a .128 fixed-point numbers and it'll still be off. This is purely a result of <dfn>round-off error</dfn>, and it'd happen with floats just as well. When you use reciprocal division, *m* should be rounded *up*, not down. You can use the alignment trick here: add *A*−1, then divide. Now *m*=0x56, and you'll be safe. At least, for a while.
+ご覧のとおり、問題は*ほぼすぐに*起きます！ *x*=*A* に達することすらできずに困ったことになります。これは精度の問題では*ありません*。.128 の固定小数点数を使っても、やはりずれます。これは純粋に<dfn>丸め誤差</dfn>の結果で、浮動小数点数でもまったく同じように起きます。逆数による割り算を使うときは、*m* を切り捨てではなく切り*上げ*るべきです。ここではアラインメントの技が使えます。*A*−1 を足してから割るのです。これで *m*=0x56 になり、安全になります。少なくとも、しばらくの間は。
 
 <!--
 m = \left\lfloor (n+A-1)/A \right\rfloor
@@ -684,7 +684,7 @@ m = \left\lfloor (n+A-1)/A \right\rfloor
 <table id="tbl:rmdiv-good" class="table-data">
 <caption align="bottom">
   <b>*@tbl:rmdiv-good</b>: 
-  <i>x</i>/3, using <i>m</i>= &#x230A;(256+2)/3&#x230B; = 0x56. Still good at 3, 6, &hellip;
+  <i>m</i>= &#x230A;(256+2)/3&#x230B; = 0x56 を使った <i>x</i>/3。3、6、&hellip; でも正しい
 </caption>
 <tbody align="center">
 <tr><th>x
@@ -693,13 +693,13 @@ m = \left\lfloor (n+A-1)/A \right\rfloor
   <td> 0.00h <td> 0.56h <td> 0.ACh 
   <td> 1.02h <td> 1.58h <td> 1.AEh
   <td> 2.04h <td> 2.5Ah
-<tr><th>true <i>x</i>/3
+<tr><th>本当の <i>x</i>/3
   <td> 0 <td> 0 <td> 0 <td> 1 <td> 1 <td> 1 <td> 2 <td> 2
 </tbody>
 </table>
 </div>
 
-Yes, you're safe. But for how long? Eventually, you'll reach a value of *x* where there will be trouble. This time around, it does concern the accuracy. Fortunately, you can derive safety limits for *x* and *n* that spell out when things can go badly. It is possible that the true range is a little bit better due to the way the error condition of @eq:aprx-fail jumps around, but better safe than sorry. The derivations start at @eq:aprx-fail and make use of @eq:int-div and a trick concerning modulo, namely that *p*%*q* ∈ \[0, *q*⟩.
+そう、安全です。でも、いつまででしょうか？ いずれ、問題が起きる *x* の値に達します。今度は精度が関係します。幸い、*x* と *n* について、いつまずいことになりうるかをはっきり示す安全の限界を導けます。@eq:aprx-fail の誤差の条件の飛び跳ね方のせいで、本当の範囲は少し広いかもしれませんが、用心するに越したことはありません。導出は @eq:aprx-fail から始まり、@eq:int-div と、剰余についての技、つまり *p*%*q* ∈ \[0, *q*⟩ を使います。
 
 <!--
 \begin{matrix}
@@ -775,7 +775,7 @@ x(m \cdot A - n) & < & n &
                   <mi>A</mi>
                 </mtd>
                 <mtd>
-                  <mtext>[insert&#xA0;</mtext>
+                  <mtext>[代入:&#xA0;</mtext>
                   <mrow data-mjx-texclass="INNER">
                     <mo data-mjx-texclass="OPEN">&#x230A;</mo>
                     <mi>x</mi>
@@ -823,7 +823,7 @@ x(m \cdot A - n) & < & n &
                   <mi>A</mi>
                 </mtd>
                 <mtd>
-                  <mtext>[insert&#xA0;</mtext>
+                  <mtext>[代入:&#xA0;</mtext>
                   <mo data-mjx-texclass="OP" movablelimits="true">max</mo>
                   <mo stretchy="false">(</mo>
                   <mi>x</mi>
@@ -895,7 +895,7 @@ x(m \cdot A - n) & < & n &
 </tr>
 </table>
 
-From this result, we can easily calculate the maximum valid *x* for given *A* and *n*:
+この結果から、与えられた *A* と *n* に対する有効な *x* の最大値を簡単に計算できます。
 
 <table id="eq:lim-x">
 <tr>
@@ -904,7 +904,7 @@ From this result, we can easily calculate the maximum valid *x* for given *A* an
     (<i>m&middot;A</i> &minus; <i>n</i>)
 </table>
 
-The lower-limit for *n* follows from the fact that, by (6), max(*m·A*) = *n*+*A*−1, so that:
+*n* の下限は、(6) により max(*m·A*) = *n*+*A*−1 であることから導かれるので、次のようになります。
 
 <table id="eq:lim-n">
 <tr>
@@ -912,15 +912,15 @@ The lower-limit for *n* follows from the fact that, by (6), max(*m·A*) = *n*+*A
   <td class="eqcell"><i>n</i> &gt; <i>x</i>(<i>A</i>&minus;1)
 </table>
 
-And that's basically it. There's a little more to it, of course. As you'll be multiplying, the product *m·A* must fit inside a variable. The practical limit of numbers will therefore be around 16 bits. You can sometimes ease this limitation a little bit by shifting out the lower zero-bits of *A*. For example, for *A*=10=5·2, you can right-shift *x* once before doing the whole calculation. Even 360 is 45·8, and you can save three bits this way. Also, note that even if you surpass the limits, there's a good chance that the thing is still correct or only off by a small amount (check @eq:aprx-fail). You should be able to find the true answer relatively quickly then.
+基本的にはこれで全部です。もちろん、もう少し話はあります。掛け算をするので、積 *m·A* は変数に収まらなければなりません。そのため、実用的な数の限界は 16 ビットくらいになります。*A* の下位のゼロのビットをシフトで追い出すことで、この制限を少し緩められることもあります。たとえば *A*=10=5·2 なら、計算全体をする前に *x* を 1 回右シフトできます。360 でさえ 45·8 なので、この方法で 3 ビット節約できます。また、限界を超えても、まだ正しいか、わずかにずれるだけの可能性が十分にあることに注意してください（@eq:aprx-fail を確認してください）。そうなれば、比較的すぐに本当の答えを見つけられるはずです。
 
-:::tip ARM 'int/const int' division is always safe
+:::tip ARM の「int/const int」の割り算は常に安全
 
-We can now see why GCC can always safely optimize 32bit divisions. The maxima of 32bit *x* and *A* are, of course, 2<sup>32</sup>. The safety limit for this is 2<sup>64</sup>−2<sup>32</sup>, which will always fit in the 64bit result of `smull`.
+これで、GCC がなぜ 32 ビットの割り算を常に安全に最適化できるのかがわかります。32 ビットの *x* と *A* の最大値は、もちろん 2<sup>32</sup> です。これに対する安全の限界は 2<sup>64</sup>−2<sup>32</sup> で、これは `smull` の 64 ビットの結果に常に収まります。
 
 :::
 
-Of course, you don't want to have to type in these things all the time. So here are two macros that can do the work for you. They look horrible, but the preprocessor and compiler know how to handle them. I'd advise against converting these to inline functions, because for some reason there is a good chance you will lose any advantages the code is supposed to bring.
+もちろん、これを毎回入力したくはないでしょう。そこで、仕事をしてくれる 2 つのマクロを示します。見た目はひどいですが、プリプロセッサとコンパイラはこれらの扱い方を知っています。これらをインライン関数に変換するのはおすすめしません。どういうわけか、コードがもたらすはずの利点をすべて失ってしまう可能性が高いからです。
 
 ```c
 // Division by reciprocal multiplication
@@ -933,41 +933,41 @@ Of course, you don't want to have to type in these things all the time. So here 
 #define FX_RECIMUL(x, a, fp)    ( ((x)*((1<<(fp))+(a)-1)/(a))>>(fp) )
 ```
 
-### Summary {#ssec-rmdiv-sum}
+### まとめ {#ssec-rmdiv-sum}
 
-Never forget that this is something of a hack and **only** works when *A* is constant. The whole point was to have the division at compile time rather than runtime, and that is only possible if *A* is constant. One nice thing about constants is that they're known beforehand, by definition. Negative values and powers of two may be resolved at compile-time too if desired.
+これはちょっとした小技であり、*A* が定数のときに**だけ**うまくいくことを決して忘れないでください。そもそもの要点は割り算を実行時ではなくコンパイル時に行うことで、それは *A* が定数のときにしかできません。定数の良いところの 1 つは、定義上、前もってわかっていることです。必要なら、負の値や 2 の累乗もコンパイル時に解決できます。
 
-The reciprocal multiplier *m* is *not* merely &#x230A;*n*/*A*&#x230B;, for reasons of round-off error. Always round up. In other words:
+丸め誤差の理由から、逆数の倍率 *m* は単なる &#x230A;*n*/*A*&#x230B; では*ありません*。常に切り上げてください。言い換えると次のとおりです。
 
 > *m* = &#x230A;(*n*+*A*−1) / *A*&#x230B;
 
-Then there's the matter of failed divisions, i.e. where the approximation differs from the ‘true’ &#x230A;*x*/*A*&#x230B;. The exact condition doesn't really matter, but it is useful to know the safe ranges of *x*, and conversely what *n* you need for a given *x*-range. Again, because the important terms are constant they can be figured out in advance. Note that the relations given below represent *A* limit, not *the* limit. The actual numbers for failure may be a bit looser, but depend on the circumstances and as such, relations for those would be more complex.
+それから、割り算の失敗、つまり近似が「本当の」&#x230A;*x*/*A*&#x230B; と違う場合の問題があります。正確な条件は実はあまり重要ではありませんが、*x* の安全な範囲と、逆に与えられた *x* の範囲に必要な *n* を知っておくと役立ちます。ここでも、重要な項は定数なので、前もって求められます。下に示す関係は*ひとつの*限界を表すもので、*唯一の*限界ではないことに注意してください。実際に失敗する数はもう少し緩いかもしれませんが、状況によるので、そのための関係はもっと複雑になります。
 
 > *x* \< *n* / (*m·a* − *n*)
 
 > *n* \> *x*(*A*−1)
 
-Lastly, if you have absolutely no idea what this whole section was about, I'd advise against using this strategy. It is a partially safe optimisation technique for division and while it can be a good deal faster that the normal division, it might not be worth it in non-critical areas. Just, use your judgement.
+最後に、この節全体が何の話だったのかまったくわからなければ、この方法は使わないことをおすすめします。これは部分的に安全な割り算の最適化の技法で、普通の割り算よりかなり速くなりえますが、重要でない部分では使う価値がないかもしれません。とにかく、自分で判断してください。
 
-:::note Altenative method
+:::note 別の方法
 
-There is an alternative method for reciprocal multiplication: instead of rounding *n*/*A* up, you can also add 1 to *x* for
+逆数による掛け算には別の方法もあります。*n*/*A* を切り上げる代わりに、*x* に 1 を足すこともできます。
 
 > *y* = &#x230A;*x* / *A*&#x230B; ≈ (*x*+1) × &#x230A;*N* / *A* / *N*&#x230B;
 
-This will also get rid of the problems described by @tbl:rmdiv-bad. The safety conditions are almost the same as before, but there is some difference for division of negative *x*. If you *really* must know, details are available on request.
+これでも @tbl:rmdiv-bad で示した問題はなくなります。安全の条件は前とほぼ同じですが、負の *x* の割り算については少し違いがあります。*どうしても*知りたければ、ご要望に応じて詳細をお教えします。
 
 :::
 
-## Look-up Tables {#sec-lut}
+## ルックアップテーブル {#sec-lut}
 
-A <dfn>look-up table</dfn> (or <dfn>LUT</dfn>) is, well, it's a table that you use to look stuff up. That was rather obvious, wasn't it? The important point is that you can do it really *quickly*. As a simple example, what is 2<sup>5</sup>, and what is 3<sup>5</sup>? Real Programmers (should) know the answer to the first one instantly, but the other might take a little longer to find. Why? Because any self-respecting programmer knows the powers of 2 by heart, up to 2<sup>10</sup> at least. The powers of 2 crop up so often in programming that you've got the answers memorized – you see as much as see the question "2<sup>5</sup>", you don't calculate the answer via repeated multiplication, your mind simply **looks it up** in its memory and you give the answer instantly, almost without thinking. The same goes for (decimal) multiplication tables: 7×8? 56, just like that. But move to, say, powers of 3 or hexadecimal multiplications and the process fails and you have to do it the hard and long way. What I'm trying to say here is that things can go a lot faster when you can simply look them up, rather than having to do the proper calculations.
+<dfn>ルックアップテーブル</dfn>（<dfn>LUT</dfn>）とは、まあ、物を調べる（look up）のに使う表です。かなり明らかでしたね。重要なのは、それを本当に*すばやく*できるということです。簡単な例として、2<sup>5</sup> はいくつで、3<sup>5</sup> はいくつでしょうか？ 真のプログラマなら 1 つ目の答えは即座にわかる（はず）ですが、もう 1 つは見つけるのに少し時間がかかるかもしれません。なぜでしょうか？ 自尊心のあるプログラマなら誰でも、少なくとも 2<sup>10</sup> までは 2 の累乗を暗記しているからです。2 の累乗はプログラミングでしょっちゅう出てくるので、答えを覚えてしまっているのです。「2<sup>5</sup>」という問いを見たとたん、掛け算を繰り返して答えを計算するのではなく、頭が単に記憶からそれを**調べて**、ほとんど考えずに即座に答えます。（10 進数の）九九も同じです。7×8？ 56、一瞬です。でも、たとえば 3 の累乗や 16 進数の掛け算になると、この過程はうまくいかず、難しく長いやり方でしなければなりません。私が言いたいのは、きちんと計算しなければならないより、単に調べられるほうがずっと速くなりうるということです。
 
-The concept of look-up tables works for computers as well, otherwise I wouldn't have brought it up. In this case, the look-up table is simply an array that you stuff with whatever you think you might need to look up.
+ルックアップテーブルの考え方はコンピュータにも使えます。そうでなければ話題にしませんでした。この場合、ルックアップテーブルは単に、調べる必要があると思うものを何でも詰め込んだ配列です。
 
-### Example: sine/cosine LUTs {#ssec-lut-sin}
+### 例: サイン/コサインのルックアップテーブル {#ssec-lut-sin}
 
-Classic examples are trigonometry LUTs. Sines and cosines are expensive operations, especially on the GBA, so it would be best to make a table of them so you only have to spend a memory access instead of going through two (expensive) type conversions, floating-point function. A simple way to do this is to create two FIXED arrays of, say, 360 elements each (one for every degree) and fill it at the start of your game.
+古典的な例は三角関数のルックアップテーブルです。サインとコサインは、特に GBA では高くつく演算なので、それらの表を作っておくのが一番です。そうすれば、2 回の（高くつく）型変換と浮動小数点の関数を経る代わりに、メモリアクセス 1 回で済みます。簡単なやり方は、それぞれたとえば 360 要素（1 度ごとに 1 つ）の FIXED の配列を 2 つ作り、ゲームの開始時に埋めることです。
 
 ```c
 #define PI 3.14159265
@@ -987,22 +987,22 @@ void sincos_init()
 }
 ```
 
-However, this particular method is deeply flawed. Yes, it works, yes, it's easy, but there is definitely room for improvement. To start with an issue that would be immediately visible if you were to use this function, it actually takes a few *seconds* to complete. Yes, that's how slow the standard trig routines are. This is a fairly mild issue as you only have to call it once, but still. Additionally, because the arrays are not constant, they are put in IWRAM. That's 10% of IWRAM basically wasted on something that is never actually changed except during initialization. There are a number of ways of improving on these two points like using the sine-cosine symmetries to cut down on calculation time and having the tables overlap, but why calculate them inside the game at all? It is just as easy to precalculate the tables on a PC, then export that data to arrays: then they will be constant (i.e., not hogging IWRAM), and the GBA won't have to spend a cycle on their initialization.
+しかし、この方法には深刻な欠陥があります。そう、動きはします。そう、簡単です。でも、改善の余地は間違いなくあります。この関数を使えばすぐにわかる問題から始めると、これは終わるまでに実際に数*秒*かかります。そう、標準の三角関数のルーチンはそれほど遅いのです。1 回呼ぶだけでいいので、これはかなり軽い問題ですが、それでも問題です。さらに、配列が定数でないので、IWRAM に置かれます。初期化のとき以外は実際には決して変わらないもののために、IWRAM の 10% が基本的に無駄になるのです。サインとコサインの対称性を使って計算時間を減らしたり、表を重ねたりと、これら 2 つの点を改善する方法はいくつかありますが、そもそもなぜゲームの中で計算するのでしょうか？ PC で表を前もって計算し、そのデータを配列に書き出すのも同じくらい簡単です。そうすれば表は定数になり（つまり IWRAM を独占しない）、GBA はその初期化に 1 サイクルも使わずに済みます。
 
-A second improvement would be to use a higher fixed-point fraction. The range of sine and cosine is \[−1, +1\]. This means that by using 8.8 fixeds for the LUT, I am actually wasting 6 bits that I could have used for a higher accuracy. So what I'm going to do is use 4.12 fixed-point. Yes, you could go up to .14 fixeds, but 12 is a nicer number.
+2 つ目の改善は、より大きな固定小数点の小数部を使うことです。サインとコサインの値域は \[−1, +1\] です。つまり、ルックアップテーブルに 8.8 の固定小数点を使うと、より高い精度に使えたはずの 6 ビットを実は無駄にしていることになります。そこで、4.12 の固定小数点を使うことにします。そう、.14 の固定小数点まで上げることもできますが、12 のほうがきりのいい数です。
 
-And for the final improvement, I'm not going to use 360 units for a circle, but a power of two; 512 in this case. This has two benefits:
+そして最後の改善として、円に 360 単位ではなく 2 の累乗、この場合は 512 を使います。これには 2 つの利点があります。
 
--   For wrapping (α\<0 or α\>2π), I can use a bitmask instead of if-statements or \*gasp\* modulo.
--   Since the cosine is just shifted sine, and because of point one, I now only need one table for both waves, and can use an offset angle and wrap-by-masking to get one wave from the other.
+-   回り込み（α\<0 や α\>2π）に、if 文や、\*あえぎ\* 剰余の代わりにビットマスクを使えます。
+-   コサインは単にずらしたサインで、1 つ目の点のおかげで、両方の波に表が 1 つあればよくなり、角度のオフセットとマスクによる回り込みを使って、一方の波からもう一方を得られます。
 
-Both these points can make life a lot easier.
+どちらの点も、物事をずっと楽にしてくれます。
 
-For the record, it is perfectly alright to this. The forms of sine and cosine stem from travelling along the circumference of the unit circle; the number of divisions along that path is arbitrary. The number 360 has historical significance, but that's it. Let's face it, you wouldn't be able to tell how much a degree is anyway, the thing that matters is circle divisions. 360° is a full circle, 90° is a quarter circle, et cetera. Now it's 512 for a full circle, 128 (512/4) for a quarter, and so on. A quick and dirty sin LUT generator might look something like this. Summing up:
+念のため言っておくと、こうしてもまったく問題ありません。サインとコサインの形は、単位円の円周に沿って進むことから生じるもので、その道のりをいくつに分けるかは任意です。360 という数には歴史的な意味がありますが、それだけです。正直なところ、1 度がどれくらいかなんてどのみちわからないでしょう。重要なのは円の分割です。360° は 1 周、90° は 4 分の 1 周、という具合です。それが今度は、1 周が 512、4 分の 1 周が 128（512/4）、などになるのです。手っ取り早く雑なサインのルックアップテーブルの生成器は、次のようなものになるでしょう。まとめると次のとおりです。
 
--   Precalculate the LUT outside the GBA, and link it in like a normal const array.
--   Use 4.12 fixeds instead of 4.8.
--   Divide the LUT into a power-of-two (like 512), instead of 360.
+-   ルックアップテーブルは GBA の外で前もって計算し、普通の const の配列のようにリンクする。
+-   4.8 ではなく 4.12 の固定小数点を使う。
+-   ルックアップテーブルは 360 ではなく 2 の累乗（512 など）に分割する。
 
 ```c
 // Example sine LUT generator
@@ -1036,7 +1036,7 @@ int main()
 }
 ```
 
-It creates a file sinlut.c which contains a 512 halfword array called `sin_lut`. Note that while I'm creating a C file here, you could just as well create a table in an assembly file, or even just as a binary file that you then somehow link to the project. Actually finding the sine and cosine values goes through the `lu_sin()` and `lu_cos()` functions.
+これは、`sin_lut` という 512 個のハーフワードの配列を含む sinlut.c というファイルを作ります。ここでは C のファイルを作っていますが、アセンブリのファイルに表を作ってもいいですし、あるいは何らかの方法でプロジェクトにリンクする単なるバイナリファイルとして作ることもできます。実際にサインとコサインの値を求めるには、`lu_sin()` 関数と `lu_cos()` 関数を通します。
 
 ```c
 // Sine/cosine lookups. 
@@ -1052,34 +1052,34 @@ INLINE s32 lu_cos(u32 theta)
 {   return sin_lut[((theta>>7)+128)&0x1FF]; }
 ```
 
-#### Presenting excellut
+#### excellut の紹介
 
-I haven't actually used the generator shown above for the LUTs in libtonc. Rather, I've used my own [excellut](http://www.coranac.com/projects/#excellut). This is not a program, but an Excel file. Yes, I did say Excel. The thing about using a spreadsheet program for building LUTs is that you can make *any* kind of mathematical table with it, test whether it has the desired accuracy and plot it and everything. Then after you're satisfied, you can then just export part of the spreadsheet in the manner of your choice. How's that for flexibility?
+libtonc のルックアップテーブルには、実は上に示した生成器は使っていません。代わりに、私自身の [excellut](http://www.coranac.com/projects/#excellut) を使っています。これはプログラムではなく、Excel のファイルです。そう、Excel と言いました。ルックアップテーブルを作るのに表計算のプログラムを使うことの良いところは、*どんな*種類の数学的な表でも作れ、望む精度があるかどうかを確かめ、グラフにしたりなんでもできることです。満足したら、表の一部を好きな方法で書き出すだけです。なんと柔軟でしょう？
 
-#### Accuracy and resolution
+#### 精度と分解能
 
-These are the two main things to consider when creating your LUT. <dfn>Accuracy</dfn> concerns the number of significant bits of each entry; <dfn>resolution</dfn> is how far apart each entry is in the argument space. Bigger is better in both cases, but there is a space trade-off, of course. A compromise is necessary, and once again, it depends very much on what you intend to do with it.
+これらは、ルックアップテーブルを作るときに考えるべき 2 つの主なことです。<dfn>精度</dfn>は各エントリの有効ビット数に関するもので、<dfn>分解能</dfn>は引数の空間で各エントリがどれだけ離れているかです。どちらも大きいほうが良いのですが、もちろん領域とのトレードオフがあります。妥協が必要で、ここでもまた、それで何をするつもりかに大きく左右されます。
 
-For accuracy, you need to think of the range of the function. As said, the sine range is \[−1, +1\] and using 8.8 fixeds would waste 6 bits that could have been used for more significant bits.. For a division LUT like the one I'm using for the [first mode 7 chapter](mode7.html), I need 1/1 up to 1/160, which would *not* work well with .8 fixeds, so I'm using .16 fixeds there, which may still not be enough, but more might give overflow problems.
+精度については、関数の値域を考える必要があります。先ほど言ったように、サインの値域は \[−1, +1\] で、8.8 の固定小数点を使うと、より多くの有効ビットに使えたはずの 6 ビットを無駄にします。[最初のモード 7 の章](mode7.html)で使っているような割り算のルックアップテーブルでは、1/1 から 1/160 までが必要で、これは .8 の固定小数点ではうまく*いかない*ので、そこでは .16 の固定小数点を使っています。それでもまだ足りないかもしれませんが、もっと増やすとオーバーフローの問題が出るかもしれません。
 
-The second issue, resolution, is tied to how many entries you have. Even if you have all the accuracy in the world, it wouldn't do you much good if they're spread out too thin. It's similar to screen resolutions: even with 32bit color, things will look mighty hideous if you only have a 17 inch monitor with a 320×240 resolution. On the other hand, an overly high resolution doesn't help you if the accuracy isn't there to support it. Most LUT-worthy functions will be smooth curves and for any given accuracy, you will reach a point where increasing resolution will only add identical values to the LUT, which would be a waste of space. And remember, if you really need to you can always do an interpolation if necessary.
+2 つ目の問題、分解能は、エントリをいくつ持つかに結びついています。世界中の精度があっても、エントリがまばらに散らばりすぎていれば、あまり役に立ちません。画面の解像度と似ています。32 ビットカラーでも、320×240 の解像度の 17 インチのモニタしかなければ、ものすごく醜く見えるでしょう。一方で、それを支える精度がなければ、高すぎる分解能も役に立ちません。ルックアップテーブルにする価値のある関数のほとんどはなめらかな曲線で、どんな精度でも、分解能を上げてもルックアップテーブルに同じ値が加わるだけになる点に達します。それは領域の無駄です。それから、どうしても必要なら、いつでも補間できることを忘れないでください。
 
-The first few values of my 512, 8.8 fixeds sine-lut, for example, read “0x0000, 0x0003, 0x0006, 0x0009” That is where the derivative is maximal, so these are the largest differences between neighbours you will find. If I were to increase the resolution fourfold, the differences would be in the final bit; going any further would be useless unless I increased the accuracy as well.
+たとえば、私の 512 エントリ、8.8 の固定小数点のサインのルックアップテーブルの最初の数個の値は「0x0000、0x0003、0x0006、0x0009」です。ここは導関数が最大になるところなので、これが隣り合うエントリの間で見つかる最大の差です。分解能を 4 倍にすると、差は最後のビットになります。それ以上進めても、精度も上げない限り無意味です。
 
-So it's actually a three-way compromise. There needs to be a balance between accuracy and resolution (the derivative of the function would be helpful to find this), and pitted against those two is the amount of ROM space you want to allot to the LUT. Again, the only person who can judge on the right balance is you.
+というわけで、これは実は三つ巴の妥協です。精度と分解能の間でバランスを取る必要があり（これを見つけるには関数の導関数が役立つでしょう）、その 2 つと対立するのが、ルックアップテーブルに割り当てたい ROM の領域の量です。ここでも、正しいバランスを判断できるのはあなただけです。
 
-### Linear interpolation of LUTs {#ssec-lut-lerp}
+### ルックアップテーブルの線形補間 {#ssec-lut-lerp}
 
-Look-up tables are essentially a collection of points sampled from a function. This is fine if you always access the arrays at those points, but what if you want to retrieve value between points? An example of this would be a fixed-point angle, like `theta` of the (co)sine inline functions. Usually, the lower bits of a fixed-point number are just cut off and the point before it is used. While fast, this does have some loss of accuracy as its result.
+ルックアップテーブルは本質的に、関数から標本を取った点の集まりです。常にその点で配列にアクセスするならそれで問題ありませんが、点と点の間の値を取り出したい場合はどうでしょうか？ その例は、（コ）サインのインライン関数の `theta` のような固定小数点の角度です。普通は、固定小数点数の下位のビットは単に切り捨てられ、その前の点が使われます。速いのですが、その結果として精度が多少失われます。
 
 <div class="cpt_fr" style="width:256px;">
   <img src="img/math/lutlerp.png" id="fig:lerp" 
     alt="lut lerp" width=256><br>
-  <b>*@fig:lerp</b>: approximating a sine by direct 
-  look-up or linear interpolation.
+  <b>*@fig:lerp</b>: 直接の表引きと線形補間による
+  サインの近似。
 </div>
 
-A more accurate solution would be to use the surrounding points and interpolate to the desired point. The easiest of these is <dfn>linear interpolation</dfn> (or <dfn>lerp</dfn>). Say you have a point *x*<sub>a</sub> and *x*<sub>b</sub>, with function values *y*<sub>a</sub> and *y*<sub>b</sub>, respectively. This can be used to define a line. The function value of point *x* can then be interpolated by:
+もっと正確な解決策は、周りの点を使って目的の点に補間することです。その中で最も簡単なのは<dfn>線形補間</dfn>（<dfn>lerp</dfn>）です。点 *x*<sub>a</sub> と *x*<sub>b</sub> があり、関数の値がそれぞれ *y*<sub>a</sub> と *y*<sub>b</sub> だとします。これで直線を定義できます。すると、点 *x* の関数の値は次の式で補間できます。
 
 <table id="eq:lerp">
 <tr>
@@ -1095,9 +1095,9 @@ A more accurate solution would be to use the surrounding points and interpolate 
     (<i>x</i> &minus; <i>x</i><sub>a</sub>) + <i>y</i><sub>a</sub>
 </table>
 
-*@fig:lerp gives an example of the difference that linear interpolation can make. Here I have a sine function sampled at 16 points and at .12f precision. The blue line represents the actual sine function. The magenta like is the direct look-up using the preceding point, and the lerp is given by the yellow line. Note that the blue and yellow lines are almost the same, but the magenta line can be a good deal off. Consider *x* = 4.5, given in red. The LUT value is off by 8.5%, but the lerp value by only 0.5%: that's 16 times better! True, this is an exaggerated case, but lerping can make a huge difference.
+*@fig:lerp は、線形補間がもたらしうる違いの例です。ここでは 16 点で標本を取った、.12f の精度のサイン関数があります。青い線は実際のサイン関数を表しています。マゼンタの線は前の点を使った直接の表引きで、線形補間は黄色い線で示しています。青と黄色の線はほとんど同じですが、マゼンタの線はかなりずれうることに注意してください。赤で示した *x* = 4.5 を考えてみてください。ルックアップテーブルの値は 8.5% ずれていますが、線形補間の値は 0.5% しかずれていません。16 倍良いのです！ たしかにこれは誇張した例ですが、線形補間は大きな違いを生みえます。
 
-So how do we implement this? Well, essentially by using @eq:lerp. The division in it may look nasty, but remember that the difference between successive points is always 1 – or a power-of-two for fixed point numbers. An efficient implementation would be:
+では、どう実装すればいいのでしょうか？ 基本的には @eq:lerp を使います。その中の割り算は厄介に見えるかもしれませんが、続く点どうしの差は常に 1、固定小数点数なら 2 の累乗であることを思い出してください。効率的な実装は次のようになるでしょう。
 
 ```c
 //! Linear interpolator for 32bit LUTs.
@@ -1117,20 +1117,20 @@ INLINE int lu_lerp32(const s32 lut[], int x, const int shift)
 }
 ```
 
-That's the version for 32-bit LUTs, there is also a 16-bit version called `lu_lerp16()`, which has the same body, but a different declaration. In C++, this would make a nice template function.
+これは 32 ビットのルックアップテーブル用の版で、`lu_lerp16()` という 16 ビット版もあります。本体は同じで、宣言が違います。C++ なら、これは素敵なテンプレート関数になるでしょう。
 
-These functions work for every kind of LUT, expect for a little snag at the upper boundary. Say you have a LUT of *N* entries. The functions use *x*+1, which is likely not to exist for the final interval between *N*−1 and *N*. This could seriously throw the interpolation off at that point. Rather than covering that as a special case, add an extra point to the LUT. The `sinlut` actually has 513 points, and not 512. (Actually, it has 514 points to keep things word-aligned, but that's beside the point.)
+これらの関数はどんな種類のルックアップテーブルにも使えますが、上端に小さな落とし穴があります。*N* エントリのルックアップテーブルがあるとします。関数は *x*+1 を使いますが、*N*−1 と *N* の間の最後の区間では、それはおそらく存在しません。そのため、その点で補間が大きく狂いかねません。それを特別な場合として扱う代わりに、ルックアップテーブルに点を 1 つ追加してください。`sinlut` は実際には 512 点ではなく 513 点あります。（実はワード境界に揃えるために 514 点ありますが、それは本題ではありません。）
 
-:::warning Lerping at the upper boundary
+:::warning 上端での線形補間
 
-Linear interpolation needs the sampling point above and below *x*, which can cause problems at the upper boundary. Add an extra sampling point there to “finish the fence’, as it were.
+線形補間には *x* の上と下の標本点が必要で、これが上端で問題を起こすことがあります。いわば「柵を仕上げる」ために、そこに標本点を 1 つ追加してください。
 
 :::
 
-The direct look-up is also known as 0-order interpolation; linear interpolation is first order. Higher orders also exists but require more surrounding points and more and complexer calculations. Only attempt those if you really, really have to.
+直接の表引きは 0 次の補間としても知られていて、線形補間は 1 次です。もっと高い次数もありますが、より多くの周りの点と、より多くの複雑な計算が必要になります。本当に、本当に必要な場合だけ試してください。
 
-### Non mathematical LUTs {#ssec-lut-nomath}
+### 数学以外のルックアップテーブル {#ssec-lut-nomath}
 
-While the most obvious use of lookup tables is for precalculated mathematical functions, LUTs aren't restricted to mathematics. In my [text systems](text.html), for example, I'm using a look-up table for the character→tile-index conversion. This offers me a greater range in the distribution of tiles that otherwise would be possible. The default font uses ASCII characters 32-127, and the tiles for these are usually in tiles 0 through 95. But if for some reason I would only need the number tiles, I could set-up the character LUT for only numbers, and the text system would take it from there. the rest of the tiles would then be free for other purposes.
+ルックアップテーブルの最も明らかな使い道は、前もって計算した数学の関数ですが、ルックアップテーブルは数学に限りません。たとえば私の[テキストシステム](text.html)では、文字→タイルのインデックスの変換にルックアップテーブルを使っています。これで、そうでなければできなかったほど幅広くタイルを配置できます。デフォルトのフォントは ASCII 文字の 32-127 を使い、それらのタイルは普通タイル 0 から 95 にあります。でも、何らかの理由で数字のタイルだけが必要なら、文字のルックアップテーブルを数字だけに設定でき、あとはテキストシステムがそれに従います。残りのタイルはほかの目的に使えるようになります。
 
-Another use would be flag lookup. The libraries that come with Visual C++ use LUTs for the character type routines, `isalpha()`, `isnum()` and the like. There is a table with bitflags and when you use the routines, they just grab the appropriate element and do some bit testing. You can find something similar in game programming too, like a table with bitflags for the tile types: background, walkable, trap, etc. Instead of massive switch-blocks, you might only have to do an array-lookup, which is a lot faster.
+もう 1 つの使い道はフラグの表引きです。Visual C++ に付属するライブラリは、`isalpha()`、`isnum()` などの文字の種類のルーチンにルックアップテーブルを使っています。ビットフラグの表があり、ルーチンを使うと、適切な要素を取ってきてビットを調べるだけです。ゲームプログラミングでも似たようなものが見つかります。背景、歩ける、罠、などのタイルの種類のビットフラグの表です。巨大な switch ブロックの代わりに、配列の表引きだけで済むかもしれず、そのほうがずっと速いのです。
